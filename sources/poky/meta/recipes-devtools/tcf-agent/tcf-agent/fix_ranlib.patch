@@ -1,0 +1,16 @@
+Upstream-Status: Inappropriate [poky-specific fix]
+
+Index: agent/Makefile.inc
+===================================================================
+--- agent.orig/Makefile.inc
++++ agent/Makefile.inc
+@@ -88,6 +88,9 @@ ifneq ($(OPSYS),Windows)
+   ifneq ($(CC),g++)
+     OPTS += -Wmissing-prototypes
+   endif
++  ifneq ($(RANLIB),)
++    RANLIB += $@
++  endif
+ endif
+ 
+ # Compiler flags definition

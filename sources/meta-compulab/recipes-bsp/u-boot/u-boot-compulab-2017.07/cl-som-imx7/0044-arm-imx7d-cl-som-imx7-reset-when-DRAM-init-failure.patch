@@ -1,0 +1,94 @@
+From d8be9332e2a4a4bb84c82a692923ff8c4891e5c2 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 21 Feb 2018 15:52:39 +0200
+Subject: [PATCH 44/57] arm: imx7d: cl-som-imx7: reset when DRAM init failure
+
+In case of  DRAM initialization failure, an error message is generated.
+
+Update the SPL to reset the board in case of DRAM initialization
+failure.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/common.h |  2 ++
+ board/compulab/cl-som-imx7/mux.c    | 12 ++++++------
+ board/compulab/cl-som-imx7/spl.c    |  9 +++++++--
+ 3 files changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index f9663f9006..33c216be6a 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -19,6 +19,8 @@ PADS_SET_PROT(uart1_pads)
+ PADS_SET_PROT(espi1_pads)
+ #endif /* CONFIG_SPI */
+ 
++PADS_SET_PROT(wdog_pads)
++
+ #ifndef CONFIG_SPL_BUILD
+ #ifdef CONFIG_FSL_ESDHC
+ PADS_SET_PROT(usdhc3_emmc_pads)
+diff --git a/board/compulab/cl-som-imx7/mux.c b/board/compulab/cl-som-imx7/mux.c
+index 7d04fde814..b976310e6e 100644
+--- a/board/compulab/cl-som-imx7/mux.c
++++ b/board/compulab/cl-som-imx7/mux.c
+@@ -68,6 +68,12 @@ PADS_SET(espi1_pads)
+ 
+ #endif /* CONFIG_SPI */
+ 
++static iomux_v3_cfg_t const wdog_pads[] = {
++	MX7D_PAD_GPIO1_IO00__WDOG1_WDOG_B | MUX_PAD_CTRL(NO_PAD_CTRL),
++};
++
++PADS_SET(wdog_pads)
++
+ #ifndef CONFIG_SPL_BUILD
+ 
+ #ifdef CONFIG_FSL_ESDHC
+@@ -150,12 +156,6 @@ static iomux_v3_cfg_t const usb_otg1_pads[] = {
+ 
+ PADS_SET(usb_otg1_pads)
+ 
+-static iomux_v3_cfg_t const wdog_pads[] = {
+-	MX7D_PAD_GPIO1_IO00__WDOG1_WDOG_B | MUX_PAD_CTRL(NO_PAD_CTRL),
+-};
+-
+-PADS_SET(wdog_pads)
+-
+ #ifdef CONFIG_NAND_MXS
+ 
+ #define GPMI_PAD_CTRL		(PAD_CTL_DSE_3P3V_49OHM | PAD_CTL_PUE | \
+diff --git a/board/compulab/cl-som-imx7/spl.c b/board/compulab/cl-som-imx7/spl.c
+index 238cb42b6b..5693e2850c 100644
+--- a/board/compulab/cl-som-imx7/spl.c
++++ b/board/compulab/cl-som-imx7/spl.c
+@@ -140,9 +140,12 @@ static void cl_som_imx7_spl_dram_cfg_size(u32 ram_size)
+ 		     &cl_som_imx7_spl_calib_param);
+ }
+ 
++#define CL_SOM_IMX7_WD_RESET_VAL 0x14 /* Watchdog reset value */
++
+ static void cl_som_imx7_spl_dram_cfg(void)
+ {
+ 	ulong ram_size_test, ram_size = 0;
++	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+ 
+ 	for (ram_size = SZ_2G; ram_size >= SZ_256M; ram_size >>= 1) {
+ 		cl_som_imx7_spl_dram_cfg_size(ram_size);
+@@ -151,9 +154,11 @@ static void cl_som_imx7_spl_dram_cfg(void)
+ 			break;
+ 	}
+ 
++	/* Reset the board in case of DRAM initialization failure */
+ 	if (ram_size < SZ_256M) {
+-		puts("!!!ERROR!!! DRAM detection failed!!!\n");
+-		hang();
++		puts("DRAM detection failed!!! Resetting ...\n");
++		cl_som_imx7_wdog_pads_set();
++		clrsetbits_le16(&wdog->wcr, 0, CL_SOM_IMX7_WD_RESET_VAL);
+ 	}
+ }
+ 
+-- 
+2.17.1
+

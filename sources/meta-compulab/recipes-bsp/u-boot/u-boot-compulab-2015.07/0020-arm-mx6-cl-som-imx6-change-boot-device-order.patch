@@ -1,0 +1,46 @@
+From 81d0815001fea18f1ce6fae9961c93f107ed91af Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 6 Aug 2017 17:44:04 +0300
+Subject: [PATCH 20/20] arm: mx6: cl-som-imx6: change boot device order
+
+Make the U-boot try removable devices first.
+Boot order: usb, mmc, emmc , sata.
+---
+ include/configs/cm_fx6.h | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/include/configs/cm_fx6.h b/include/configs/cm_fx6.h
+index f76355e..6474160 100644
+--- a/include/configs/cm_fx6.h
++++ b/include/configs/cm_fx6.h
+@@ -153,21 +153,18 @@
+ #endif
+ 
+ #define CONFIG_BOOTCOMMAND \
+-	"run setupmmcboot;" \
+-	"mmc dev ${storagedev};" \
+-	"if mmc rescan; then " \
+-		"run trybootsmz;" \
+-	"fi;" \
+-	EMMC\
+-	"setenv storagedev 3;"\
+-	"mmc dev ${storagedev};" \
+-	"run trybootsmz;" \
+ 	"run setupusbboot;" \
+ 	"if usb start; then "\
+ 		"if run loadscript; then " \
+ 			"run bootscript;" \
+ 		"fi;" \
+ 	"fi;" \
++	"run setupmmcboot;" \
++	"mmc dev ${storagedev};" \
++	"if mmc rescan; then " \
++		"run trybootsmz;" \
++	"fi;" \
++	EMMC\
+ 	"run setupsataboot;" \
+ 	"if sata init; then " \
+ 		"run trybootsmz;" \
+-- 
+1.9.1
+

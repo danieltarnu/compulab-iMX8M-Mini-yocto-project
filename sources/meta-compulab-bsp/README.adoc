@@ -1,0 +1,5 @@
+# Quick Start Guide
+
+## Supported CompuLab Machines
+
+  * https://github.com/compulab-yokneam/meta-bsp-imx8mm[`ucm-imx8m-mini`]

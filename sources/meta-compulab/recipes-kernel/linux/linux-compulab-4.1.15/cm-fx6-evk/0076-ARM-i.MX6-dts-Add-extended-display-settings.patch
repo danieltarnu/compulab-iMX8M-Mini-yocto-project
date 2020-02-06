@@ -1,0 +1,444 @@
+From c2ffd09e54cc5e849c26b1a9ce05f3b6fb3b43fc Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 26 Feb 2017 12:47:55 +0200
+Subject: [PATCH 76/78] ARM: i.MX6: dts: Add extended display settings
+
+1) ldb-640x240-51 New Model
+2) ldb-640x240-63 Kyocera
+3) ldb-640x240-65 Hitachi
+4) ldb-800x480-60 New Model
+5) lcd-640x240-51 New Model / connected to P50 LCD iface
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6q-display-settings.dtsi      | 25 +++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-1-hdmi-2-ldb.dts   | 23 ++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-1-ldb-2-hdmi.dts   | 23 ++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-lcd-640x240-51.dts | 62 ++++++++++++++++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-51.dts | 58 ++++++++++++++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-63.dts | 57 ++++++++++++++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-65.dts | 57 ++++++++++++++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-ldb-800x480-60.dts | 57 ++++++++++++++++++++
+ 8 files changed, 362 insertions(+)
+ create mode 100644 arch/arm/boot/dts/imx6q-display-settings.dtsi
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-1-hdmi-2-ldb.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-1-ldb-2-hdmi.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-lcd-640x240-51.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-51.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-63.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-65.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-fx6-ldb-800x480-60.dts
+
+diff --git a/arch/arm/boot/dts/imx6q-display-settings.dtsi b/arch/arm/boot/dts/imx6q-display-settings.dtsi
+new file mode 100644
+index 0000000..676e523
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-display-settings.dtsi
+@@ -0,0 +1,25 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#define LCD	disp_dev = "lcd";\
++		interface_pix_fmt = "RGB24";
++
++#define HDMI	disp_dev = "hdmi";\
++		interface_pix_fmt = "RGB24";
++
++#define LDB 	disp_dev = "ldb";\
++		interface_pix_fmt = "RGB666";
++
++#define LDB24 	disp_dev = "ldb";\
++		interface_pix_fmt = "RGB24";
++
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-1-hdmi-2-ldb.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-1-hdmi-2-ldb.dts
+new file mode 100644
+index 0000000..3106053
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-1-hdmi-2-ldb.dts
+@@ -0,0 +1,23 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	HDMI
++};
++
++&mxcfb2 {
++	LDB
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-1-ldb-2-hdmi.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-1-ldb-2-hdmi.dts
+new file mode 100644
+index 0000000..64c71a7
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-1-ldb-2-hdmi.dts
+@@ -0,0 +1,23 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	LDB
++};
++
++&mxcfb2 {
++	HDMI
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-lcd-640x240-51.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-lcd-640x240-51.dts
+new file mode 100644
+index 0000000..b7a098d
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-lcd-640x240-51.dts
+@@ -0,0 +1,62 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	LDB24
++	mode_str ="640x240M-18@51";
++	default_bpp = <24>;
++};
++
++&lvds0 {
++	crtc = "ipu1-di0";
++};
++
++&mxcfb2 {
++	HDMI
++};
++
++&mxcfb3 {
++	status = "disabled";
++};
++
++&mxcfb4 {
++	status = "disabled";
++};
++
++#if __TIMINGS_HELP__
++mode "640x240-51"
++	# D: 10.390 MHz, H: 14.098 kHz, V: 51.452 Hz
++	geometry 640 240 640 240 24
++	timings 96246 10 10 10 10 77 14
++	rgba 8/16,8/8,8/0,0/0
++endmode
++Model:
++    96246    10      10    10      10      77      14
++    43860   100     220    26      35      224     7
++<pixclock> <left> <right> <upper> <lower> <hslen> <vslen>
++#endif
++
++&timing0 {
++	clock-frequency = <10390000>;
++        hactive = <640>;
++        vactive = <240>;
++        hback-porch = <10>;
++        hfront-porch = <10>;
++        vback-porch = <10>;
++        vfront-porch = <10>;
++        hsync-len = <77>;
++        vsync-len = <14>;
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-51.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-51.dts
+new file mode 100644
+index 0000000..38a3a2a
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-51.dts
+@@ -0,0 +1,58 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	LDB
++	mode_str ="640x240M-18@60";
++	default_bpp = <24>;
++};
++
++&mxcfb2 {
++	HDMI
++};
++
++&mxcfb3 {
++	status = "disabled";
++};
++
++&mxcfb4 {
++	status = "disabled";
++};
++
++#if __TIMINGS_HELP__
++mode "640x240-51"
++	# D: 10.390 MHz, H: 14.098 kHz, V: 51.452 Hz
++	geometry 640 240 640 240 24
++	timings 96246 10 10 10 10 77 14
++	rgba 8/16,8/8,8/0,0/0
++endmode
++Model:
++    96246    10      10    10      10      77      14
++    43860   100     220    26      35      224     7
++<pixclock> <left> <right> <upper> <lower> <hslen> <vslen>
++#endif
++
++&timing0 {
++	clock-frequency = <10390000>;
++        hactive = <640>;
++        vactive = <240>;
++        hback-porch = <10>;
++        hfront-porch = <10>;
++        vback-porch = <10>;
++        vfront-porch = <10>;
++        hsync-len = <77>;
++        vsync-len = <14>;
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-63.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-63.dts
+new file mode 100644
+index 0000000..ed1ee93
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-63.dts
+@@ -0,0 +1,57 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	LDB
++	mode_str ="640x240M-18@60";
++	default_bpp = <24>;
++};
++
++&mxcfb2 {
++	HDMI
++};
++
++&mxcfb3 {
++	status = "disabled";
++};
++
++&mxcfb4 {
++	status = "disabled";
++};
++
++#if __TIMINGS_HELP__
++mode "640x240-63"
++    # D: 22.800 MHz, H: 19.257 kHz, V: 62.523 Hz
++    geometry 640 240 640 240 24
++    timings 43859 100 220 26 35 224 7
++    rgba 8/16,8/8,8/0,0/0
++endmode
++Kyocera:
++    43860   100     220    26      35      224     7
++<pixclock> <left> <right> <upper> <lower> <hslen> <vslen>
++#endif
++
++&timing0 {
++	clock-frequency = <22800000>;
++	hactive = <640>;
++	vactive = <240>;
++	hback-porch = <100>;
++	hfront-porch = <220>;
++	vback-porch = <26>;
++	vfront-porch = <35>;
++	hsync-len = <224>;
++	vsync-len = <7>;
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-65.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-65.dts
+new file mode 100644
+index 0000000..4faba0b
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-640x240-65.dts
+@@ -0,0 +1,57 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	LDB
++	mode_str ="640x240M-18@60";
++	default_bpp = <24>;
++};
++
++&mxcfb2 {
++	HDMI
++};
++
++&mxcfb3 {
++	status = "disabled";
++};
++
++&mxcfb4 {
++	status = "disabled";
++};
++
++#if __TIMINGS_HELP___
++mode "640x240-65"
++    # D: 22.800 MHz, H: 30.000 kHz, V: 64.517 Hz
++    geometry 640 240 640 240 24
++    timings 43859 40 40 75 75 40 75
++    rgba 8/16,8/8,8/0,0/0
++endmode
++Hitachi:
++    43860    40      40    75      75       40    75
++<pixclock> <left> <right> <upper> <lower> <hslen> <vslen>
++#endif
++
++&timing0 {
++	clock-frequency = <22800000>;
++	hactive = <640>;
++	vactive = <240>;
++	hback-porch = <40>;
++	hfront-porch = <40>;
++	vback-porch = <75>;
++	vfront-porch = <75>;
++	hsync-len = <40>;
++	vsync-len = <75>;
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-800x480-60.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-800x480-60.dts
+new file mode 100644
+index 0000000..7467032
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-ldb-800x480-60.dts
+@@ -0,0 +1,57 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-fx6.dts"
++#include "imx6q-display-settings.dtsi"
++
++&mxcfb1 {
++	LDB
++	mode_str ="800x480M-18@60";
++	default_bpp = <24>;
++};
++
++&mxcfb2 {
++	HDMI
++};
++
++&mxcfb3 {
++	status = "disabled";
++};
++
++&mxcfb4 {
++	status = "disabled";
++};
++
++#if __TIMINGS_HELP___
++mode "800x480-60"
++    # D: 33.501 MHz, H: 31.515 kHz, V: 60.259 Hz
++    geometry 800 480 800 480 24
++    timings 29850 89 164 23 10 10 10
++    rgba 8/16,8/8,8/0,0/0
++endmode
++Model:
++    29850    89     164    23      10       10    10
++<pixclock> <left> <right> <upper> <lower> <hslen> <vslen>
++#endif
++
++&timing0 {
++	clock-frequency = <33500000>;
++	hactive = <800>;
++	vactive = <480>;
++	hback-porch = <89>;
++	hfront-porch = <164>;
++	vback-porch = <23>;
++	vfront-porch = <10>;
++	hsync-len = <10>;
++	vsync-len = <10>;
++};
+-- 
+1.9.1
+

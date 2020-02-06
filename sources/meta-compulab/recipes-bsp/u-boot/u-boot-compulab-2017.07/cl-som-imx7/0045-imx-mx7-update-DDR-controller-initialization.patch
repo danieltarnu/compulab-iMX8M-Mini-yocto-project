@@ -1,0 +1,238 @@
+From 162a95139965c13eaac3abf8884eb9c590b22ca7 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Thu, 1 Mar 2018 09:17:30 +0200
+Subject: [PATCH 45/57] imx: mx7: update DDR controller initialization
+
+About 1% failure of DDR initialization was detected.
+DDR initialization process updates:
+* DDR PHY calibration is done by setting the register DDR_PHY_ZQ_CON0
+  with a sequence of values. The list of values is provided by the
+  function parameter calib_param.
+  Change the calibration process according to the TRM.
+  Cancel the function parameter calib_param.
+* Add a mechanism to verify a successful DDR controller initialization.
+* The return type of the DDR initialization function is void.
+  Change return type of the DDR initialization function to int.
+  Return value 0 indicates operation success.
+  Return value 1 indicates operation failure.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ arch/arm/cpu/armv7/mx7/ddr.c            | 46 ++++++++++++++++++++-----
+ arch/arm/include/asm/arch-mx7/mx7-ddr.h | 35 +++++++++++++------
+ board/compulab/cl-som-imx7/spl.c        | 29 ++++++----------
+ 3 files changed, 71 insertions(+), 39 deletions(-)
+
+diff --git a/arch/arm/cpu/armv7/mx7/ddr.c b/arch/arm/cpu/armv7/mx7/ddr.c
+index 801d81e4af..b3702b3bae 100644
+--- a/arch/arm/cpu/armv7/mx7/ddr.c
++++ b/arch/arm/cpu/armv7/mx7/ddr.c
+@@ -15,6 +15,11 @@
+ #include <asm/arch/mx7-ddr.h>
+ #include <common.h>
+ 
++#define POLLING_COUNT_MAX 1000
++/* Recommended DDR PHY calibration value */
++#define CTRL_ZQ_CLK_DIV_VAL (0x7 & ZQ_CON2_CTRL_ZQ_CLK_DIV_MASK)
++#define DDR_PHY_CTRL_WAKE_UP_VAL 0xf
++
+ /*
+  * Routine: mx7_dram_cfg
+  * Description: DDR controller configuration
+@@ -22,12 +27,10 @@
+  * @ddrc_regs_val: DDRC registers value
+  * @ddrc_mp_val: DDRC_MP registers value
+  * @ddr_phy_regs_val: DDR_PHY registers value
+- * @calib_param: calibration parameters
+- *
++ * @return: 0 on success, 1 otherwise
+  */
+-void mx7_dram_cfg(struct ddrc *ddrc_regs_val, struct ddrc_mp *ddrc_mp_val,
+-		  struct ddr_phy *ddr_phy_regs_val,
+-		  struct mx7_calibration *calib_param)
++int mx7_dram_cfg(struct ddrc *ddrc_regs_val, struct ddrc_mp *ddrc_mp_val,
++		 struct ddr_phy *ddr_phy_regs_val)
+ {
+ 	struct src *const src_regs = (struct src *)SRC_BASE_ADDR;
+ 	struct ddrc *const ddrc_regs = (struct ddrc *)DDRC_IPS_BASE_ADDR;
+@@ -36,7 +39,8 @@ void mx7_dram_cfg(struct ddrc *ddrc_regs_val, struct ddrc_mp *ddrc_mp_val,
+ 		(struct ddr_phy *)DDRPHY_IPS_BASE_ADDR;
+ 	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs =
+ 		(struct iomuxc_gpr_base_regs *)IOMUXC_GPR_BASE_ADDR;
+-	int i;
++	u32 reg_val;
++	int polling_count = 0;
+ 
+ 	/* Assert DDR Controller preset and DDR PHY reset */
+ 	writel(SRC_DDRC_RCR_DDRC_CORE_RST_MASK, &src_regs->ddrc_rcr);
+@@ -92,15 +96,39 @@ void mx7_dram_cfg(struct ddrc *ddrc_regs_val, struct ddrc_mp *ddrc_mp_val,
+ 	writel(ddr_phy_regs_val->offset_lp_con0, &ddr_phy_regs->offset_lp_con0);
+ 
+ 	/* calibration */
+-	for (i = 0; i < calib_param->num_val; i++)
+-		writel(calib_param->values[i], &ddr_phy_regs->zq_con0);
++	clrbits_le32(&ddr_phy_regs->zq_con0, ZQ_CON0_ZQ_MANUAL_STR_MASK);
++	clrbits_le32(&ddr_phy_regs->zq_con0, ZQ_CON0_ZQ_CLK_DIV_EN_MASK);
++	writel(CTRL_ZQ_CLK_DIV_VAL, &ddr_phy_regs->zq_con2);
++	setbits_le32(&ddr_phy_regs->zq_con0, ZQ_CON0_ZQ_CLK_DIV_EN_MASK);
++	reg_val = readl(&ddr_phy_regs->zq_con0);
++	reg_val &= ~ZQ_CON0_ZQ_MANUAL_MODE_MASK;
++	reg_val |= ZQ_CON0_ZQ_MANUAL_MODE_LONG_CALIB;
++	writel(reg_val, &ddr_phy_regs->zq_con0);
++	setbits_le32(&ddr_phy_regs->zq_con0, ZQ_CON0_ZQ_MANUAL_STR_MASK);
++	while (!(readl(&ddr_phy_regs->zq_con1) & ZQ_CON1_ZQ_DONE_MASK)) {
++		udelay(1);
++		if (++polling_count > POLLING_COUNT_MAX)
++			return 1;
++	}
++	clrbits_le32(&ddr_phy_regs->zq_con0, ZQ_CON0_ZQ_MANUAL_STR_MASK);
++	clrbits_le32(&ddr_phy_regs->zq_con0, ZQ_CON0_ZQ_CLK_DIV_EN_MASK);
+ 
+ 	/* Wake_up DDR PHY */
+ 	HW_CCM_CCGR_WR(CCGR_IDX_DDR, CCM_CLK_ON_N_N);
+-	writel(IOMUXC_GPR_GPR8_ddr_phy_ctrl_wake_up(0xf) |
++	writel(IOMUXC_GPR_GPR8_ddr_phy_ctrl_wake_up(DDR_PHY_CTRL_WAKE_UP_VAL) |
+ 	       IOMUXC_GPR_GPR8_ddr_phy_dfi_init_start_MASK,
+ 	       &iomuxc_gpr_regs->gpr[8]);
+ 	HW_CCM_CCGR_WR(CCGR_IDX_DDR, CCM_CLK_ON_R_W);
++
++	/* Validation of DDRC normal operation mode */
++	polling_count = 0;
++	while ((readl(&ddrc_regs->stat) & STAT_OPERATING_MODE_MASK) !=
++	       STAT_OPERATING_MODE_NORMAL) {
++		udelay(1);
++		if (++polling_count > POLLING_COUNT_MAX)
++			return 1;
++	}
++	return 0;
+ }
+ 
+ /*
+diff --git a/arch/arm/include/asm/arch-mx7/mx7-ddr.h b/arch/arm/include/asm/arch-mx7/mx7-ddr.h
+index d2f4eef0e0..f6588b9dda 100644
+--- a/arch/arm/include/asm/arch-mx7/mx7-ddr.h
++++ b/arch/arm/include/asm/arch-mx7/mx7-ddr.h
+@@ -14,7 +14,8 @@
+ /* DDRC Registers (DDRC_IPS_BASE_ADDR) */
+ struct ddrc {
+ 	u32 mstr;		/* 0x0000 */
+-	u32 reserved1[0x18];
++	u32 stat;		/* 0x0004 */
++	u32 reserved1[0x17];
+ 	u32 rfshtmg;		/* 0x0064 */
+ 	u32 reserved2[0x1a];
+ 	u32 init0;		/* 0x00d0 */
+@@ -61,6 +62,10 @@ struct ddrc {
+ #define MSTR_DATA_BUS_WIDTH_SHIFT	12
+ #define MSTR_DATA_ACTIVE_RANKS_MASK	0xf << 24
+ #define MSTR_DATA_ACTIVE_RANKS_SHIFT	24
++/* DDRC_STAT fields */
++#define STAT_OPERATING_MODE_MASK	0x3 << 0
++#define STAT_OPERATING_MODE_SHIFT	0
++#define STAT_OPERATING_MODE_NORMAL	0x1 << 0
+ /* DDRC_ADDRMAP1 fields */
+ #define ADDRMAP1_BANK_B0_MASK		0x1f << 0
+ #define ADDRMAP1_BANK_B0_SHIFT		0
+@@ -137,19 +142,27 @@ struct ddr_phy {
+ 	u32 mdll_con0;		/* 0x00b0 */
+ 	u32 reserved8[0x03];
+ 	u32 zq_con0;		/* 0x00c0 */
++	u32 zq_con1;            /* 0x00c4 */
++	u32 zq_con2;            /* 0x00c8 */
+ };
+ 
+ #define DDR_PHY_CMD_SDLL_CON0_CTRL_RESYNC_MASK (1 << 24)
++/* DDR_PHY_ZQ_CON0 */
++#define ZQ_CON0_ZQ_MANUAL_STR_MASK 0x1 << 1
++#define ZQ_CON0_ZQ_MANUAL_STR_SHIFT 1
++#define ZQ_CON0_ZQ_MANUAL_MODE_MASK 0x3 << 2
++#define ZQ_CON0_ZQ_MANUAL_MODE_SHIFT 2
++#define ZQ_CON0_ZQ_MANUAL_MODE_LONG_CALIB 0x1 << 2
++#define ZQ_CON0_ZQ_CLK_DIV_EN_MASK 1 << 18
++#define ZQ_CON0_ZQ_CLK_DIV_EN_SHIFT 18
++/* DDR_PHY_ZQ_CON1 */
++#define ZQ_CON1_ZQ_DONE_MASK 0x1 << 0
++#define ZQ_CON1_ZQ_DONE_SHIFT 0
++/* DDR_PHY_ZQ_CON2 */
++#define ZQ_CON2_CTRL_ZQ_CLK_DIV_MASK 0xffff << 0
++#define ZQ_CON2_CTRL_ZQ_CLK_DIV_SHIFT 0
+ 
+-#define MX7_CAL_VAL_MAX 5
+-/* Calibration parameters */
+-struct mx7_calibration {
+-	int num_val;			/* Number of calibration values */
+-	u32 values[MX7_CAL_VAL_MAX];	/* calibration values */
+-};
+-
+-void mx7_dram_cfg(struct ddrc *ddrc_regs_val, struct ddrc_mp *ddrc_mp_val,
+-		  struct ddr_phy *ddr_phy_regs_val,
+-		  struct mx7_calibration *calib_param);
++int mx7_dram_cfg(struct ddrc *ddrc_regs_val, struct ddrc_mp *ddrc_mp_val,
++		 struct ddr_phy *ddr_phy_regs_val);
+ 
+ #endif	/*__ASM_ARCH_MX7_DDR_H__ */
+diff --git a/board/compulab/cl-som-imx7/spl.c b/board/compulab/cl-som-imx7/spl.c
+index 5693e2850c..f4ffc97732 100644
+--- a/board/compulab/cl-som-imx7/spl.c
++++ b/board/compulab/cl-som-imx7/spl.c
+@@ -74,18 +74,7 @@ static struct ddr_phy cl_som_imx7_spl_ddr_phy_regs_val = {
+ 	.offset_lp_con0	= 0x0000000F,
+ };
+ 
+-struct mx7_calibration cl_som_imx7_spl_calib_param = {
+-	.num_val	= 5,
+-	.values		= {
+-		0x0E407304,
+-		0x0E447304,
+-		0x0E447306,
+-		0x0E447304,
+-		0x0E407304,
+-	},
+-};
+-
+-static void cl_som_imx7_spl_dram_cfg_size(u32 ram_size)
++static int cl_som_imx7_spl_dram_cfg_size(u32 ram_size)
+ {
+ 	switch (ram_size) {
+ 	case SZ_256M:
+@@ -134,28 +123,30 @@ static void cl_som_imx7_spl_dram_cfg_size(u32 ram_size)
+ 		break;
+ 	}
+ 
+-	mx7_dram_cfg(&cl_som_imx7_spl_ddrc_regs_val,
+-		     &cl_som_imx7_spl_ddrc_mp_val,
+-		     &cl_som_imx7_spl_ddr_phy_regs_val,
+-		     &cl_som_imx7_spl_calib_param);
++	return mx7_dram_cfg(&cl_som_imx7_spl_ddrc_regs_val,
++			    &cl_som_imx7_spl_ddrc_mp_val,
++			    &cl_som_imx7_spl_ddr_phy_regs_val);
+ }
+ 
+-#define CL_SOM_IMX7_WD_RESET_VAL 0x14 /* Watchdog reset value */
++#define CL_SOM_IMX7_WD_RESET_VAL 0x1C /* Watchdog reset value */
+ 
+ static void cl_som_imx7_spl_dram_cfg(void)
+ {
+ 	ulong ram_size_test, ram_size = 0;
+ 	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
++	int init_failure;
+ 
+ 	for (ram_size = SZ_2G; ram_size >= SZ_256M; ram_size >>= 1) {
+-		cl_som_imx7_spl_dram_cfg_size(ram_size);
++		init_failure = cl_som_imx7_spl_dram_cfg_size(ram_size);
++		if (init_failure)
++			break;
+ 		ram_size_test = get_ram_size((long int *)PHYS_SDRAM, ram_size);
+ 		if (ram_size_test == ram_size)
+ 			break;
+ 	}
+ 
+ 	/* Reset the board in case of DRAM initialization failure */
+-	if (ram_size < SZ_256M) {
++	if (init_failure || (ram_size < SZ_256M)) {
+ 		puts("DRAM detection failed!!! Resetting ...\n");
+ 		cl_som_imx7_wdog_pads_set();
+ 		clrsetbits_le16(&wdog->wcr, 0, CL_SOM_IMX7_WD_RESET_VAL);
+-- 
+2.17.1
+

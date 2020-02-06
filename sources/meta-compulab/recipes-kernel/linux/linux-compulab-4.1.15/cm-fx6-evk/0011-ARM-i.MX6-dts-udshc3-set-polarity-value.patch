@@ -1,0 +1,28 @@
+From 0698d5cda1399cf1b01175e21e035ad15479eaf9 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 19 Jun 2016 11:47:08 +0300
+Subject: [PATCH 11/24] ARM: i.MX6: dts: udshc3 set polarity value
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+index 1bb2867..8bc50e4 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+@@ -100,8 +100,8 @@
+ };
+ 
+ &usdhc3 {
+-	wp-gpios = <&gpio7 0 0>;
+-	cd-gpios = <&gpio7 1 0>;
++	wp-gpios = <&gpio7 0 GPIO_ACTIVE_HIGH>;
++	cd-gpios = <&gpio7 1 GPIO_ACTIVE_LOW>;
+ 	status = "okay";
+ };
+ 
+-- 
+1.9.1
+

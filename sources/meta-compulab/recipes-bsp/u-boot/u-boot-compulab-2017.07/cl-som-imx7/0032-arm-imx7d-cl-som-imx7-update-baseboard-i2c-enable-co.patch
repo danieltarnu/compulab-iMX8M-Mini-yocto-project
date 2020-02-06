@@ -1,0 +1,197 @@
+From 2784c1cee1949db34503a400e06f532ad93ec4cd Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Mon, 27 Nov 2017 11:45:02 +0200
+Subject: [PATCH 32/57] arm: imx7d: cl-som-imx7: update baseboard i2c enable
+ condition
+
+The baseboard i2c bus (mxc3) is unconditionally enabled.
+Add environment variable flag for enabling the i2c bus.
+New environment variable: baseboard_i2c_enable
+To enable the baseboard i2c bus, set baseboard_i2c_enable to "1", "yes"
+or "true".
+
+The base board i2c bus is needed for enabling the DVI controller.
+The baseboard i2c should be located after the environment initialization
+and before the display enable.
+Move the initialization of the base board i2c bus and the display enable
+to the board_late_init() API.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/cl-som-imx7.c | 39 +++++++++++++++++++-----
+ board/compulab/cl-som-imx7/common.h      |  1 +
+ board/compulab/cl-som-imx7/display.c     | 17 ++++++-----
+ include/configs/cl-som-imx7.h            |  1 +
+ 4 files changed, 43 insertions(+), 15 deletions(-)
+
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index 11583c5c7f..b4ee39dae6 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -80,19 +80,35 @@ static struct i2c_pads_info cl_som_imx7_i2c_pad_info4 = {
+ 	},
+ };
+ 
++/* Environment variable: base board I2C bus enable */
++#define CL_SOM_IMX7_ENV_BASE_I2C "baseboard_i2c_enable"
++
+ /*
+  * cl_som_imx7_setup_i2c() - I2C  pinmux configuration.
+  */
+-static void cl_som_imx7_setup_i2c(void)
++static void cl_som_imx7_setup_i2c0(void)
++{
++	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &cl_som_imx7_i2c_pad_info2);
++}
++static int cl_som_imx7_setup_i2c1(void)
+ {
+ 	int ret;
++	char *base_i2c = getenv(CL_SOM_IMX7_ENV_BASE_I2C);
+ 
+-	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &cl_som_imx7_i2c_pad_info2);
+-	ret = setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &cl_som_imx7_i2c_pad_info4);
+-	cl_som_imx7_base_i2c_init = ret ? 0:1;
++	if (base_i2c && (!strcmp(base_i2c, "yes") ||
++			 !strcmp(base_i2c, "true") ||
++			 !strcmp(base_i2c, "1"))) {
++		ret = setup_i2c(1, CONFIG_SYS_I2C_SPEED, 0x7f, &cl_som_imx7_i2c_pad_info4);
++		if (ret)
++			return 0;
++		return 1;
++	}
++
++	return 0;
+ }
+ #else /* !CONFIG_SYS_I2C_MXC */
+-static void cl_som_imx7_setup_i2c(void) {}
++static void cl_som_imx7_setup_i2c0(void) {}
++static int cl_som_imx7_setup_i2c1(void) { return 0; }
+ #endif /* CONFIG_SYS_I2C_MXC */
+ 
+ int dram_init(void)
+@@ -562,7 +578,6 @@ int board_early_init_f(void)
+ {
+ 	cl_som_imx7_uart1_pads_set();
+ 	cl_som_imx7_usb_otg1_pads_set();
+-
+ 	return 0;
+ }
+ 
+@@ -572,7 +587,7 @@ int board_init(void)
+ 
+ 	/* address of boot parameters */
+ 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
+-	cl_som_imx7_setup_i2c();
++	cl_som_imx7_setup_i2c0();
+ 	cl_som_imx7_setup_gpmi_nand();
+ 	cl_som_imx7_setup_fec();
+ 	cl_som_imx7_spi_init();
+@@ -643,6 +658,16 @@ void cl_som_imx7_setup_wdog(void)
+ 
+ int board_late_init(void)
+ {
++	int ret;
++
++	cl_som_imx7_base_i2c_init = cl_som_imx7_setup_i2c1();
++
++#ifdef CONFIG_VIDEO_MXS
++	ret = enable_display();
++	if (ret < 0)
++		printf("Display enable failure\n");
++#endif /* CONFIG_VIDEO_MXS */
++
+ 	setenv("board_name", "CL-SOM-iMX7");
+ 	cl_som_imx7_setup_wdog();
+ 	cl_som_imx7_update_dtb_name();
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index 53ed5d9b9e..995a3c9f7b 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -49,6 +49,7 @@ typedef enum {
+ extern cl_som_imx7_base cl_som_imx7_base_id;
+ 
+ #ifdef CONFIG_VIDEO_MXS
++int enable_display(void);
+ int fdt_board_adjust_display(void);
+ PADS_SET_PROT(lcd_pads)
+ PADS_SET_PROT(lcd_control_pads)
+diff --git a/board/compulab/cl-som-imx7/display.c b/board/compulab/cl-som-imx7/display.c
+index c9a23bd49f..9377fd1a5e 100644
+--- a/board/compulab/cl-som-imx7/display.c
++++ b/board/compulab/cl-som-imx7/display.c
+@@ -142,6 +142,8 @@ static struct disp_param dispparams[] = {
+ 
+ /* Selected display preset ID */
+ static display_preset selected_preset = PRSET_NONE;
++/* Selected display type */
++static display_type disp_type = DISP_NONE;
+ 
+ #define TFP410_ID_H 0x00
+ #define TFP410_ID_L 0x06
+@@ -187,6 +189,9 @@ static int dvi_on(void)
+ 	uchar buf;
+ 	int ret = -1;
+ 
++	if (!cl_som_imx7_base_i2c_init)
++	  return 0;
++
+ 	ret = i2c_set_bus_num(CL_SOM_IMX7_I2C_BUS_EXT);
+ 	if (ret != 0) {
+ 		puts ("Failed to select the external I2C bus.\n");
+@@ -264,6 +269,9 @@ static int dvi_off(void)
+ 	uchar buf;
+ 	int ret = -1;
+ 
++	if (!cl_som_imx7_base_i2c_init)
++	  return 0;
++
+ 	ret = i2c_set_bus_num(CL_SOM_IMX7_I2C_BUS_EXT);
+ 	if (ret != 0) {
+ 		puts ("Failed to select the external I2C bus.\n");
+@@ -384,10 +392,9 @@ static display_type env_parse_displaytype(char *disp_type)
+ /*
+  * enable_display() - enable specific display type.
+  *
+- * @disp_type: display type to enable.
+  * Returns negative value on failure, 0 on success.
+  */
+-static int enable_display(display_type disp_type)
++int enable_display(void)
+ {
+ 	int ret = 0;
+ 
+@@ -417,7 +424,6 @@ int board_video_skip(void)
+ 	int ret;
+ 	char *displaytype = getenv("displaytype");
+ 	char *stdout_env = getenv("stdout");
+-	display_type disp_type;
+ 
+ 	cl_som_imx7_lcd_pads_set();
+ 	if (cl_som_imx7_base_id == CL_SOM_IMX7_SB_SOM)
+@@ -429,11 +435,6 @@ int board_video_skip(void)
+ 		return ret;
+ 	}
+ 
+-	ret = enable_display(disp_type);
+-	if (ret < 0) {
+-		printf("Display enable failure\n");
+-		return ret;
+-	}
+ 	/* Update stdout and enderr environment parameters according to the
+ 	   baseboard type */
+ 	if (stdout_env) /* stdout was set */
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 176fb55b1d..620dbf5a7e 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -137,6 +137,7 @@
+ 		"fi;\0" \
+ 	"displaytype=dvi\0" \
+ 	"stdin=serial,usbkbd\0" \
++	"baseboard_i2c_enable=true\0" \
+ 
+ #define CONFIG_PREBOOT                 "usb start"
+ 
+-- 
+2.17.1
+

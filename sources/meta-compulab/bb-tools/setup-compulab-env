@@ -1,0 +1,115 @@
+#!/bin/bash
+
+CWD=$(pwd)
+PROGNAME=${BASH_SOURCE[0]}
+[ $(basename -- $BASH_SOURCE) == $(basename -- $0) ] && EXIT="exit" || EXIT="return"
+
+if [ "$(whoami)" = "root" ]; then
+    echo "ERROR: do not use the BSP as root. Exiting..."
+    ${EXIT}
+fi
+
+BBLAYERS_CONF=conf/bblayers.conf
+LOCAL_CONF=conf/local.conf
+BB_CL_CONF_DONE=conf/bb_cl_conf.done
+
+if ([ ! -f ${BBLAYERS_CONF} ] || [ ! -f ${LOCAL_CONF} ]);then
+cat << eom
+    Warning: Files ${BBLAYERS_CONF} and ${LOCAL_CONF} not found.
+    Make sure that the scritp issued at a correct location.
+eom
+    ${EXIT} 2
+fi
+
+[[ -n ${FORCE} ]] && rm -rf ${BB_CL_CONF_DONE}
+
+if [ -f ${BB_CL_CONF_DONE} ];then
+cat << eom
+    Note: Already issued.
+    Nothing to be done.
+eom
+    ${EXIT} 0
+fi
+
+eval $(awk '(/MACHINE|DISTRO/)&&(gsub(/'"'"'/,"")&&($0=$1"="$NF))' ORS=";" ${LOCAL_CONF})
+
+cat << eom
+    Prepare: ${MACHINE}:${DISTRO} ...
+eom
+
+# Machine's independent stuff
+# bblayers.conf
+cat << eof | tee -a ${BBLAYERS_CONF} > /dev/null
+BBLAYERS += " \\
+	\${BSPDIR}/sources/meta-compulab \\
+	\${BSPDIR}/sources/meta-openembedded/meta-xfce \\
+"
+eof
+
+if [[ -d ../sources/meta-compulab-dev ]];then
+cat << eof | tee -a ${BBLAYERS_CONF} > /dev/null
+BBLAYERS += " \\
+	\${BSPDIR}/sources/meta-compulab-dev \\
+eof
+fi
+
+# local.conf
+if [[ -n ${ADD_DEB} ]];then
+sed -i '/PACKAGE_CLASSES/ a PACKAGE_CLASSES += " package_deb"' ${LOCAL_CONF}
+fi
+
+EXTRA_INSTALL=" can-utils ntp dhcp-client memtester"
+EXTRA_INSTALL+=" cl-deploy cl-uboot cl-cleanup"
+declare -a bbmask=(recipes-security/optee-imx/optee-os-imx_git.bb recipes-browser/chromium/chromium_%.bbappend)
+
+eval $(awk '(/^DISTRO_VERSION /)&&(gsub(/ /,""))' ../sources/poky/meta-poky/conf/distro/poky.conf)
+
+case ${MACHINE} in
+    cl-som-imx6ul|cl-som-imx7)
+    meta_cpl_dir="../sources/meta-compulab"
+    meta_ti_dir="../sources/meta-ti"
+    meta_uim_dir="../sources/meta-uim"; mkdir -p ${meta_uim_dir}
+    if [ ! -d ${meta_ti_dir} ];then
+        git clone git://git.yoctoproject.org/meta-ti ${meta_ti_dir}
+    else
+        git -C ${meta_ti_dir} remote update
+    fi
+    tar -C ${meta_ti_dir} --transform='flags=r;s|uim_|uim-ti_|' -cf - recipes-connectivity/uim conf/layer.conf | tar -C ${meta_uim_dir} -xf -
+    sed 's/compulab/uim/g' ${meta_cpl_dir}/conf/layer.conf > ${meta_uim_dir}/conf/layer.conf
+    sed -i '$ a BBLAYERS += " ${BSPDIR}/sources/'${meta_uim_dir}' "' ${BBLAYERS_CONF}
+    EXTRA_INSTALL+=" uim-ti "
+    ;;
+    cl-som-imx6|cm-fx6-evk)
+    EXTRA_INSTALL+=" video-input u-boot-fw-utils"
+    ;;
+    *)
+    ;;
+esac
+
+cat << eof | tee -a ${LOCAL_CONF} > /dev/null
+CORE_IMAGE_EXTRA_INSTALL += "${EXTRA_INSTALL}"
+LICENSE_FLAGS_WHITELIST = "commercial"
+eof
+
+case ${DISTRO_VERSION} in
+    2.1.1|2.2.1)
+    ;;
+    *)
+    for i in  ${bbmask[@]}; do
+cat << eof >> ${LOCAL_CONF}
+BBMASK += "${i}"
+eof
+
+done
+    ;;
+esac
+
+cat << eom
+    Note: Files ${BBLAYERS_CONF} and ${LOCAL_CONF} updated successfully.
+eom
+
+cat << eom > ${BB_CL_CONF_DONE}
+$(date)
+eom
+
+${EXIT} 0

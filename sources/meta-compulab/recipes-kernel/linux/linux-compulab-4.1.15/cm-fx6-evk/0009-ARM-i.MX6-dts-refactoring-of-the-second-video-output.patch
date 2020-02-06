@@ -1,0 +1,38 @@
+From 4a20bb47d34afbac33ecd9f91ec67221808089f7 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 14 Jun 2016 15:19:53 +0300
+Subject: [PATCH 09/24] ARM: i.MX6: dts: refactoring of the second video output
+
+1) fix the fb2 depends field
+2) add ipu and disp id for a "fsl,dvi" device
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi
+index 7bf19c9..b700499 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi
+@@ -115,6 +115,8 @@
+ &ipu1di0_disp {
+ 	compatible = "fsl,dvi";
+ 	hp_gpio = <4>;
++	ipu_id = <0>;
++	disp_id = <0>;
+ 	status = "okay";
+ };
+ 
+@@ -129,7 +131,6 @@
+ 
+ &mxcfb2 {
+ 	disp_dev = "dvi";
+-	mode_str ="1920x1080M@50";
+-	depends = "fsl,dvi";
++	depends = &ipu1di0_disp;
+ 	status = "okay";
+ };
+-- 
+1.9.1
+

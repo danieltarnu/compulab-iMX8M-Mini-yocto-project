@@ -1,0 +1,128 @@
+#!/bin/bash
+
+########## variables ##########
+. /usr/share/cl-ap/cl-ap.env
+
+########## custom configuration  ##########
+[ -f ${CLAP_CONF} ] && source ${CLAP_CONF}
+
+IP_ADDR=${AP_NET}.1
+
+hostapd_conf() {
+cat << eof > ${HOSTAPD_CONF}
+interface=${WLAN}
+hw_mode=a
+channel=36
+ieee80211d=1
+country_code=US
+ieee80211n=1
+#ieee80211ac=1
+wmm_enabled=1
+ssid=${SSID}
+auth_algs=1
+wpa=2
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+wpa_passphrase=${WPA_PASSPHRASE}
+eof
+}
+
+dnsmasq_conf() {
+cat << eof > ${DNSMASQ_CONF}
+interface=${WLAN}
+bind-interfaces
+domain=cl-ap.com
+dhcp-option=3,${AP_NET}.1
+dhcp-option=6,8.8.8.8,8.8.4.4
+dhcp-range=${AP_NET}.10,${AP_NET}.254,12h
+eof
+}
+
+get_daemon_pids() {
+unset HOSTAPD_PID
+unset DNSMASQ_PID
+eval $(ps -eo comm,pid | awk '/hostapd/&&($0="HOSTAPD_PID="$2)')
+eval $(ps -eo comm,pid | awk '/dnsmasq/&&($0="DNSMASQ_PID="$2)')
+}
+########## body ##########
+
+ap_config() {
+### check for configuration file
+### hostapd
+[ ! -f ${HOSTAPD_CONF} ] && hostapd_conf
+
+### dnsmasq
+[ ! -f ${DNSMASQ_CONF} ] && dnsmasq_conf
+}
+
+ap_reconfig() {
+[ -f ${HOSTAPD_CONF} ] && rm -rf ${HOSTAPD_CONF}
+[ -f ${DNSMASQ_CONF} ] && rm -rf ${DNSMASQ_CONF}
+ap_config
+}
+
+ap_clean() {
+rm -rf /usr/share/cl-ap/*.conf
+}
+
+ap_start() {
+
+ap_config
+
+### configure ip forewarding
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+get_daemon_pids
+### start a hostapd interface, if not present
+if [ -z "${HOSTAPD_PID}" ]; then
+ hostapd -B ${HOSTAPD_CONF}
+ sleep 1 
+fi
+
+### configure ip
+ifconfig ${WLAN} ${IP_ADDR} netmask 255.255.255.0 up
+
+### start dnsmasq server, if not started
+if [ -z "${DNSMASQ_PID}" ]; then
+ dnsmasq --conf-file=${DNSMASQ_CONF}
+fi
+
+### configure nat
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+}
+
+ap_stop() {
+get_daemon_pids
+### stop a hostapd interface, if present
+[ ! -z "${HOSTAPD_PID}" ] && kill -9 ${HOSTAPD_PID}
+
+### stop dnsmasq server, if started
+[ ! -z "${DNSMASQ_PID}" ] && kill -9 ${DNSMASQ_PID}
+
+### disable ip forewarding
+echo 0 > /proc/sys/net/ipv4/ip_forward
+
+### unconfigure ip
+ifconfig ${WLAN} down
+}
+
+case "$1" in
+start)
+	ap_start
+	;;
+stop)
+	ap_stop
+	;;
+reconfig)
+	ap_reconfig
+	;;
+clean)
+	ap_clean
+	;;
+
+*)
+	echo "Usage: $0 {start|stop|reconfig|clean}"
+	exit 1
+esac
+
+exit 0

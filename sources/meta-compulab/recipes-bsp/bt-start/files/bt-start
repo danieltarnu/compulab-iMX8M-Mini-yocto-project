@@ -1,0 +1,115 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:		bt-start
+# Required-Start:	$syslog
+# Required-Stop:	$syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:
+# Short-Description:	CompuLab bt-start
+### END INIT INFO
+
+# Get the SOM model name
+SOM=$(udevadm info -ap /sys/devices/soc0 | awk -F"\"" '(/machine/)&&(split($2,a," ")&&($0=a[2]))')
+case "$SOM" in
+"CL-SOM-iMX8")
+	BT_REG_ON=4
+	TTY=ttymxc3
+	;;
+"CL-SOM-iMX6")
+	BT_REG_ON=204
+	TTY=ttymxc4
+	;;
+"UCM-iMX7")
+	BT_REG_ON=58
+	TTY=ttymxc2
+	;;
+*)
+	exit 0;
+esac
+
+bluetooth_init() {
+	if [ ! -e  /sys/class/gpio/gpio${BT_REG_ON} ]
+	then
+		echo ${BT_REG_ON} > /sys/class/gpio/export
+		echo out > /sys/class/gpio/gpio${BT_REG_ON}/direction
+	fi
+}
+
+bluetooth_regon() {
+	echo 0 > /sys/class/gpio/gpio${BT_REG_ON}/value
+	sleep 0.1
+	echo 1 > /sys/class/gpio/gpio${BT_REG_ON}/value
+	sleep 0.1
+}
+
+bluetooth_kill() {
+	pkill -9 hciattach
+}
+
+bluetooth_stop() {
+	if [[ ! -d  /sys/class/tty/${TTY}/hci0 ]]
+	then
+cat << eom
+	The Device already stopped.
+	Exiting ....
+eom
+	exit 0
+	fi
+	bluetooth_kill
+}
+
+bluetooth_attach() {
+	hciattach /dev/${TTY} bcm43xx ${1} flow -t 20
+}
+
+bluetooth_up() {
+	[[ -d  /sys/class/tty/${TTY}/hci0 ]] && hciconfig hci0 up
+}
+
+bluetooth_status() {
+	local mess="connected"
+	[[ ! -d  /sys/class/tty/${TTY}/hci0 ]] && mess="dis"${mess}
+cat << eom
+	Device hci0 is ${mess}
+eom
+}
+
+bluetooth_start() {
+	if [[ -d  /sys/class/tty/${TTY}/hci0 ]]
+	then
+cat << eom
+	The Device already started.
+	Exiting ....
+eom
+	exit 0
+	fi
+
+	bluetooth_init
+	bluetooth_regon
+	bluetooth_attach 115200
+	bluetooth_regon
+	bluetooth_kill
+	sleep 0.1
+	bluetooth_attach 1152000
+	bluetooth_up
+}
+
+case "$1" in
+start)
+	bluetooth_start
+	;;
+stop)
+	bluetooth_stop
+	;;
+status)
+	bluetooth_status
+	;;
+*)
+cat << eom
+	Usage: $0 {start|stop|status}
+eom
+	exit 1
+esac
+
+exit 0

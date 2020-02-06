@@ -1,0 +1,49 @@
+From 6a7fa14860f6f20303d3a1776b493f8f70a26955 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 28 Aug 2018 14:37:26 +0300
+Subject: [PATCH 95/95] cl-som-imx6: Enable UART2
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 8ff4826..7806160 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -406,17 +406,13 @@
+ 			>;
+ 		};
+ 
+-#ifndef __SOM_iMX6__
+ 		/* pins for ttymxc1 */
+ 		pinctrl_uart2: uar2grp {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_GPIO_7__UART2_TX_DATA  0x1b0b1
+ 				MX6QDL_PAD_GPIO_8__UART2_RX_DATA  0x1b0b1
+-				MX6QDL_PAD_SD4_DAT5__UART2_RTS_B  0x1b0b1
+-				MX6QDL_PAD_SD4_DAT6__UART2_CTS_B  0x1b0b1
+ 			>;
+ 		};
+-#endif
+ 
+ 		/* pins for ttymxc2 */
+ 		pinctrl_uart3: uar3grp {
+@@ -791,13 +787,11 @@
+ 	status = "okay";
+ };
+ 
+-#ifndef __SOM_iMX6__
+ &uart2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart2>;
+ 	status = "okay";
+ };
+-#endif
+ 
+ &uart3 {
+ 	pinctrl-names = "default";
+-- 
+1.9.1
+

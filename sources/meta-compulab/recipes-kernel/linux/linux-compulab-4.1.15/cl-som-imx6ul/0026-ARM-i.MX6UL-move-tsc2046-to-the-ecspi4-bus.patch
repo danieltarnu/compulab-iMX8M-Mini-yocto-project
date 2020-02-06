@@ -1,0 +1,132 @@
+From 69c50d85f336fd1d8d8792074ced95f6c735197f Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 26 May 2016 14:49:09 +0300
+Subject: [PATCH 26/38] ARM: i.MX6UL: move tsc2046 to the ecspi4 bus
+
+Move tsc2046 to the ecspi4 bus.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 79 +++++++++++------------------
+ 1 file changed, 29 insertions(+), 50 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index a25de61..da97864 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -183,23 +183,10 @@
+ 		};
+ 
+ 		/* pins for spi */
+-		pinctrl_ecspi2_cs: ecspi2_cs_grp {
+-			fsl,pins = <
+-				MX6UL_PAD_LCD_RESET__GPIO3_IO04  0x17059
+-			>;
+-		};
+-
+-		pinctrl_ecspi2: ecspi2grp {
+-			fsl,pins = <
+-				MX6UL_PAD_UART5_TX_DATA__ECSPI2_MOSI	0x1b0b1
+-				MX6UL_PAD_UART5_RX_DATA__ECSPI2_MISO	0x1b0b1
+-				MX6UL_PAD_UART4_TX_DATA__ECSPI2_SCLK	0x1b0b1
+-			>;
+-		};
+-
+ 		pinctrl_ecspi4_cs: ecspi4_cs_grp {
+ 			fsl,pins = <
+ 				MX6UL_PAD_ENET2_RX_ER__GPIO2_IO15	0x17059
++				MX6UL_PAD_LCD_RESET__GPIO3_IO04  0x17059
+ 			>;
+ 		};
+ 
+@@ -336,13 +323,36 @@
+ 	};
+ };
+ 
+-&ecspi2 {
+-	fsl,spi-num-chipselects = <1>;
++&ecspi4 {
++	fsl,spi-num-chipselects = <2>;
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_ecspi2 &pinctrl_ecspi2_cs>;
+-	cs-gpios = <&gpio3 4 0>;
++	pinctrl-0 = <&pinctrl_ecspi4 &pinctrl_ecspi4_cs>;
++	cs-gpios = <&gpio2 15 0>, <&gpio3 4 0>;
+ 	status = "okay";
+ 
++	m25px16@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "st,m25p16", "st,m25p";
++		spi-max-frequency = <20000000>;
++		reg = <0>;
++
++		partition@0 {
++			label = "uboot";
++			reg = <0x0 0xc0000>;
++		};
++
++		partition@c0000 {
++			label = "uboot environment";
++			reg = <0xc0000 0x2000>;
++		};
++
++		partition@100000 {
++			label = "splash";
++			reg = <0x100000 0x100000>;
++		};
++	};
++
+ 	/* touch controller */
+ 	touch:	tsc2046@0 {
+ 		pinctrl-names = "default";
+@@ -351,7 +361,7 @@
+ 		compatible = "ti,tsc2046";
+ 		vcc-supply = <&tsc2046reg>;
+ 
+-		reg = <0>;
++		reg = <1>;
+ 		spi-max-frequency = <1500000>;
+ 
+ 		interrupt-parent = <&gpio1>;
+@@ -374,37 +384,6 @@
+ 	};
+ };
+ 
+-&ecspi4 {
+-	fsl,spi-num-chipselects = <1>;
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_ecspi4 &pinctrl_ecspi4_cs>;
+-	cs-gpios = <&gpio2 15 0>;
+-	status = "okay";
+-
+-	m25px16@0 {
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		compatible = "st,m25p16", "st,m25p";
+-		spi-max-frequency = <20000000>;
+-		reg = <0>;
+-
+-		partition@0 {
+-			label = "uboot";
+-			reg = <0x0 0xc0000>;
+-		};
+-
+-		partition@c0000 {
+-			label = "uboot environment";
+-			reg = <0xc0000 0x2000>;
+-		};
+-
+-		partition@100000 {
+-			label = "splash";
+-			reg = <0x100000 0x100000>;
+-		};
+-	};
+-};
+-
+ &fec1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_enet1>;
+-- 
+1.9.1
+

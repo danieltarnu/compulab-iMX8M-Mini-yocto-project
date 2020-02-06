@@ -1,0 +1,6475 @@
+diff --git a/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.txt b/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.txt
+index 6fbba53..cf67483 100644
+--- a/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.txt
++++ b/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.txt
+@@ -13,6 +13,11 @@ Required properties:
+ - clock-names: Must include the following additional entries:
+ 	- "pcie_phy"
+ 
++Optional properties for imx7d-pcie:
++ - phy-ref-clk: pcie phy reference clock source: may take on following values:
++	0 - external oscillator (default value)
++	1 - internal pll
++
+ Example:
+ 
+ 	pcie@0x01000000 {
+diff --git a/Documentation/devicetree/bindings/rtc/abracon,abx80x.txt b/Documentation/devicetree/bindings/rtc/abracon,abx80x.txt
+index be78968..ac1ee92 100644
+--- a/Documentation/devicetree/bindings/rtc/abracon,abx80x.txt
++++ b/Documentation/devicetree/bindings/rtc/abracon,abx80x.txt
+@@ -28,3 +28,49 @@ and valid to enable charging:
+  - "abracon,tc-diode": should be "standard" (0.6V) or "schottky" (0.3V)
+  - "abracon,tc-resistor": should be <0>, <3>, <6> or <11>. 0 disables the output
+                           resistor, the other values are in ohm.
++
++The Abracon ab08x5 and ab18x5 RTC families have a programmable square wave output
++generator with a wide range of frequency selections (32.768 kHz to 1 year).
++Please refer to the datasheet for more info.
++The square wave output be configured via the following properties:
++
++ - "abracon,sqw-enable": boolean to enable square wave output. If this property is
++    not set, the square wave output will be disabled.
++ - "abracon,sqw-freq-sel": square wave output frequency select SQFS as described below.
++   If this property is not set, the square wave output will be set to a default value.
++
++    SQFS Value | Square Wave Output
++   ============+=====================
++        0      |    1 century
++        1      |    32.768 kHz
++        2      |    8.192 kHz
++        3      |    4.096 kHz
++        4      |    2.048 kHz
++        5      |    1.024 kHz
++        6      |    512 Hz – default
++        7      |    256 Hz
++        8      |    128 Hz
++        9      |    64 Hz
++       10      |    32 Hz
++       11      |    16 Hz
++       12      |    8 Hz
++       13      |    4 Hz
++       14      |    2 Hz
++       15      |    1 Hz
++       16      |    1/2 Hz
++       17      |    1/4 Hz
++       18      |    1/8 Hz
++       19      |    1/16 Hz
++       20      |    1/32 Hz
++       21      |    1/60 Hz
++       22      |    16.384 kHz
++       23      |    100 Hz
++       24      |    1 hour
++       25      |    1 day
++       26      |    TIRQ
++       27      |    NOT TIRQ
++       28      |    1 year
++       29      |    1 Hz to Counters
++       30      |    1/32 Hz from Acal
++       31      |    1/8 Hz from Acal
++   ==================================
+diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt b/Documentation/devicetree/bindings/sound/simple-card.txt
+index 73bf314..2f8b5af 100644
+--- a/Documentation/devicetree/bindings/sound/simple-card.txt
++++ b/Documentation/devicetree/bindings/sound/simple-card.txt
+@@ -80,6 +80,8 @@ Optional CPU/CODEC subnodes properties:
+ 					  in dai startup() and disabled with
+ 					  clk_disable_unprepare() in dai
+ 					  shutdown().
++- system-clock-direction		: "in" or "out", default "in"
++- system-clock-type			: "xtal" or "mclk" that has 1 or 2 value, default is 0
+ 
+ Example 1 - single DAI link:
+ 
+diff --git a/Documentation/devicetree/bindings/sound/tdm-slot.txt b/Documentation/devicetree/bindings/sound/tdm-slot.txt
+index 6a2c842..34cf70e 100644
+--- a/Documentation/devicetree/bindings/sound/tdm-slot.txt
++++ b/Documentation/devicetree/bindings/sound/tdm-slot.txt
+@@ -4,11 +4,15 @@ This specifies audio DAI's TDM slot.
+ 
+ TDM slot properties:
+ dai-tdm-slot-num : Number of slots in use.
+-dai-tdm-slot-width :  Width in bits for each slot.
++dai-tdm-slot-width : Width in bits for each slot.
++dai-tdm-slot-tx-mask : Transmit direction slot mask, optional
++dai-tdm-slot-rx-mask : Receive direction slot mask, optional
+ 
+ For instance:
+ 	dai-tdm-slot-num = <2>;
+ 	dai-tdm-slot-width = <8>;
++	dai-tdm-slot-tx-mask = <0 1>;
++	dai-tdm-slot-rx-mask = <1 0>;
+ 
+ And for each spcified driver, there could be one .of_xlate_tdm_slot_mask()
+ to specify a explicit mapping of the channels and the slots. If it's absent
+@@ -18,3 +22,8 @@ tx and rx masks.
+ For snd_soc_of_xlate_tdm_slot_mask(), the tx and rx masks will use a 1 bit
+ for an active slot as default, and the default active bits are at the LSB of
+ the masks.
++
++The explicit masks are given as array of integers, where the first
++number presents bit-0 (LSB), second presents bit-1, etc. Any non zero
++number is considered 1 and 0 is 0. snd_soc_of_xlate_tdm_slot_mask()
++does not do anything, if either mask is set non zero value.
+diff --git a/Documentation/serial/driver b/Documentation/serial/driver
+index c415b0e..379468e 100644
+--- a/Documentation/serial/driver
++++ b/Documentation/serial/driver
+@@ -439,11 +439,13 @@ Modem control lines via GPIO
+ 
+ Some helpers are provided in order to set/get modem control lines via GPIO.
+ 
+-mctrl_gpio_init(dev, idx):
++mctrl_gpio_init(port, idx):
+ 	This will get the {cts,rts,...}-gpios from device tree if they are
+ 	present and request them, set direction etc, and return an
+ 	allocated structure. devm_* functions are used, so there's no need
+ 	to call mctrl_gpio_free().
++	As this sets up the irq handling make sure to not handle changes to the
++	gpio input lines in your driver, too.
+ 
+ mctrl_gpio_free(dev, gpios):
+ 	This will free the requested gpios in mctrl_gpio_init().
+@@ -458,3 +460,9 @@ mctrl_gpio_set(gpios, mctrl):
+ 
+ mctrl_gpio_get(gpios, mctrl):
+ 	This will update mctrl with the gpios values.
++
++mctrl_gpio_enable_ms(gpios):
++	Enables irqs and handling of changes to the ms lines.
++
++mctrl_gpio_disable_ms(gpios):
++	Disables irqs and handling of changes to the ms lines.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 892b56e..605c536c 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -387,6 +387,15 @@ dtb-$(CONFIG_SOC_IMX7D) += \
+ 	imx7d-12x12-lpddr3-arm2-mqs.dtb \
+ 	imx7d-12x12-lpddr3-arm2-pcie.dtb \
+ 	imx7d-19x19-lpddr2-arm2.dtb \
++	imx7d-cl-som-imx7.dtb \
++	imx7d-cl-som-imx7-m4.dtb \
++	imx7d-sbc-imx7.dtb \
++	imx7d-sbc-imx7-csi.dtb \
++	imx7d-sbc-imx7-lvds.dtb \
++	imx7d-sbc-imx7-m4.dtb \
++	imx7d-sbc-iot-imx7.dtb \
++	imx7d-sbc-iot-imx7-can.dtb \
++	imx7d-sbc-iot-imx7-rs485-hdx.dtb \
+ 	imx7d-sdb.dtb \
+ 	imx7d-sdb-epdc.dtb \
+ 	imx7d-sdb-gpmi-weim.dtb \
+@@ -400,7 +409,9 @@ dtb-$(CONFIG_SOC_IMX7D) += \
+ 	imx7d-sdb-reva-m4.dtb \
+ 	imx7d-sdb-reva-qspi.dtb \
+ 	imx7d-sdb-reva-touch.dtb \
+-	imx7d-sdb-reva-wm8960.dtb
++	imx7d-sdb-reva-wm8960.dtb \
++	imx7d-ucm-imx7.dtb \
++	imx7d-sbc-ucm-imx7.dtb
+ dtb-$(CONFIG_SOC_LS1021A) += \
+ 	ls1021a-qds.dtb \
+ 	ls1021a-twr.dtb
+diff --git a/arch/arm/boot/dts/imx7d-cl-som-imx7-m4.dts b/arch/arm/boot/dts/imx7d-cl-som-imx7-m4.dts
+new file mode 100644
+index 0000000..91e639a
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-cl-som-imx7-m4.dts
+@@ -0,0 +1,13 @@
++/*
++ * Support for CompuLab CL-SOM-iMX7 System-on-Module Cortex-M4
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Nikita Kiryanov <nikita@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-cl-som-imx7.dts"
++#include "imx7d-cl-som-imx7-m4.dtsi"
+diff --git a/arch/arm/boot/dts/imx7d-cl-som-imx7-m4.dtsi b/arch/arm/boot/dts/imx7d-cl-som-imx7-m4.dtsi
+new file mode 100644
+index 0000000..abf03b0
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-cl-som-imx7-m4.dtsi
+@@ -0,0 +1,43 @@
++/*
++ * Support for CompuLab CL-SOM-iMX7 System-on-Module Cortex-M4
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Nikita Kiryanov <nikita@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/ {
++	/* usable memory */
++	memory {
++		linux,usable-memory = <0x80000000 0x1ff00000>,
++					<0xa0000000 0x1ff00000>;
++	};
++
++	m4_tcm: tcml@007f8000 {
++		compatible = "fsl, m4_tcml";
++		reg = <0x007f8000 0x8000>;
++	};
++};
++
++&adc1 {
++	status = "disabled";
++};
++
++&adc2 {
++	status = "disabled";
++};
++
++&rpmsg {
++	status = "okay";
++};
++
++&uart2 {
++	status = "disabled";
++};
++
++&ocram {
++	reg = <0x00901000 0xf000>;
++};
+\ No newline at end of file
+diff --git a/arch/arm/boot/dts/imx7d-cl-som-imx7.dts b/arch/arm/boot/dts/imx7d-cl-som-imx7.dts
+new file mode 100644
+index 0000000..6a2b6ec
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-cl-som-imx7.dts
+@@ -0,0 +1,677 @@
++/*
++ * Support for CompuLab CL-SOM-iMX7 System-on-Module
++ *
++ * Copyright (C) 2016 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include "imx7d.dtsi"
++
++/ {
++	model = "CompuLab CL-SOM-iMX7";
++	compatible = "compulab,cl-som-imx7", "fsl,imx7d";
++
++	aliases {
++		gpmi = &gpmi;
++	};
++
++	memory {
++		reg = <0x80000000 0x10000000>; /* 256 MB - minimal configuration */
++	};
++
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		reg_usb_otg1_vbus: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "usb_otg1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++
++		tsc2046reg: regulator@1 {
++			compatible = "regulator-fixed";
++			regulator-name = "tsc2046-reg";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++
++		rf_pwr_en_reg: regulator@2 {
++			compatible = "regulator-fixed";
++			regulator-name = "rf-pwr-en-regulator";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			gpio = <&pca9555 9 GPIO_ACTIVE_HIGH>;
++			startup-delay-us = <70000>;
++			enable-active-high;
++			regulator-always-on;
++		};
++
++		wlan_en_reg: regulator@3 {
++			compatible = "regulator-fixed";
++			regulator-name = "wlan-en-regulator";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			gpio = <&pca9555 0 GPIO_ACTIVE_HIGH>;
++			/* WLAN card specific delay */
++			startup-delay-us = <70000>;
++			enable-active-high;
++		};
++
++		reg_usbh_nreset: regulator@4 {
++			compatible = "regulator-fixed";
++			regulator-name = "usb_host_nreset";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			gpio = <&pca9555 6 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++			regulator-always-on;
++		};
++	};
++
++	kim {
++		compatible = "kim";
++		depends = "/regulators/regulator@2";
++		nshutdown_gpio = <&pca9555 1 GPIO_ACTIVE_HIGH>;
++		dev_name = "/dev/ttymxc2";
++		flow_cntrl = <1>;
++		baud_rate = <3000000>;
++	};
++
++	btwilink {
++		compatible = "btwilink";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		onboard-led {
++			label = "Heartbeat";
++			gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++        sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "cl-som-imx7";
++		simple-audio-card,widgets =
++			"Headphone", "Headphone Jack",
++			"Line", "Line Out",
++			"Microphone", "Mic Jack",
++			"Line", "Line In";
++		simple-audio-card,routing =
++			"Headphone Jack", "RHPOUT",
++			"Headphone Jack", "LHPOUT",
++			"LLINEIN", "Line Jack",
++			"RLINEIN", "Line Jack",
++			"MICIN", "Mic Bias",
++			"Mic Bias", "Mic Jack";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&sound_master>;
++		simple-audio-card,frame-master = <&sound_master>;
++		/*simple-audio-card,bitclock-inversion;*/
++
++		assigned-clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_SRC>,
++			          <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
++		assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
++		assigned-clock-rates = <0>, <12288000>;
++
++		sound_master: simple-audio-card,cpu {
++			sound-dai = <&sai1 0>;
++			system-clock-direction = "out";
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&wm8731>;
++			system-clock-type = "mclk";
++			system-clock-frequency = <12288000>;
++			system-clock-direction = "in";
++		};
++	};
++};
++
++&clks {
++	assigned-clocks = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
++	assigned-clock-rates = <884736000>;
++};
++
++&cpu0 {
++	arm-supply = <&sw1a_reg>;
++};
++
++&ecspi1 {
++	fsl,spi-num-chipselects = <2>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
++	cs-gpios = <&gpio4 2 0>, <&gpio4 19 0>;
++	status = "okay";
++
++	/* touch controller */
++	touch:	tsc2046@0 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_tsc2046>;
++
++		compatible = "ti,tsc2046";
++		vcc-supply = <&tsc2046reg>;
++
++		reg = <0>;
++		spi-max-frequency = <1500000>;
++
++		interrupt-parent = <&gpio1>;
++		interrupts = <14 0>;
++		pendown-gpio = <&gpio1 14 0>;
++
++		ti,x-min = /bits/ 16 <0x0>;
++		ti,x-max = /bits/ 16 <0x0fff>;
++		ti,y-min = /bits/ 16 <0x0>;
++		ti,y-max = /bits/ 16 <0x0fff>;
++
++		ti,x-plate-ohms = /bits/ 16 <180>;
++		ti,pressure-max = /bits/ 16 <255>;
++
++		ti,debounce-max = /bits/ 16 <30>;
++		ti,debounce-tol = /bits/ 16 <10>;
++		ti,debounce-rep = /bits/ 16 <1>;
++
++		linux,wakeup;
++	};
++
++	m25px16@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "st,m25px16", "st,m25p";
++		spi-max-frequency = <20000000>;
++		reg = <1>;
++
++		partition@0 {
++			label = "uboot";
++			reg = <0x0 0xc0000>;
++		};
++
++		partition@c0000 {
++			label = "uboot environment";
++			reg = <0xc0000 0x40000>;
++		};
++
++		partition@100000 {
++			label = "splash";
++			reg = <0x100000 0x100000>;
++		};
++	};
++};
++
++&fec1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_enet1>;
++	depends = "/soc/aips-bus@30800000/i2c@30a30000/pca9555@20";
++	pinctrl-assert-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH> , <&pca9555 4 GPIO_ACTIVE_HIGH>;
++	assigned-clocks = <&clks IMX7D_ENET1_TIME_ROOT_SRC>,
++			  <&clks IMX7D_ENET1_TIME_ROOT_CLK>;
++	assigned-clock-parents = <&clks IMX7D_PLL_ENET_MAIN_100M_CLK>;
++	assigned-clock-rates = <0>, <100000000>;
++	phy-mode = "rgmii";
++	phy-handle = <&ethphy0>;
++	fsl,magic-packet;
++	status = "okay";
++
++	mdio {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ethphy0: ethernet-phy@0 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <0>;
++		};
++
++		ethphy1: ethernet-phy@1 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <1>;
++		};
++	};
++};
++
++&fec2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_enet2>;
++	assigned-clocks = <&clks IMX7D_ENET2_TIME_ROOT_SRC>,
++			  <&clks IMX7D_ENET2_TIME_ROOT_CLK>;
++	assigned-clock-parents = <&clks IMX7D_PLL_ENET_MAIN_100M_CLK>;
++	assigned-clock-rates = <0>, <100000000>;
++	phy-mode = "rgmii";
++	phy-handle = <&ethphy1>;
++	fsl,magic-packet;
++	status = "okay";
++};
++
++&gpmi {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_gpmi_nand>;
++	depends = "/soc/aips-bus@30800000/spba-bus@30800000/ecspi@30820000";
++	status = "disabled";
++	nand-on-flash-bbt;
++
++	/* MTD partition table */
++	partition@0 {
++		label = "kernel";
++		reg = <0x00000000 0x00980000>;
++	};
++	partition@980000 {
++		label = "dtb";
++		reg = <0x00980000 0x00080000>;
++	};
++	partition@a00000 {
++		label = "rootfs";
++		reg = <0x00a00000 0x0>;
++	};
++};
++
++&iomuxc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog>;
++
++	cl-som-imx7 {
++		pinctrl_hog: hoggrp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO15__GPIO1_IO15			0x34 /* WLAN IRQ */
++				MX7D_PAD_SAI1_TX_SYNC__GPIO6_IO14		0x34 /* Onboard LED */
++			>;
++		};
++
++		pinctrl_gpmi_nand: gpmi-nand {
++			fsl,pins = <
++				MX7D_PAD_SD3_CLK__NAND_CLE			0x71
++				MX7D_PAD_SD3_CMD__NAND_ALE			0x71
++				MX7D_PAD_SD3_DATA0__NAND_DATA00			0x71
++				MX7D_PAD_SD3_DATA1__NAND_DATA01			0x71
++				MX7D_PAD_SD3_DATA2__NAND_DATA02			0x71
++				MX7D_PAD_SD3_DATA3__NAND_DATA03			0x71
++				MX7D_PAD_SD3_DATA4__NAND_DATA04			0x71
++				MX7D_PAD_SD3_DATA5__NAND_DATA05			0x71
++				MX7D_PAD_SD3_DATA6__NAND_DATA06			0x71
++				MX7D_PAD_SD3_DATA7__NAND_DATA07			0x71
++				MX7D_PAD_SD3_STROBE__NAND_RE_B			0x71
++				MX7D_PAD_SD3_RESET_B__NAND_WE_B			0x71
++				MX7D_PAD_SAI1_TX_BCLK__NAND_CE0_B		0x71
++				MX7D_PAD_SAI1_TX_DATA__NAND_READY_B		0x74
++				MX7D_PAD_SAI1_MCLK__NAND_WP_B			0x71
++			>;
++		};
++
++		pinctrl_ecspi1: ecspi1grp {
++			fsl,pins = <
++				MX7D_PAD_ECSPI1_MOSI__ECSPI1_MOSI		0xf
++				MX7D_PAD_ECSPI1_MISO__ECSPI1_MISO		0xf
++				MX7D_PAD_ECSPI1_SCLK__ECSPI1_SCLK		0xf
++			>;
++		};
++
++		pinctrl_ecspi1_cs: ecspi1_cs_grp {
++			fsl,pins = <
++				/* Touchscreen chipselect */
++				MX7D_PAD_UART2_RX_DATA__GPIO4_IO2		0x34
++				/* SPI flash chipselect */
++				MX7D_PAD_ECSPI1_SS0__GPIO4_IO19			0x34
++			>;
++		};
++
++		pinctrl_enet1: enet1grp {
++			fsl,pins = <
++				MX7D_PAD_SD2_CD_B__ENET1_MDIO			0x30
++				MX7D_PAD_SD2_WP__ENET1_MDC			0x30
++				MX7D_PAD_ENET1_RGMII_TXC__ENET1_RGMII_TXC	0x11
++				MX7D_PAD_ENET1_RGMII_TD0__ENET1_RGMII_TD0	0x11
++				MX7D_PAD_ENET1_RGMII_TD1__ENET1_RGMII_TD1	0x11
++				MX7D_PAD_ENET1_RGMII_TD2__ENET1_RGMII_TD2	0x11
++				MX7D_PAD_ENET1_RGMII_TD3__ENET1_RGMII_TD3	0x11
++				MX7D_PAD_ENET1_RGMII_TX_CTL__ENET1_RGMII_TX_CTL	0x11
++				MX7D_PAD_ENET1_RGMII_RXC__ENET1_RGMII_RXC	0x11
++				MX7D_PAD_ENET1_RGMII_RD0__ENET1_RGMII_RD0	0x11
++				MX7D_PAD_ENET1_RGMII_RD1__ENET1_RGMII_RD1	0x11
++				MX7D_PAD_ENET1_RGMII_RD2__ENET1_RGMII_RD2	0x11
++				MX7D_PAD_ENET1_RGMII_RD3__ENET1_RGMII_RD3	0x11
++				MX7D_PAD_ENET1_RGMII_RX_CTL__ENET1_RGMII_RX_CTL	0x11
++			>;
++		};
++
++		pinctrl_enet2: enet2grp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_GDSP__ENET2_RGMII_TXC		0x11
++				MX7D_PAD_EPDC_SDCE2__ENET2_RGMII_TD0		0x11
++				MX7D_PAD_EPDC_SDCE3__ENET2_RGMII_TD1		0x11
++				MX7D_PAD_EPDC_GDCLK__ENET2_RGMII_TD2		0x11
++				MX7D_PAD_EPDC_GDOE__ENET2_RGMII_TD3		0x11
++				MX7D_PAD_EPDC_GDRL__ENET2_RGMII_TX_CTL		0x11
++				MX7D_PAD_EPDC_SDCE1__ENET2_RGMII_RXC		0x11
++				MX7D_PAD_EPDC_SDCLK__ENET2_RGMII_RD0		0x11
++				MX7D_PAD_EPDC_SDLE__ENET2_RGMII_RD1		0x11
++				MX7D_PAD_EPDC_SDOE__ENET2_RGMII_RD2		0x11
++				MX7D_PAD_EPDC_SDSHR__ENET2_RGMII_RD3		0x11
++				MX7D_PAD_EPDC_SDCE0__ENET2_RGMII_RX_CTL		0x11
++			>;
++		};
++
++		pinctrl_sai1: sai1grp {
++			fsl,pins = <
++				MX7D_PAD_ENET1_RX_CLK__SAI1_TX_BCLK		0x1f
++				MX7D_PAD_ENET1_CRS__SAI1_TX_SYNC		0x1f
++				MX7D_PAD_ENET1_COL__SAI1_TX_DATA0		0x30
++				MX7D_PAD_ENET1_TX_CLK__SAI1_RX_DATA0		0x1f
++			>;
++		};
++
++		pinctrl_tsc2046: tsc2046grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO14__GPIO1_IO14			0x34 /* PENDOWN */
++			>;
++		};
++
++		pinctrl_uart1: uart1grp {
++			fsl,pins = <
++				MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX		0x79
++				MX7D_PAD_UART1_RX_DATA__UART1_DCE_RX		0x79
++			>;
++		};
++
++		pinctrl_uart3: uart3grp {
++			fsl,pins = <
++				MX7D_PAD_UART3_TX_DATA__UART3_DCE_TX		0x79
++				MX7D_PAD_UART3_RX_DATA__UART3_DCE_RX		0x79
++				MX7D_PAD_UART3_CTS_B__UART3_DCE_CTS		0x79
++				MX7D_PAD_UART3_RTS_B__UART3_DCE_RTS		0x79
++			>;
++		};
++
++		pinctrl_usdhc2: usdhc2grp {
++			fsl,pins = <
++				MX7D_PAD_SD2_CMD__SD2_CMD			0x59
++				MX7D_PAD_SD2_CLK__SD2_CLK			0x19
++				MX7D_PAD_SD2_DATA0__SD2_DATA0			0x59
++				MX7D_PAD_SD2_DATA1__SD2_DATA1			0x59
++				MX7D_PAD_SD2_DATA2__SD2_DATA2			0x59
++				MX7D_PAD_SD2_DATA3__SD2_DATA3			0x59
++			>;
++		};
++
++		pinctrl_usdhc3: usdhc3grp {
++			fsl,pins = <
++				MX7D_PAD_SD3_CMD__SD3_CMD			0x59
++				MX7D_PAD_SD3_CLK__SD3_CLK			0x19
++				MX7D_PAD_SD3_DATA0__SD3_DATA0			0x59
++				MX7D_PAD_SD3_DATA1__SD3_DATA1			0x59
++				MX7D_PAD_SD3_DATA2__SD3_DATA2			0x59
++				MX7D_PAD_SD3_DATA3__SD3_DATA3			0x59
++				MX7D_PAD_SD3_DATA4__SD3_DATA4			0x59
++				MX7D_PAD_SD3_DATA5__SD3_DATA5			0x59
++				MX7D_PAD_SD3_DATA6__SD3_DATA6			0x59
++				MX7D_PAD_SD3_DATA7__SD3_DATA7			0x59
++				MX7D_PAD_SD3_STROBE__SD3_STROBE			0x19
++			>;
++		};
++	};
++};
++
++&iomuxc_lpsr {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog_lpsr>;
++
++	cl-som-imx7 {
++		pinctrl_hog_lpsr: hoggrp_lpsr {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO04__GPIO1_IO4			0x34 /* FEC1 Phy nReset */
++			>;
++		};
++
++		pinctrl_i2c2: i2c2grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO07__I2C2_SDA			0x4000000f
++				MX7D_PAD_GPIO1_IO06__I2C2_SCL			0x4000000f
++			>;
++		};
++
++		pinctrl_sai1_lpsr: sai1grp_lpsr {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO01__SAI1_MCLK			0x14
++			>;
++		};
++
++		pinctrl_usbotg1: usbotg1grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO05__GPIO1_IO5			0x14 /* OTG PWREN */
++			>;
++		};
++
++		pinctrl_wdog: wdoggrp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO00__WDOD1_WDOG_B		0x74
++			>;
++		};
++	};
++};
++
++&i2c2 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c2>;
++	status = "okay";
++
++	pmic: pmic@8 {
++		compatible = "fsl,pfuze3000";
++		reg = <0x08>;
++
++		regulators {
++			sw1a_reg: sw1a {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++
++			/* use sw1c_reg to align with pfuze100/pfuze200 */
++			sw1c_reg: sw1b {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <1475000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <1500000>;
++				regulator-max-microvolt = <1850000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw3a_reg: sw3 {
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <1650000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			swbst_reg: swbst {
++				regulator-min-microvolt = <5000000>;
++				regulator-max-microvolt = <5150000>;
++			};
++
++			snvs_reg: vsnvs {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3000000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vref_reg: vrefddr {
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vgen1_reg: vldo1 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen2_reg: vldo2 {
++				regulator-min-microvolt = <800000>;
++				regulator-max-microvolt = <1550000>;
++				regulator-always-on;
++			};
++
++			vgen3_reg: vccsd {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen4_reg: v33 {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen5_reg: vldo3 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen6_reg: vldo4 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++		};
++	};
++
++	wm8731: wm8731@1a {
++		#sound-dai-cells = <0>;
++		compatible = "wlf,wm8731";
++		reg = <0x1a>;
++		clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
++		clock-names = "mclk";
++		status = "okay";
++	};
++
++	pca9555: pca9555@20 {
++		compatible = "nxp,pca9555";
++		gpio-controller;
++		#gpio-cells = <2>;
++		reg = <0x20>;
++	};
++
++	eeprom@50 {
++		compatible = "atmel,24c08";
++		reg = <0x50>;
++		pagesize = <16>;
++	};
++
++	rtc@56 {
++		compatible = "emmicro,em3027";
++		reg = <0x56>;
++	};
++};
++
++&sai1 {
++	#sound-dai-cells = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai1 &pinctrl_sai1_lpsr>;
++	assigned-clocks = <&clks IMX7D_SAI1_ROOT_SRC>,
++			  <&clks IMX7D_SAI1_ROOT_CLK>;
++	assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
++	assigned-clock-rates = <0>, <36864000>;
++	status = "okay";
++};
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	assigned-clocks = <&clks IMX7D_UART1_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_OSC_24M_CLK>;
++	status = "okay";
++};
++
++&uart3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart3>;
++	assigned-clocks = <&clks IMX7D_UART3_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_PLL_SYS_MAIN_240M_CLK>;
++	status = "okay";
++	fsl,uart-has-rtscts;
++};
++
++&usbotg1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usbotg1>;
++	vbus-supply = <&reg_usb_otg1_vbus>;
++	srp-disable;
++	hnp-disable;
++	adp-disable;
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbotg2 {
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usbh {
++	vbus-supply = <&reg_usbh_nreset>;
++	status = "okay";
++};
++
++&usdhc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc2>;
++	cd-gpios = <>;
++	wp-gpios = <>;
++	no-1-8-v;
++	keep-power-in-suspend;
++	enable-sdio-wakeup;
++	vmmc-supply = <&wlan_en_reg>;
++	depends = "/regulators/regulator@3";
++	non-removable;
++	cap-power-off-card;
++	status = "okay";
++	#address-cells = <1>;
++	#size-cells = <0>;
++	wlcore: wlcore@0 {
++		compatible = "ti,wl1835";
++		reg = <2>;
++		interrupt-parent = <&gpio1>;
++		interrupts = <15 IRQ_TYPE_LEVEL_HIGH>;
++	};
++};
++
++&usdhc3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc3>;
++	assigned-clocks = <&clks IMX7D_USDHC3_ROOT_CLK>;
++	assigned-clock-rates = <400000000>;
++	bus-width = <8>;
++	tuning-step = <2>;
++	non-removable;
++	status = "okay";
++};
++
++&wdog1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog>;
++	fsl,wdog_b;
++};
+diff --git a/arch/arm/boot/dts/imx7d-sbc-imx7-csi.dts b/arch/arm/boot/dts/imx7d-sbc-imx7-csi.dts
+new file mode 100644
+index 0000000..564cd1a
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-imx7-csi.dts
+@@ -0,0 +1,107 @@
++/*
++ * Copyright (C) 2017 CompuLab Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-sbc-imx7.dts"
++
++/ {
++	pxp_v4l2_out {
++		compatible = "fsl,imx7d-pxp-v4l2", "fsl,imx6sx-pxp-v4l2", "fsl,imx6sl-pxp-v4l2";
++		status = "okay";
++	};
++};
++
++&iomuxc {
++	sbc-imx7-csi {
++		pinctrl_i2c1: i2c1grp {
++			fsl,pins = <
++				MX7D_PAD_I2C1_SCL__I2C1_SCL 		0x4000002f /* P4-2 P1-63 */
++				MX7D_PAD_I2C1_SDA__I2C1_SDA 		0x4000002f /* P4-4 P1-65 */
++			>;
++		};
++
++		pinctrl_mipi_csi: mipicsigrp-1 {
++			fsl,pins = <
++				/* MIPI CSI PinMux */
++				MX7D_PAD_I2C4_SDA__CSI_MCLK		0x19
++				MX7D_PAD_I2C2_SDA__GPIO4_IO11		0x59 /* WPM */
++				MX7D_PAD_EPDC_PWR_COM__GPIO2_IO30	0x59 /* RST */
++			>;
++		};
++	};
++};
++
++/* Avoid a conflict with I2C1 bus */
++&flexcan1 {
++	status = "disable";
++};
++
++&i2c1 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c1>;
++	status = "okay";
++
++	ov564x_mipi: ov564x_mipi@3c {
++		compatible = "ovti,ov5640_mipi";
++		reg = <0x3c>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_mipi_csi>;
++
++		clocks = <&clks IMX7D_CSI_MCLK_ROOT_CLK>;
++		clock-names = "csi_mclk";
++
++		pwn-gpios = <&gpio4 11 1>;
++		rst-gpios = <&gpio2 30 0>;
++
++		csi_id = <0>;
++		mclk = <24000000>;
++		mclk_source = <0>;
++		port {
++			ov564x_mipi_ep: endpoint {
++				remote-endpoint = <&mipi_sensor_ep>;
++			};
++		};
++	};
++};
++
++&mipi_csi {
++	clock-frequency = <240000000>;
++	status = "okay";
++	port {
++		mipi_sensor_ep: endpoint1 {
++			remote-endpoint = <&ov564x_mipi_ep>;
++			data-lanes = <2>;
++			csis-hs-settle = <13>;
++			csis-clk-settle = <2>;
++			/* csis-wclk; */
++		};
++
++		csi_mipi_ep: endpoint2 {
++			remote-endpoint = <&csi_ep>;
++		};
++	};
++};
++
++&csi1 {
++	csi-mux-mipi = <&gpr 0x14 4>;
++	status = "okay";
++
++	port {
++		csi_ep: endpoint {
++			remote-endpoint = <&csi_mipi_ep>;
++		};
++	};
++};
++
++&sdma {
++	status = "okay";
++};
++
++&epxp {
++	status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx7d-sbc-imx7-lvds.dts b/arch/arm/boot/dts/imx7d-sbc-imx7-lvds.dts
+new file mode 100644
+index 0000000..de970de
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-imx7-lvds.dts
+@@ -0,0 +1,63 @@
++/*
++ * Copyright (C) 2017 CompuLab Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-sbc-imx7.dts"
++
++/ {
++
++	mipi_dsi_reset: mipi-dsi-reset {
++		compatible = "gpio-reset";
++		reset-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>; /* Unused gpio - routed to P4_21 */
++		reset-delay-us = <100>;
++		#reset-cells = <0>;
++	};
++
++	regulators {
++		reg_mipi_dsi_pwr_on: mipi_dsi_pwr_on {
++			compatible = "regulator-fixed";
++			regulator-name = "mipi_dsi_pwr_on";
++			gpio = <&gpio1 9 GPIO_ACTIVE_HIGH>;  /* Unused gpio - routed to P4_23 */
++			enable-active-high;
++		};
++	};
++};
++
++&lcdif {
++	disp-dev = "mipi_dsi_samsung";
++};
++
++&mipi_dsi {
++	lcd_panel = "SN65DSI_default";
++	disp-power-on-supply = <&reg_mipi_dsi_pwr_on>;
++	resets = <&mipi_dsi_reset>;
++	status = "okay";
++};
++
++&i2c2 {
++	sn65dsi83: sn65dsi83@2c {
++		compatible = "ti,sn65dsi83";
++		reg = <0x2c>;
++		depends = "/soc/aips-bus@30800000/i2c@30a30000/pca9555@20";
++		enable-gpios = <&pca9555 2 GPIO_ACTIVE_HIGH>;
++		status = "okay";
++
++		port {
++			bridge_out: endpoint{
++				remote-endpoint = <&lvds_in>;
++			};
++		};
++
++		lvds_panel {
++			port {
++				lvds_in: endpoint{
++					remote-endpoint = <&bridge_out>;
++				};
++			};
++		};
++	};
++};
+diff --git a/arch/arm/boot/dts/imx7d-sbc-imx7-m4.dts b/arch/arm/boot/dts/imx7d-sbc-imx7-m4.dts
+new file mode 100644
+index 0000000..f4bbddc
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-imx7-m4.dts
+@@ -0,0 +1,13 @@
++/*
++ * Support for CompuLab SBC-iMX7 Single Board Computer Cortex-M4
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Nikita Kiryanov <nikita@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-sbc-imx7.dts"
++#include "imx7d-cl-som-imx7-m4.dtsi"
+diff --git a/arch/arm/boot/dts/imx7d-sbc-imx7.dts b/arch/arm/boot/dts/imx7d-sbc-imx7.dts
+new file mode 100644
+index 0000000..cc02a10
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-imx7.dts
+@@ -0,0 +1,245 @@
++/*
++ * Support for CompuLab SBC-iMX7 Single Board Computer
++ *
++ * Copyright (C) 2015 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-cl-som-imx7.dts"
++
++/ {
++	model = "CompuLab CL-SOM-iMX7 on SB-SOM";
++	compatible = "compulab,sbc-imx7", "compulab,cl-som-imx7", "fsl,imx7d";
++
++	aliases {
++		lcdif = &lcdif;
++	};
++
++	backlight {
++		compatible = "pwm-backlight";
++		pwms = <&pwm2 0 5000000>;
++		brightness-levels = <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++		status = "okay";
++	};
++
++	regulators {
++		reg_dvi_en_3v3: dvi_en_3v3 {
++			compatible = "regulator-fixed";
++			regulator-name = "dvi_en_3v3";
++			gpio = <&pca9555_sb 13 0>;
++			enable-active-high;
++			regulator-always-on;
++		};
++
++		reg_lcd_nstby_3v3: lcd_nstby_3v3 {
++			compatible = "regulator-fixed";
++			regulator-name = "lcd_nstby_3v3";
++			gpio = <&pca9555_sb 14 0>;
++			enable-active-high;
++			regulator-always-on;
++		};
++	};
++};
++
++
++&flexcan1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan1>;
++	status = "okay";
++};
++
++&flexcan2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan2>;
++	status = "okay";
++};
++
++&i2c4 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c4>;
++	status = "okay";
++
++	pca9555_sb: pca9555_sb@20 {
++		compatible = "nxp,pca9555";
++		gpio-controller;
++		#gpio-cells = <2>;
++		reg = <0x20>;
++	};
++
++	eeprom_sb@54 {
++		compatible = "atmel,24c08";
++		reg = <0x54>;
++		pagesize = <16>;
++	};
++
++	dvicape@39 {
++		compatible = "sil164_simple";
++		reg = <0x39>;
++	};
++};
++
++&usdhc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	cd-gpios = <&gpio5 0 GPIO_ACTIVE_LOW>;
++	wp-gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;
++	enable-sdio-wakeup;
++	status = "okay";
++};
++
++&iomuxc {
++	sbc-imx7 {
++		pinctrl_flexcan1: flexcan1grp {
++			fsl,pins = <
++				MX7D_PAD_I2C1_SCL__FLEXCAN1_RX		0x59
++				MX7D_PAD_I2C1_SDA__FLEXCAN1_TX		0x59
++			>;
++		};
++
++		pinctrl_flexcan2: flexcan2grp {
++			fsl,pins = <
++				MX7D_PAD_I2C3_SCL__FLEXCAN2_RX		0x59
++				MX7D_PAD_I2C3_SDA__FLEXCAN2_TX		0x59
++			>;
++		};
++
++		pinctrl_i2c4: i2c4grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO11__I2C4_SDA		0x4000000f
++				MX7D_PAD_GPIO1_IO10__I2C4_SCL		0x4000000f
++			>;
++		};
++
++		pinctrl_lcdif_dat: lcdifdatgrp {
++			fsl,pins = <
++				MX7D_PAD_LCD_DATA00__LCD_DATA0		0x79
++				MX7D_PAD_LCD_DATA01__LCD_DATA1		0x79
++				MX7D_PAD_LCD_DATA02__LCD_DATA2		0x79
++				MX7D_PAD_LCD_DATA03__LCD_DATA3		0x79
++				MX7D_PAD_EPDC_DATA04__LCD_DATA4		0x79
++				MX7D_PAD_EPDC_DATA05__LCD_DATA5		0x79
++				MX7D_PAD_EPDC_DATA06__LCD_DATA6		0x79
++				MX7D_PAD_EPDC_DATA07__LCD_DATA7		0x79
++				MX7D_PAD_EPDC_DATA08__LCD_DATA8		0x79
++				MX7D_PAD_EPDC_DATA09__LCD_DATA9		0x79
++				MX7D_PAD_EPDC_DATA10__LCD_DATA10	0x79
++				MX7D_PAD_EPDC_DATA11__LCD_DATA11	0x79
++				MX7D_PAD_EPDC_DATA12__LCD_DATA12	0x79
++				MX7D_PAD_EPDC_DATA13__LCD_DATA13	0x79
++				MX7D_PAD_EPDC_DATA14__LCD_DATA14	0x79
++				MX7D_PAD_EPDC_DATA15__LCD_DATA15	0x79
++				MX7D_PAD_LCD_DATA16__LCD_DATA16		0x79
++				MX7D_PAD_LCD_DATA17__LCD_DATA17		0x79
++				MX7D_PAD_LCD_DATA18__LCD_DATA18		0x79
++				MX7D_PAD_LCD_DATA19__LCD_DATA19		0x79
++				MX7D_PAD_LCD_DATA20__LCD_DATA20		0x79
++				MX7D_PAD_LCD_DATA21__LCD_DATA21		0x79
++				MX7D_PAD_LCD_DATA22__LCD_DATA22		0x79
++				MX7D_PAD_LCD_DATA23__LCD_DATA23		0x79
++			>;
++		};
++
++		pinctrl_lcdif_ctrl: lcdifctrlgrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_DATA00__LCD_CLK		0x79
++				MX7D_PAD_EPDC_DATA01__LCD_ENABLE	0x79
++				MX7D_PAD_EPDC_DATA02__LCD_VSYNC		0x79
++				MX7D_PAD_EPDC_DATA03__LCD_HSYNC		0x79
++			>;
++		};
++
++		pinctrl_usdhc1: usdhc1grp {
++			fsl,pins = <
++				MX7D_PAD_SD1_CMD__SD1_CMD		0x59
++				MX7D_PAD_SD1_CLK__SD1_CLK		0x19
++				MX7D_PAD_SD1_DATA0__SD1_DATA0		0x59
++				MX7D_PAD_SD1_DATA1__SD1_DATA1		0x59
++				MX7D_PAD_SD1_DATA2__SD1_DATA2		0x59
++				MX7D_PAD_SD1_DATA3__SD1_DATA3		0x59
++				MX7D_PAD_SD1_CD_B__GPIO5_IO0		0x59 /* CD */
++				MX7D_PAD_SD1_WP__GPIO5_IO1		0x59 /* WP */
++			>;
++		};
++	};
++};
++
++&iomuxc_lpsr {
++	sbc-imx7 {
++		pinctrl_pwm2: pwm2grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO02__PWM2_OUT		0x110b0
++			>;
++		};
++	};
++};
++
++&lcdif {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lcdif_dat
++		     &pinctrl_lcdif_ctrl>;
++	display = <&display0>;
++	status = "okay";
++
++	display0: display {
++		bits-per-pixel = <24>;
++		bus-width = <24>;
++
++		display-timings {
++			native-mode = <&timing0>;
++			timing0: lcd {
++				clock-frequency = <29580000>;
++				hactive = <800>;
++				vactive = <480>;
++				hfront-porch = <16>;
++				hback-porch = <1>;
++				hsync-len = <80>;
++				vback-porch = <13>;
++				vfront-porch = <16>;
++				vsync-len = <16>;
++
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <1>;
++				pixelclk-active = <0>;
++			};
++
++			timing1: dvi {
++				/* 1024x768p60 */
++				clock-frequency = <65000000>;
++				hactive = <1024>;
++				vactive = <768>;
++				hback-porch = <220>;
++				hfront-porch = <40>;
++				vback-porch = <21>;
++				vfront-porch = <7>;
++				hsync-len = <60>;
++				vsync-len = <10>;
++
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <1>;
++				pixelclk-active = <0>;
++			};
++		};
++	};
++};
++
++&pcie {
++	pinctrl-names = "default";
++	depends = "/soc/aips-bus@30800000/i2c@30a50000/pca9555_sb@20";
++	reset-gpio = <&pca9555_sb 1 GPIO_ACTIVE_LOW>;
++	phy-ref-clk = <1>;
++	status = "okay";
++};
++
++&pwm2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pwm2>;
++	status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx7d-sbc-iot-imx7-can.dts b/arch/arm/boot/dts/imx7d-sbc-iot-imx7-can.dts
+new file mode 100644
+index 0000000..6066b40
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-iot-imx7-can.dts
+@@ -0,0 +1,49 @@
++/*
++ * Support for CompuLab SBC-IOT-iMX7 Single Board Computer with CAN bus support
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-sbc-iot-imx7.dts"
++
++&flexcan2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan2>;
++	status = "okay";
++};
++
++&iomuxc {
++	sbc-iot-imx7 {
++		pinctrl_flexcan2: flexcan2grp {
++			fsl,pins = <
++				MX7D_PAD_I2C3_SCL__FLEXCAN2_RX		0x59
++				MX7D_PAD_I2C3_SDA__FLEXCAN2_TX		0x59
++			>;
++		};
++
++		pinctrl_uart5: uart5grp {
++			fsl,pins = <
++				MX7D_PAD_I2C4_SDA__UART5_DCE_TX		0x79 /* RS232-TX */
++				MX7D_PAD_I2C4_SCL__UART5_DCE_RX		0x79 /* RS232-RX */
++			>;
++		};
++	};
++};
++
++&uart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart5>;
++	assigned-clocks = <&clks IMX7D_UART5_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_PLL_SYS_MAIN_240M_CLK>;
++	status = "okay";
++};
++
++&uart7 {
++	status = "disabled";
++};
++
+diff --git a/arch/arm/boot/dts/imx7d-sbc-iot-imx7-rs485-hdx.dts b/arch/arm/boot/dts/imx7d-sbc-iot-imx7-rs485-hdx.dts
+new file mode 100644
+index 0000000..7b46249
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-iot-imx7-rs485-hdx.dts
+@@ -0,0 +1,40 @@
++/*
++ * Support for CompuLab SBC-IOT-iMX7 Single Board Computer
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-sbc-iot-imx7.dts"
++
++
++&iomuxc {
++	pinctrl-1 = <&pinctrl_xpen>;
++
++	sbc-iot-imx7 {
++
++		pinctrl_uart7_rs485_hdx: uart7rs485hdxgrp {
++			fsl,pins = <
++				MX7D_PAD_ECSPI2_MOSI__UART7_DCE_TX	0x79 /* R485-TX */
++				MX7D_PAD_ECSPI2_SCLK__UART7_DCE_RX	0x79 /* R485-RX */
++				MX7D_PAD_ECSPI2_SS0__GPIO4_IO23		0x34 /* RTS GPIO */
++			>;
++		};
++	};
++};
++
++&uart7 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart7_rs485_hdx>;
++	assigned-clocks = <&clks IMX7D_UART7_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_PLL_SYS_MAIN_240M_CLK>;
++	linux,rs485-enabled-at-boot-time;
++	rs485-rts-active-high;
++	rts-gpio = <&gpio4 23 GPIO_ACTIVE_HIGH>;
++	status = "okay";
++};
++
+diff --git a/arch/arm/boot/dts/imx7d-sbc-iot-imx7.dts b/arch/arm/boot/dts/imx7d-sbc-iot-imx7.dts
+new file mode 100644
+index 0000000..072b179
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-iot-imx7.dts
+@@ -0,0 +1,257 @@
++/*
++ * Support for CompuLab SBC-IOT-iMX7 Single Board Computer
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-cl-som-imx7.dts"
++
++/ {
++	model = "CompuLab CL-SOM-iMX7 on SB-IOT";
++	compatible = "compulab,sbc-iot-imx7", "compulab,cl-som-imx7", "fsl,imx7d";
++
++	aliases {
++		lcdif = &lcdif;
++	};
++};
++
++&ecspi3 {
++	fsl,spi-num-chipselects = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_ecspi3 &pinctrl_ecspi3_cs>;
++	cs-gpios = <&gpio4 11 0>;
++	status = "okay";
++};
++
++&i2c3 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c3>;
++	status = "okay";
++};
++
++&i2c4 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c4>;
++	status = "okay";
++
++	eeprom_iot@54 {
++		compatible = "atmel,24c08";
++		reg = <0x54>;
++		pagesize = <16>;
++	};
++
++	dvicape@39 {
++		compatible = "sil164_simple";
++		reg = <0x39>;
++	};
++};
++
++&iomuxc {
++	pinctrl-1 = <&pinctrl_xpen>;
++
++	sbc-iot-imx7 {
++		/* SB-IOT-iMX7 Xpension Header P7 */
++		pinctrl_xpen: xpengrp {
++			fsl,pins = <
++				MX7D_PAD_LCD_DATA13__GPIO3_IO18		0x34 /* P7-4 - gpio82 */
++				MX7D_PAD_LCD_DATA12__GPIO3_IO17		0x34 /* P7-5 - gpio81 */
++			>;
++		};
++
++		pinctrl_ecspi3: ecspi3grp {
++			fsl,pins = <
++				MX7D_PAD_I2C1_SDA__ECSPI3_MOSI		0xf /* P7-8 */
++				MX7D_PAD_I2C1_SCL__ECSPI3_MISO		0xf /* P7-7 */
++				MX7D_PAD_I2C2_SCL__ECSPI3_SCLK		0xf /* P7-6 */
++			>;
++		};
++
++		pinctrl_ecspi3_cs: ecspi3_cs_grp {
++			fsl,pins = <
++				MX7D_PAD_I2C2_SDA__GPIO4_IO11		0x34 /* P7-9 */
++			>;
++		};
++
++		pinctrl_i2c3: i2c3grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO09__I2C3_SDA		0x4000000f /* P7-3 */
++				MX7D_PAD_GPIO1_IO08__I2C3_SCL		0x4000000f /* P7-2 */
++			>;
++		};
++
++		pinctrl_i2c4: i2c4grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO11__I2C4_SDA		0x4000000f
++				MX7D_PAD_GPIO1_IO10__I2C4_SCL		0x4000000f
++			>;
++		};
++
++		pinctrl_lcdif_dat: lcdifdatgrp {
++			fsl,pins = <
++				MX7D_PAD_LCD_DATA00__LCD_DATA0		0x79
++				MX7D_PAD_LCD_DATA01__LCD_DATA1		0x79
++				MX7D_PAD_LCD_DATA02__LCD_DATA2		0x79
++				MX7D_PAD_LCD_DATA03__LCD_DATA3		0x79
++				MX7D_PAD_EPDC_DATA04__LCD_DATA4		0x79
++				MX7D_PAD_EPDC_DATA05__LCD_DATA5		0x79
++				MX7D_PAD_EPDC_DATA06__LCD_DATA6		0x79
++				MX7D_PAD_EPDC_DATA07__LCD_DATA7		0x79
++				MX7D_PAD_EPDC_DATA08__LCD_DATA8		0x79
++				MX7D_PAD_EPDC_DATA09__LCD_DATA9		0x79
++				MX7D_PAD_EPDC_DATA10__LCD_DATA10	0x79
++				MX7D_PAD_EPDC_DATA11__LCD_DATA11	0x79
++				MX7D_PAD_EPDC_DATA12__LCD_DATA12	0x79
++				MX7D_PAD_EPDC_DATA13__LCD_DATA13	0x79
++				MX7D_PAD_EPDC_DATA14__LCD_DATA14	0x79
++				MX7D_PAD_EPDC_DATA15__LCD_DATA15	0x79
++				MX7D_PAD_LCD_DATA16__LCD_DATA16		0x79
++				MX7D_PAD_LCD_DATA17__LCD_DATA17		0x79
++				MX7D_PAD_LCD_DATA18__LCD_DATA18		0x79
++				MX7D_PAD_LCD_DATA19__LCD_DATA19		0x79
++				MX7D_PAD_LCD_DATA20__LCD_DATA20		0x79
++				MX7D_PAD_LCD_DATA21__LCD_DATA21		0x79
++				MX7D_PAD_LCD_DATA22__LCD_DATA22		0x79
++				MX7D_PAD_LCD_DATA23__LCD_DATA23		0x79
++			>;
++		};
++
++		pinctrl_lcdif_ctrl: lcdifctrlgrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_DATA00__LCD_CLK		0x79
++				MX7D_PAD_EPDC_DATA01__LCD_ENABLE	0x79
++				MX7D_PAD_EPDC_DATA02__LCD_VSYNC		0x79
++				MX7D_PAD_EPDC_DATA03__LCD_HSYNC		0x79
++			>;
++		};
++
++		pinctrl_pcie: pciegrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_BDR1__GPIO2_IO29		0x34 /* PCIe RST */
++			>;
++		};
++
++		pinctrl_uart2: uart2grp {
++			fsl,pins = <
++				MX7D_PAD_LCD_ENABLE__UART2_DCE_TX	0x79 /* P7-12 */
++				MX7D_PAD_LCD_CLK__UART2_DCE_RX		0x79 /* P7-13 */
++				MX7D_PAD_LCD_VSYNC__UART2_DCE_CTS	0x79 /* P7-11 */
++				MX7D_PAD_LCD_HSYNC__UART2_DCE_RTS	0x79 /* P7-10 */
++			>;
++		};
++
++		pinctrl_uart5: uart5grp {
++			fsl,pins = <
++				MX7D_PAD_I2C4_SDA__UART5_DCE_TX		0x79 /* RS232-TX */
++				MX7D_PAD_I2C4_SCL__UART5_DCE_RX		0x79 /* RS232-RX */
++				MX7D_PAD_I2C3_SDA__UART5_DCE_RTS	0x79 /* RS232-RTS */
++				MX7D_PAD_I2C3_SCL__UART5_DCE_CTS	0x79 /* RS232-CTS */
++			>;
++		};
++
++		pinctrl_uart7: uart7grp {
++			fsl,pins = <
++				MX7D_PAD_ECSPI2_MOSI__UART7_DCE_TX	0x79 /* R485-TX */
++				MX7D_PAD_ECSPI2_SCLK__UART7_DCE_RX	0x79 /* R485-RX */
++				MX7D_PAD_ECSPI2_SS0__UART7_DCE_CTS	0x79 /* R485-CTS */
++				MX7D_PAD_ECSPI2_MISO__UART7_DCE_RTS	0x79 /* R485-TTS */
++			>;
++		};
++
++		pinctrl_usdhc1: usdhc1grp {
++			fsl,pins = <
++				MX7D_PAD_SD1_CMD__SD1_CMD		0x59
++				MX7D_PAD_SD1_CLK__SD1_CLK		0x19
++				MX7D_PAD_SD1_DATA0__SD1_DATA0		0x59
++				MX7D_PAD_SD1_DATA1__SD1_DATA1		0x59
++				MX7D_PAD_SD1_DATA2__SD1_DATA2		0x59
++				MX7D_PAD_SD1_DATA3__SD1_DATA3		0x59
++				MX7D_PAD_SD1_CD_B__GPIO5_IO0		0x59 /* CD */
++			>;
++		};
++	};
++};
++
++&lcdif {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lcdif_dat
++		     &pinctrl_lcdif_ctrl>;
++	display = <&display0>;
++	status = "okay";
++
++	display0: display {
++		bits-per-pixel = <24>;
++		bus-width = <24>;
++
++		display-timings {
++			native-mode = <&timing0>;
++			timing0: dvi {
++				/* 1024x768p60 */
++				clock-frequency = <65000000>;
++				hactive = <1024>;
++				hfront-porch = <40>;
++				hback-porch = <220>;
++				hsync-len = <60>;
++				vactive = <768>;
++				vfront-porch = <7>;
++				vback-porch = <21>;
++				vsync-len = <10>;
++
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <1>;
++				pixelclk-active = <0>;
++			};
++		};
++	};
++};
++
++&pcie {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pcie>;
++	reset-gpio = <&gpio2 29 GPIO_ACTIVE_LOW>;
++	phy-ref-clk = <1>;
++	status = "okay";
++};
++
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart2>;
++	assigned-clocks = <&clks IMX7D_UART2_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_OSC_24M_CLK>;
++	fsl,uart-has-rtscts;
++	status = "okay";
++};
++
++&uart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart5>;
++	assigned-clocks = <&clks IMX7D_UART5_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_PLL_SYS_MAIN_240M_CLK>;
++	fsl,uart-has-rtscts;
++	status = "okay";
++};
++
++&uart7 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart7>;
++	assigned-clocks = <&clks IMX7D_UART7_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_PLL_SYS_MAIN_240M_CLK>;
++	fsl,uart-has-rtscts;
++	status = "okay";
++};
++
++&usdhc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	cd-gpios = <&gpio5 0 GPIO_ACTIVE_LOW>;
++	wp-gpios = <&gpio5 1 GPIO_ACTIVE_HIGH>;
++	enable-sdio-wakeup;
++	status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx7d-sbc-ucm-imx7.dts b/arch/arm/boot/dts/imx7d-sbc-ucm-imx7.dts
+new file mode 100644
+index 0000000..ece502d
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-sbc-ucm-imx7.dts
+@@ -0,0 +1,274 @@
++/*
++ * Support for CompuLab SBC-UCM-iMX7 Single Board Computer
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "imx7d-ucm-imx7.dts"
++
++/ {
++	model = "CompuLab UCM-iMX7 on SB-UCM";
++	compatible = "compulab,sbc-ucm-imx7", "compulab,ucm-imx7", "fsl,imx7d";
++
++	aliases {
++		lcdif = &lcdif;
++	};
++
++	backlight {
++		compatible = "pwm-backlight";
++		pwms = <&pwm2 0 5000000>;
++		brightness-levels = <0 4 8 16 32 64 128 255>;
++		default-brightness-level = <6>;
++		status = "okay";
++	};
++
++	regulators {
++		reg_pwr_en_req: pwr_en_req {
++			compatible = "regulator-fixed";
++			regulator-name = "pwr_en_req";
++			gpio = <&gpio3 13 0>;
++			enable-active-high;
++			regulator-always-on;
++		};
++
++		reg_dvi_en_3v3: dvi_en_3v3 {
++			compatible = "regulator-fixed";
++			regulator-name = "dvi_en_3v3";
++			gpio = <&gpio4 14 0>;
++			enable-active-high;
++			regulator-always-on;
++		};
++
++		reg_lcd_nstby_3v3: lcd_nstby_3v3 {
++			compatible = "regulator-fixed";
++			regulator-name = "lcd_nstby_3v3";
++			gpio = <&gpio5 1 0>;
++			enable-active-high;
++			regulator-always-on;
++		};
++	};
++};
++
++&flexcan1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan1>;
++	status = "okay";
++};
++
++&flexcan2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan2>;
++	status = "okay";
++};
++
++&i2c3 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c3>;
++	status = "okay";
++};
++
++&i2c4 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c4>;
++	status = "okay";
++
++	eeprom_sb@54 {
++		compatible = "atmel,24c08";
++		reg = <0x54>;
++		pagesize = <16>;
++	};
++
++	dvicape@39 {
++		compatible = "sil164_simple";
++		reg = <0x39>;
++	};
++};
++
++&usdhc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	cd-gpios = <&gpio5 0 GPIO_ACTIVE_LOW>;
++	enable-sdio-wakeup;
++	status = "okay";
++};
++
++&iomuxc {
++	pinctrl-names = "default_sbc";
++	pinctrl-1 = <&pinctrl_hog_sbc>;
++
++	sbc-ucm-imx7 {
++		pinctrl_hog_sbc: hogsbcgrp {
++			fsl,pins = <
++				MX7D_PAD_LCD_DATA08__GPIO3_IO13		0x14 /* PWR_EN_REQ */
++				MX7D_PAD_I2C4_SCL__GPIO4_IO14		0x14 /* DVI_EN */
++				MX7D_PAD_SD1_WP__GPIO5_IO1		0x14 /* LCD_nSTBY */
++			>;
++		};
++
++		pinctrl_flexcan1: flexcan1grp {
++			fsl,pins = <
++				MX7D_PAD_I2C1_SCL__FLEXCAN1_RX		0x59
++				MX7D_PAD_I2C1_SDA__FLEXCAN1_TX		0x59
++			>;
++		};
++
++		pinctrl_flexcan2: flexcan2grp {
++			fsl,pins = <
++				MX7D_PAD_I2C3_SCL__FLEXCAN2_RX		0x59
++				MX7D_PAD_I2C3_SDA__FLEXCAN2_TX		0x59
++			>;
++		};
++
++		pinctrl_i2c3: i2c3grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO09__I2C3_SDA		0x4000000f
++				MX7D_PAD_GPIO1_IO08__I2C3_SCL		0x4000000f
++			>;
++		};
++
++		pinctrl_i2c4: i2c4grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO11__I2C4_SDA		0x4000000f
++				MX7D_PAD_GPIO1_IO10__I2C4_SCL		0x4000000f
++			>;
++		};
++
++		pinctrl_lcdif_dat: lcdifdatgrp {
++			fsl,pins = <
++				MX7D_PAD_LCD_DATA00__LCD_DATA0		0x79
++				MX7D_PAD_LCD_DATA01__LCD_DATA1		0x79
++				MX7D_PAD_LCD_DATA02__LCD_DATA2		0x79
++				MX7D_PAD_LCD_DATA03__LCD_DATA3		0x79
++				MX7D_PAD_EPDC_DATA04__LCD_DATA4		0x79
++				MX7D_PAD_EPDC_DATA05__LCD_DATA5		0x79
++				MX7D_PAD_EPDC_DATA06__LCD_DATA6		0x79
++				MX7D_PAD_EPDC_DATA07__LCD_DATA7		0x79
++				MX7D_PAD_EPDC_DATA08__LCD_DATA8		0x79
++				MX7D_PAD_EPDC_DATA09__LCD_DATA9		0x79
++				MX7D_PAD_EPDC_DATA10__LCD_DATA10	0x79
++				MX7D_PAD_EPDC_DATA11__LCD_DATA11	0x79
++				MX7D_PAD_EPDC_DATA12__LCD_DATA12	0x79
++				MX7D_PAD_EPDC_DATA13__LCD_DATA13	0x79
++				MX7D_PAD_EPDC_DATA14__LCD_DATA14	0x79
++				MX7D_PAD_EPDC_DATA15__LCD_DATA15	0x79
++				MX7D_PAD_LCD_DATA16__LCD_DATA16		0x79
++				MX7D_PAD_LCD_DATA17__LCD_DATA17		0x79
++				MX7D_PAD_LCD_DATA18__LCD_DATA18		0x79
++				MX7D_PAD_LCD_DATA19__LCD_DATA19		0x79
++				MX7D_PAD_LCD_DATA20__LCD_DATA20		0x79
++				MX7D_PAD_LCD_DATA21__LCD_DATA21		0x79
++				MX7D_PAD_LCD_DATA22__LCD_DATA22		0x79
++				MX7D_PAD_LCD_DATA23__LCD_DATA23		0x79
++			>;
++		};
++
++		pinctrl_lcdif_ctrl: lcdifctrlgrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_DATA00__LCD_CLK		0x79
++				MX7D_PAD_EPDC_DATA01__LCD_ENABLE	0x79
++				MX7D_PAD_EPDC_DATA02__LCD_VSYNC		0x79
++				MX7D_PAD_EPDC_DATA03__LCD_HSYNC		0x79
++			>;
++		};
++
++		pinctrl_pcie: pciegrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_BDR1__GPIO2_IO29		0x14 /* PCIe_nRST */
++			>;
++		};
++
++		pinctrl_usdhc1: usdhc1grp {
++			fsl,pins = <
++				MX7D_PAD_SD1_CMD__SD1_CMD		0x59
++				MX7D_PAD_SD1_CLK__SD1_CLK		0x19
++				MX7D_PAD_SD1_DATA0__SD1_DATA0		0x59
++				MX7D_PAD_SD1_DATA1__SD1_DATA1		0x59
++				MX7D_PAD_SD1_DATA2__SD1_DATA2		0x59
++				MX7D_PAD_SD1_DATA3__SD1_DATA3		0x59
++				MX7D_PAD_SD1_CD_B__GPIO5_IO0		0x59 /* CD */
++			>;
++		};
++	};
++};
++
++&iomuxc_lpsr {
++	sbc-ucm-imx7 {
++		pinctrl_pwm2: pwm2grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO02__PWM2_OUT		0x110b0
++			>;
++		};
++	};
++};
++
++&lcdif {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_lcdif_dat
++		     &pinctrl_lcdif_ctrl>;
++	display = <&display0>;
++	status = "okay";
++
++	display0: display {
++		bits-per-pixel = <24>;
++		bus-width = <24>;
++
++		display-timings {
++			native-mode = <&timing0>;
++			timing0: lcd {
++				clock-frequency = <29580000>;
++				hactive = <800>;
++				vactive = <480>;
++				hfront-porch = <16>;
++				hback-porch = <1>;
++				hsync-len = <80>;
++				vback-porch = <13>;
++				vfront-porch = <16>;
++				vsync-len = <16>;
++
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <1>;
++				pixelclk-active = <0>;
++			};
++
++			timing1: dvi {
++				/* 1024x768p60 */
++				clock-frequency = <65000000>;
++				hactive = <1024>;
++				vactive = <768>;
++				hback-porch = <220>;
++				hfront-porch = <40>;
++				vback-porch = <21>;
++				vfront-porch = <7>;
++				hsync-len = <60>;
++				vsync-len = <10>;
++
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <1>;
++				pixelclk-active = <0>;
++			};
++		};
++	};
++};
++
++&pcie {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pcie>;
++	reset-gpio = <&gpio2 29 GPIO_ACTIVE_LOW>;
++	phy-ref-clk = <1>;
++	status = "okay";
++};
++
++&pwm2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pwm2>;
++	status = "okay";
++};
+diff --git a/arch/arm/boot/dts/imx7d-ucm-imx7.dts b/arch/arm/boot/dts/imx7d-ucm-imx7.dts
+new file mode 100644
+index 0000000..7b07f1e
+--- /dev/null
++++ b/arch/arm/boot/dts/imx7d-ucm-imx7.dts
+@@ -0,0 +1,631 @@
++/*
++ * Support for CompuLab UCM-iMX7 System-on-Module
++ *
++ * Copyright (C) 2017 CompuLab Ltd. - http://www.compulab.co.il/
++ * Author: Ilya Ledvich <ilya@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include "imx7d.dtsi"
++
++/ {
++	model = "CompuLab UCM-iMX7";
++	compatible = "compulab,ucm-imx7", "fsl,imx7d";
++
++	aliases {
++		gpmi = &gpmi;
++	};
++
++	memory {
++		reg = <0x80000000 0x10000000>; /* 256 MB - minimal configuration */
++	};
++
++	regulators {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		reg_usb_otg1_vbus: regulator@0 {
++			compatible = "regulator-fixed";
++			reg = <0>;
++			regulator-name = "usb_otg1_vbus";
++			regulator-min-microvolt = <5000000>;
++			regulator-max-microvolt = <5000000>;
++			gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++		};
++
++		tsc2046reg: regulator@1 {
++			compatible = "regulator-fixed";
++			regulator-name = "tsc2046-reg";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
++
++		reg_usbh_nreset: regulator@2 {
++			compatible = "regulator-fixed";
++			reg = <4>;
++			regulator-name = "usb_host_nreset";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			gpio = <&gpio2 27 GPIO_ACTIVE_HIGH>;
++			enable-active-high;
++			regulator-always-on;
++		};
++
++		wlreg_on: regulator@3 {
++			compatible = "regulator-fixed";
++			reg = <2>;
++			regulator-name = "wlreg_on";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			gpio = <&gpio2 25 GPIO_ACTIVE_HIGH>;
++			startup-delay-us = <100>;
++			enable-active-high;
++		};
++	};
++
++	/* Murata -- define hook for BCMDHD driver.   */
++	bcmdhd_wlan_0: bcmdhd_wlan@0 {
++		compatible = "android,bcmdhd_wlan";
++		wlreg_on-supply = <&wlreg_on>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		onboard-led {
++			label = "Heartbeat";
++			gpios = <&gpio6 14 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++        sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "ucm-imx7";
++		simple-audio-card,widgets =
++			"Headphone", "Headphone Jack",
++			"Line", "Line Out",
++			"Microphone", "Mic Jack",
++			"Line", "Line In";
++		simple-audio-card,routing =
++			"Headphone Jack", "RHPOUT",
++			"Headphone Jack", "LHPOUT",
++			"LLINEIN", "Line Jack",
++			"RLINEIN", "Line Jack",
++			"MICIN", "Mic Bias",
++			"Mic Bias", "Mic Jack";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&sound_master>;
++		simple-audio-card,frame-master = <&sound_master>;
++		/*simple-audio-card,bitclock-inversion;*/
++
++		assigned-clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_SRC>,
++			          <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
++		assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
++		assigned-clock-rates = <0>, <12288000>;
++
++		sound_master: simple-audio-card,cpu {
++			sound-dai = <&sai1 0>;
++			system-clock-direction = "out";
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&wm8731>;
++			system-clock-type = "mclk";
++			system-clock-frequency = <12288000>;
++			system-clock-direction = "in";
++		};
++	};
++};
++
++&clks {
++	assigned-clocks = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
++	assigned-clock-rates = <884736000>;
++};
++
++&cpu0 {
++	arm-supply = <&sw1a_reg>;
++};
++
++&ecspi1 {
++	fsl,spi-num-chipselects = <2>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_ecspi1 &pinctrl_ecspi1_cs>;
++	cs-gpios = <&gpio4 2 0>, <&gpio4 19 0>;
++	status = "okay";
++
++	/* touch controller */
++	touch:	tsc2046@0 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_tsc2046>;
++
++		compatible = "ti,tsc2046";
++		vcc-supply = <&tsc2046reg>;
++
++		reg = <0>;
++		spi-max-frequency = <1500000>;
++
++		interrupt-parent = <&gpio1>;
++		interrupts = <14 0>;
++		pendown-gpio = <&gpio1 14 0>;
++
++		ti,x-min = /bits/ 16 <0x0>;
++		ti,x-max = /bits/ 16 <0x0fff>;
++		ti,y-min = /bits/ 16 <0x0>;
++		ti,y-max = /bits/ 16 <0x0fff>;
++
++		ti,x-plate-ohms = /bits/ 16 <180>;
++		ti,pressure-max = /bits/ 16 <255>;
++
++		ti,debounce-max = /bits/ 16 <30>;
++		ti,debounce-tol = /bits/ 16 <10>;
++		ti,debounce-rep = /bits/ 16 <1>;
++
++		linux,wakeup;
++	};
++
++	m25px16@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "st,m25px16", "st,m25p";
++		spi-max-frequency = <20000000>;
++		reg = <1>;
++
++		partition@0 {
++			label = "uboot";
++			reg = <0x0 0xc0000>;
++		};
++
++		partition@c0000 {
++			label = "uboot environment";
++			reg = <0xc0000 0x40000>;
++		};
++
++		partition@100000 {
++			label = "splash";
++			reg = <0x100000 0x100000>;
++		};
++	};
++};
++
++&fec1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_enet1>;
++	pinctrl-assert-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
++	clocks = <&clks IMX7D_ENET_AXI_ROOT_CLK>,
++		<&clks IMX7D_ENET_AXI_ROOT_CLK>,
++		<&clks IMX7D_ENET1_TIME_ROOT_CLK>,
++		<&clks IMX7D_PLL_ENET_MAIN_125M_CLK>,
++		<&clks IMX7D_ENET1_REF_ROOT_CLK>;
++	clock-names = "ipg", "ahb", "ptp",
++		"enet_clk_ref", "enet_out";
++	assigned-clocks = <&clks IMX7D_ENET1_TIME_ROOT_SRC>,
++			  <&clks IMX7D_ENET1_TIME_ROOT_CLK>;
++	assigned-clock-parents = <&clks IMX7D_PLL_ENET_MAIN_100M_CLK>;
++	assigned-clock-rates = <0>, <100000000>;
++	phy-mode = "rgmii";
++	phy-handle = <&ethphy0>;
++	fsl,magic-packet;
++	status = "okay";
++
++	mdio {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		ethphy0: ethernet-phy@0 {
++			compatible = "ethernet-phy-ieee802.3-c22";
++			reg = <0>;
++		};
++	};
++};
++
++&gpmi {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_gpmi_nand>;
++	depends = "/soc/aips-bus@30800000/spba-bus@30800000/ecspi@30820000";
++	status = "disabled";
++	nand-on-flash-bbt;
++
++	/* MTD partition table */
++	partition@0 {
++		label = "kernel";
++		reg = <0x00000000 0x00980000>;
++	};
++	partition@980000 {
++		label = "dtb";
++		reg = <0x00980000 0x00080000>;
++	};
++	partition@a00000 {
++		label = "rootfs";
++		reg = <0x00a00000 0x0>;
++	};
++};
++
++&iomuxc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog>;
++
++	ucm-imx7 {
++		pinctrl_hog: hoggrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_GDRL__GPIO2_IO26			0x34 /* BT_REG_ON */
++				MX7D_PAD_SAI1_TX_SYNC__GPIO6_IO14		0x34 /* Onboard LED */
++			>;
++		};
++
++		pinctrl_gpmi_nand: gpmi-nand {
++			fsl,pins = <
++				MX7D_PAD_SD3_CLK__NAND_CLE			0x71
++				MX7D_PAD_SD3_CMD__NAND_ALE			0x71
++				MX7D_PAD_SD3_DATA0__NAND_DATA00			0x71
++				MX7D_PAD_SD3_DATA1__NAND_DATA01			0x71
++				MX7D_PAD_SD3_DATA2__NAND_DATA02			0x71
++				MX7D_PAD_SD3_DATA3__NAND_DATA03			0x71
++				MX7D_PAD_SD3_DATA4__NAND_DATA04			0x71
++				MX7D_PAD_SD3_DATA5__NAND_DATA05			0x71
++				MX7D_PAD_SD3_DATA6__NAND_DATA06			0x71
++				MX7D_PAD_SD3_DATA7__NAND_DATA07			0x71
++				MX7D_PAD_SD3_STROBE__NAND_RE_B			0x71
++				MX7D_PAD_SD3_RESET_B__NAND_WE_B			0x71
++				MX7D_PAD_SAI1_TX_BCLK__NAND_CE0_B		0x71
++				MX7D_PAD_SAI1_TX_DATA__NAND_READY_B		0x74
++				MX7D_PAD_SAI1_MCLK__NAND_WP_B			0x71
++			>;
++		};
++
++		pinctrl_ecspi1: ecspi1grp {
++			fsl,pins = <
++				MX7D_PAD_ECSPI1_MOSI__ECSPI1_MOSI		0xf
++				MX7D_PAD_ECSPI1_MISO__ECSPI1_MISO		0xf
++				MX7D_PAD_ECSPI1_SCLK__ECSPI1_SCLK		0xf
++			>;
++		};
++
++		pinctrl_ecspi1_cs: ecspi1_cs_grp {
++			fsl,pins = <
++				/* Touchscreen chipselect */
++				MX7D_PAD_UART2_RX_DATA__GPIO4_IO2		0x34
++				/* SPI flash chipselect */
++				MX7D_PAD_ECSPI1_SS0__GPIO4_IO19			0x34
++			>;
++		};
++
++		pinctrl_enet1: enet1grp {
++			fsl,pins = <
++				MX7D_PAD_SD2_CD_B__ENET1_MDIO			0x30
++				MX7D_PAD_SD2_WP__ENET1_MDC			0x30
++				MX7D_PAD_ENET1_RGMII_TXC__ENET1_RGMII_TXC	0x11
++				MX7D_PAD_ENET1_RGMII_TD0__ENET1_RGMII_TD0	0x11
++				MX7D_PAD_ENET1_RGMII_TD1__ENET1_RGMII_TD1	0x11
++				MX7D_PAD_ENET1_RGMII_TD2__ENET1_RGMII_TD2	0x11
++				MX7D_PAD_ENET1_RGMII_TD3__ENET1_RGMII_TD3	0x11
++				MX7D_PAD_ENET1_RGMII_TX_CTL__ENET1_RGMII_TX_CTL	0x11
++				MX7D_PAD_ENET1_RGMII_RXC__ENET1_RGMII_RXC	0x11
++				MX7D_PAD_ENET1_RGMII_RD0__ENET1_RGMII_RD0	0x11
++				MX7D_PAD_ENET1_RGMII_RD1__ENET1_RGMII_RD1	0x11
++				MX7D_PAD_ENET1_RGMII_RD2__ENET1_RGMII_RD2	0x11
++				MX7D_PAD_ENET1_RGMII_RD3__ENET1_RGMII_RD3	0x11
++				MX7D_PAD_ENET1_RGMII_RX_CTL__ENET1_RGMII_RX_CTL	0x11
++				MX7D_PAD_GPIO1_IO12__CCM_ENET_REF_CLK1		0x14
++			>;
++		};
++
++		pinctrl_sai1: sai1grp {
++			fsl,pins = <
++				MX7D_PAD_ENET1_RX_CLK__SAI1_TX_BCLK		0x1f
++				MX7D_PAD_ENET1_CRS__SAI1_TX_SYNC		0x1f
++				MX7D_PAD_ENET1_COL__SAI1_TX_DATA0		0x30
++				MX7D_PAD_ENET1_TX_CLK__SAI1_RX_DATA0		0x1f
++			>;
++		};
++
++		pinctrl_tsc2046: tsc2046grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO14__GPIO1_IO14			0x34 /* PENDOWN */
++			>;
++		};
++
++		pinctrl_uart1: uart1grp {
++			fsl,pins = <
++				MX7D_PAD_UART1_TX_DATA__UART1_DCE_TX		0x79
++				MX7D_PAD_UART1_RX_DATA__UART1_DCE_RX		0x79
++			>;
++		};
++
++		pinctrl_uart3: uart3grp {
++			fsl,pins = <
++				MX7D_PAD_UART3_TX_DATA__UART3_DCE_TX		0x79
++				MX7D_PAD_UART3_RX_DATA__UART3_DCE_RX		0x79
++				MX7D_PAD_UART3_CTS_B__UART3_DCE_CTS		0x79
++				MX7D_PAD_UART3_RTS_B__UART3_DCE_RTS		0x79
++			>;
++		};
++
++		pinctrl_usbh: usbhgrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_GDSP__GPIO2_IO27			0x14 /* HUB_nRST */
++			>;
++		};
++
++		pinctrl_usdhc2: usdhc2grp {
++			fsl,pins = <
++				MX7D_PAD_SD2_CMD__SD2_CMD			0x59
++				MX7D_PAD_SD2_CLK__SD2_CLK			0x19
++				MX7D_PAD_SD2_DATA0__SD2_DATA0			0x59
++				MX7D_PAD_SD2_DATA1__SD2_DATA1			0x59
++				MX7D_PAD_SD2_DATA2__SD2_DATA2			0x59
++				MX7D_PAD_SD2_DATA3__SD2_DATA3			0x59
++			>;
++		};
++
++		pinctrl_usdhc3: usdhc3grp {
++			fsl,pins = <
++				MX7D_PAD_SD3_CMD__SD3_CMD			0x59
++				MX7D_PAD_SD3_CLK__SD3_CLK			0x19
++				MX7D_PAD_SD3_DATA0__SD3_DATA0			0x59
++				MX7D_PAD_SD3_DATA1__SD3_DATA1			0x59
++				MX7D_PAD_SD3_DATA2__SD3_DATA2			0x59
++				MX7D_PAD_SD3_DATA3__SD3_DATA3			0x59
++				MX7D_PAD_SD3_DATA4__SD3_DATA4			0x59
++				MX7D_PAD_SD3_DATA5__SD3_DATA5			0x59
++				MX7D_PAD_SD3_DATA6__SD3_DATA6			0x59
++				MX7D_PAD_SD3_DATA7__SD3_DATA7			0x59
++				MX7D_PAD_SD3_STROBE__SD3_STROBE			0x19
++			>;
++		};
++
++		pinctrl_wlan: wlangrp {
++			fsl,pins = <
++				MX7D_PAD_EPDC_GDCLK__GPIO2_IO24			0x34 /* WL_HOST_WAKE */
++				MX7D_PAD_EPDC_GDOE__GPIO2_IO25			0x14 /* WL_REG_ON */
++			>;
++		};
++	};
++};
++
++&iomuxc_lpsr {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog_lpsr>;
++
++	ucm-imx7 {
++		pinctrl_hog_lpsr: hoggrp_lpsr {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO04__GPIO1_IO4			0x34 /* FEC1 Phy nReset */
++			>;
++		};
++
++		pinctrl_i2c2: i2c2grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO07__I2C2_SDA			0x4000000f
++				MX7D_PAD_GPIO1_IO06__I2C2_SCL			0x4000000f
++			>;
++		};
++
++		pinctrl_sai1_lpsr: sai1grp_lpsr {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO01__SAI1_MCLK			0x14
++			>;
++		};
++
++		pinctrl_usbotg1: usbotg1grp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO05__GPIO1_IO5			0x14 /* OTG PWREN */
++			>;
++		};
++
++		pinctrl_wdog: wdoggrp {
++			fsl,pins = <
++				MX7D_PAD_GPIO1_IO00__WDOD1_WDOG_B		0x74
++			>;
++		};
++	};
++};
++
++&i2c2 {
++	clock-frequency = <100000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c2>;
++	status = "okay";
++
++	pmic: pmic@8 {
++		compatible = "fsl,pfuze3000";
++		reg = <0x08>;
++
++		regulators {
++			sw1a_reg: sw1a {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++
++			/* use sw1c_reg to align with pfuze100/pfuze200 */
++			sw1c_reg: sw1b {
++				regulator-min-microvolt = <700000>;
++				regulator-max-microvolt = <1475000>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <6250>;
++			};
++
++			sw2_reg: sw2 {
++				regulator-min-microvolt = <1500000>;
++				regulator-max-microvolt = <1850000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			sw3a_reg: sw3 {
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <1650000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			swbst_reg: swbst {
++				regulator-min-microvolt = <5000000>;
++				regulator-max-microvolt = <5150000>;
++			};
++
++			snvs_reg: vsnvs {
++				regulator-min-microvolt = <1000000>;
++				regulator-max-microvolt = <3000000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vref_reg: vrefddr {
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			vgen1_reg: vldo1 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen2_reg: vldo2 {
++				regulator-min-microvolt = <800000>;
++				regulator-max-microvolt = <1550000>;
++				regulator-always-on;
++			};
++
++			vgen3_reg: vccsd {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen4_reg: v33 {
++				regulator-min-microvolt = <2850000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen5_reg: vldo3 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++
++			vgen6_reg: vldo4 {
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-always-on;
++			};
++		};
++	};
++
++	wm8731: wm8731@1a {
++		#sound-dai-cells = <0>;
++		compatible = "wlf,wm8731";
++		reg = <0x1a>;
++		clocks = <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
++		clock-names = "mclk";
++		status = "okay";
++	};
++
++	eeprom@50 {
++		compatible = "atmel,24c08";
++		reg = <0x50>;
++		pagesize = <16>;
++	};
++
++	rtc@69 {
++		compatible = "abracon,ab1805";
++		abracon,sqw-enable;
++		abracon,sqw-freq-sel = /bits/ 8 <1>;
++		reg = <0x69>;
++		pagesize = <16>;
++	};
++};
++
++&sai1 {
++	#sound-dai-cells = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai1 &pinctrl_sai1_lpsr>;
++	assigned-clocks = <&clks IMX7D_SAI1_ROOT_SRC>,
++			  <&clks IMX7D_SAI1_ROOT_CLK>;
++	assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
++	assigned-clock-rates = <0>, <36864000>;
++	status = "okay";
++};
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	assigned-clocks = <&clks IMX7D_UART1_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_OSC_24M_CLK>;
++	status = "okay";
++};
++
++&uart3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart3>;
++	assigned-clocks = <&clks IMX7D_UART3_ROOT_SRC>;
++	assigned-clock-parents = <&clks IMX7D_PLL_SYS_MAIN_240M_CLK>;
++	status = "okay";
++	fsl,uart-has-rtscts;
++};
++
++&usbotg1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usbotg1>;
++	vbus-supply = <&reg_usb_otg1_vbus>;
++	srp-disable;
++	hnp-disable;
++	adp-disable;
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbotg2 {
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usbh {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usbh>;
++	vbus-supply = <&reg_usbh_nreset>;
++	status = "okay";
++};
++
++&usdhc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc2 &pinctrl_wlan>;
++	bus-width = <4>;
++	non-removable;
++	wifi-host;
++	cd-post;
++	pm-ignore-notify;
++	status = "okay";
++};
++
++&usdhc3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc3>;
++	assigned-clocks = <&clks IMX7D_USDHC3_ROOT_CLK>;
++	assigned-clock-rates = <400000000>;
++	bus-width = <8>;
++	tuning-step = <2>;
++	non-removable;
++	status = "okay";
++};
++
++&wdog1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog>;
++	fsl,wdog_b;
++};
+diff --git a/arch/arm/configs/compulab_imx7_defconfig b/arch/arm/configs/compulab_imx7_defconfig
+new file mode 100644
+index 0000000..02d90d5
+--- /dev/null
++++ b/arch/arm/configs/compulab_imx7_defconfig
+@@ -0,0 +1,536 @@
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_KERNEL_LZO=y
++CONFIG_SYSVIPC=y
++CONFIG_FHANDLE=y
++CONFIG_NO_HZ=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=18
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_EXPERT=y
++CONFIG_KALLSYMS_ALL=y
++CONFIG_PERF_EVENTS=y
++# CONFIG_SLUB_DEBUG is not set
++# CONFIG_COMPAT_BRK is not set
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++CONFIG_MODVERSIONS=y
++CONFIG_MODULE_SRCVERSION_ALL=y
++# CONFIG_BLK_DEV_BSG is not set
++CONFIG_ARCH_MULTI_V6=y
++CONFIG_ARCH_MXC=y
++# CONFIG_MACH_MX31ADS is not set
++# CONFIG_MACH_BUG is not set
++CONFIG_SOC_IMX50=y
++CONFIG_SOC_IMX53=y
++CONFIG_SOC_IMX6Q=y
++CONFIG_SOC_IMX6SL=y
++CONFIG_SOC_IMX6SX=y
++CONFIG_SOC_IMX6UL=y
++CONFIG_SOC_IMX7D=y
++CONFIG_SOC_UCM_IMX7=y
++CONFIG_SOC_VF610=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_PCI_IMX6=y
++CONFIG_PCI_LAYERSCAPE=y
++CONFIG_SMP=y
++CONFIG_HAVE_ARM_ARCH_TIMER=y
++CONFIG_VMSPLIT_2G=y
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++CONFIG_HIGHMEM=y
++CONFIG_CMA=y
++CONFIG_CMDLINE="noinitrd console=ttymxc0,115200"
++CONFIG_CPU_FREQ=y
++CONFIG_CPU_FREQ_GOV_POWERSAVE=y
++CONFIG_CPU_FREQ_GOV_USERSPACE=y
++CONFIG_CPU_FREQ_GOV_ONDEMAND=y
++CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
++CONFIG_ARM_IMX6Q_CPUFREQ=y
++CONFIG_ARM_IMX7D_CPUFREQ=y
++CONFIG_CPU_IDLE=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++CONFIG_BINFMT_MISC=m
++CONFIG_PM_DEBUG=y
++CONFIG_PM_TEST_SUSPEND=y
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_XFRM_USER=m
++CONFIG_XFRM_SUB_POLICY=y
++CONFIG_XFRM_MIGRATE=y
++CONFIG_XFRM_STATISTICS=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_NET_IPIP=m
++CONFIG_NET_IPGRE_DEMUX=m
++CONFIG_NET_IPGRE=m
++CONFIG_NET_IPVTI=m
++CONFIG_NET_FOU=m
++CONFIG_GENEVE=m
++CONFIG_INET_AH=m
++CONFIG_INET_ESP=m
++CONFIG_INET_IPCOMP=m
++CONFIG_INET_XFRM_MODE_TRANSPORT=m
++CONFIG_INET_XFRM_MODE_TUNNEL=m
++CONFIG_INET_XFRM_MODE_BEET=m
++CONFIG_INET_LRO=m
++CONFIG_IPV6=y
++CONFIG_INET6_AH=m
++CONFIG_INET6_ESP=m
++CONFIG_INET6_IPCOMP=m
++CONFIG_IPV6_MIP6=m
++CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION=m
++CONFIG_IPV6_VTI=m
++CONFIG_IPV6_GRE=m
++CONFIG_NETFILTER=y
++CONFIG_NETFILTER_DEBUG=y
++CONFIG_NF_CONNTRACK=m
++# CONFIG_NF_CT_PROTO_SCTP is not set
++CONFIG_NF_CONNTRACK_FTP=m
++CONFIG_NF_CONNTRACK_TFTP=m
++CONFIG_NETFILTER_XTABLES=y
++CONFIG_NETFILTER_XT_TARGET_CHECKSUM=m
++CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
++CONFIG_NETFILTER_XT_TARGET_CONNMARK=m
++CONFIG_NETFILTER_XT_TARGET_DSCP=m
++CONFIG_NETFILTER_XT_TARGET_HMARK=m
++CONFIG_NETFILTER_XT_TARGET_IDLETIMER=m
++CONFIG_NETFILTER_XT_TARGET_LED=m
++CONFIG_NETFILTER_XT_TARGET_LOG=m
++CONFIG_NETFILTER_XT_TARGET_MARK=m
++CONFIG_NETFILTER_XT_TARGET_NFLOG=m
++CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
++CONFIG_NETFILTER_XT_TARGET_NOTRACK=m
++CONFIG_NETFILTER_XT_TARGET_TEE=m
++CONFIG_NETFILTER_XT_TARGET_TPROXY=m
++CONFIG_NETFILTER_XT_TARGET_TRACE=m
++CONFIG_NETFILTER_XT_TARGET_TCPMSS=m
++CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=m
++CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=m
++CONFIG_NETFILTER_XT_MATCH_BPF=m
++CONFIG_NETFILTER_XT_MATCH_CGROUP=m
++CONFIG_NETFILTER_XT_MATCH_CLUSTER=m
++CONFIG_NETFILTER_XT_MATCH_COMMENT=m
++CONFIG_NETFILTER_XT_MATCH_CONNBYTES=m
++CONFIG_NETFILTER_XT_MATCH_CONNLABEL=m
++CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=m
++CONFIG_NETFILTER_XT_MATCH_CONNMARK=m
++CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m
++CONFIG_NETFILTER_XT_MATCH_CPU=m
++CONFIG_NETFILTER_XT_MATCH_DCCP=m
++CONFIG_NETFILTER_XT_MATCH_DEVGROUP=m
++CONFIG_NETFILTER_XT_MATCH_DSCP=m
++CONFIG_NETFILTER_XT_MATCH_ESP=m
++CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=m
++CONFIG_NETFILTER_XT_MATCH_HELPER=m
++CONFIG_NETFILTER_XT_MATCH_IPCOMP=m
++CONFIG_NETFILTER_XT_MATCH_IPRANGE=m
++CONFIG_NETFILTER_XT_MATCH_L2TP=m
++CONFIG_NETFILTER_XT_MATCH_LENGTH=m
++CONFIG_NETFILTER_XT_MATCH_LIMIT=m
++CONFIG_NETFILTER_XT_MATCH_MAC=m
++CONFIG_NETFILTER_XT_MATCH_MARK=m
++CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
++CONFIG_NETFILTER_XT_MATCH_NFACCT=m
++CONFIG_NETFILTER_XT_MATCH_OSF=m
++CONFIG_NETFILTER_XT_MATCH_OWNER=m
++CONFIG_NETFILTER_XT_MATCH_POLICY=m
++CONFIG_NETFILTER_XT_MATCH_PHYSDEV=m
++CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
++CONFIG_NETFILTER_XT_MATCH_QUOTA=m
++CONFIG_NETFILTER_XT_MATCH_RATEEST=m
++CONFIG_NETFILTER_XT_MATCH_REALM=m
++CONFIG_NETFILTER_XT_MATCH_RECENT=m
++CONFIG_NETFILTER_XT_MATCH_SOCKET=m
++CONFIG_NETFILTER_XT_MATCH_STATE=m
++CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
++CONFIG_NETFILTER_XT_MATCH_STRING=m
++CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
++CONFIG_NETFILTER_XT_MATCH_TIME=m
++CONFIG_NETFILTER_XT_MATCH_U32=m
++CONFIG_NF_CONNTRACK_IPV4=m
++CONFIG_NF_REJECT_IPV4=y
++CONFIG_IP_NF_IPTABLES=m
++CONFIG_IP_NF_MATCH_AH=m
++CONFIG_IP_NF_MATCH_ECN=m
++CONFIG_IP_NF_MATCH_RPFILTER=m
++CONFIG_IP_NF_MATCH_TTL=m
++CONFIG_IP_NF_FILTER=m
++CONFIG_IP_NF_TARGET_REJECT=m
++CONFIG_IP_NF_NAT=m
++CONFIG_IP_NF_TARGET_MASQUERADE=m
++CONFIG_IP_NF_TARGET_NETMAP=m
++CONFIG_IP_NF_TARGET_REDIRECT=m
++CONFIG_IP_NF_MANGLE=m
++CONFIG_IP_NF_TARGET_CLUSTERIP=m
++CONFIG_IP_NF_TARGET_ECN=m
++CONFIG_IP_NF_TARGET_TTL=m
++CONFIG_IP_NF_RAW=m
++CONFIG_IP_NF_SECURITY=m
++CONFIG_IP_NF_ARPTABLES=m
++CONFIG_IP_NF_ARPFILTER=m
++CONFIG_IP_NF_ARP_MANGLE=m
++CONFIG_IP_SCTP=m
++CONFIG_BRIDGE=m
++CONFIG_BRIDGE_VLAN_FILTERING=y
++CONFIG_VLAN_8021Q=m
++CONFIG_VLAN_8021Q_GVRP=y
++CONFIG_VLAN_8021Q_MVRP=y
++CONFIG_CAN=y
++CONFIG_CAN_RAW=m
++CONFIG_CAN_BCM=m
++CONFIG_CAN_GW=m
++CONFIG_CAN_FLEXCAN=m
++CONFIG_BT=y
++CONFIG_BT_RFCOMM=m
++CONFIG_BT_RFCOMM_TTY=y
++CONFIG_BT_BNEP=y
++CONFIG_BT_BNEP_MC_FILTER=y
++CONFIG_BT_BNEP_PROTO_FILTER=y
++CONFIG_BT_HCIBTSDIO=m
++CONFIG_BT_HCIUART=m
++CONFIG_BT_HCIUART_BCM=y
++CONFIG_BT_WILINK=m
++CONFIG_CFG80211=y
++CONFIG_CFG80211_WEXT=y
++CONFIG_MAC80211=y
++CONFIG_RFKILL=y
++CONFIG_RFKILL_INPUT=y
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++# CONFIG_STANDALONE is not set
++CONFIG_DMA_CMA=y
++CONFIG_CMA_SIZE_MBYTES=320
++CONFIG_IMX_WEIM=y
++CONFIG_CONNECTOR=y
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_CFI=y
++CONFIG_MTD_JEDECPROBE=y
++CONFIG_MTD_CFI_INTELEXT=y
++CONFIG_MTD_CFI_AMDSTD=y
++CONFIG_MTD_CFI_STAA=y
++CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_MTD_DATAFLASH=y
++CONFIG_MTD_M25P80=y
++CONFIG_MTD_SST25L=y
++CONFIG_MTD_NAND=y
++CONFIG_MTD_NAND_GPMI_NAND=y
++CONFIG_MTD_NAND_MXC=y
++CONFIG_MTD_SPI_NOR=y
++CONFIG_SPI_FSL_QUADSPI=y
++CONFIG_MTD_UBI=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_BLK_DEV_RAM_SIZE=65536
++CONFIG_EEPROM_AT24=y
++CONFIG_EEPROM_AT25=y
++CONFIG_TI_ST=y
++# CONFIG_SCSI_PROC_FS is not set
++CONFIG_BLK_DEV_SD=y
++CONFIG_SCSI_CONSTANTS=y
++CONFIG_SCSI_LOGGING=y
++CONFIG_SCSI_SCAN_ASYNC=y
++# CONFIG_SCSI_LOWLEVEL is not set
++CONFIG_ATA=y
++CONFIG_SATA_AHCI_PLATFORM=y
++CONFIG_AHCI_IMX=y
++CONFIG_PATA_IMX=y
++CONFIG_MD=y
++CONFIG_MD_LINEAR=m
++CONFIG_MD_RAID0=m
++CONFIG_MD_MULTIPATH=m
++CONFIG_MD_FAULTY=m
++CONFIG_BLK_DEV_DM=m
++CONFIG_DM_MIRROR=m
++CONFIG_DM_LOG_USERSPACE=m
++CONFIG_DM_RAID=m
++CONFIG_NETDEVICES=y
++CONFIG_TUN=m
++# CONFIG_NET_VENDOR_BROADCOM is not set
++CONFIG_CS89x0=y
++CONFIG_CS89x0_PLATFORM=y
++# CONFIG_NET_VENDOR_FARADAY is not set
++CONFIG_E1000E=m
++CONFIG_IGB=m
++# CONFIG_NET_VENDOR_MARVELL is not set
++# CONFIG_NET_VENDOR_MICREL is not set
++# CONFIG_NET_VENDOR_MICROCHIP is not set
++# CONFIG_NET_VENDOR_NATSEMI is not set
++# CONFIG_NET_VENDOR_SEEQ is not set
++CONFIG_SMC91X=y
++CONFIG_SMC911X=y
++CONFIG_SMSC911X=y
++# CONFIG_NET_VENDOR_STMICRO is not set
++CONFIG_AT803X_PHY=y
++CONFIG_PPP=m
++CONFIG_PPP_BSDCOMP=m
++CONFIG_PPP_DEFLATE=m
++CONFIG_PPP_ASYNC=m
++CONFIG_PPP_SYNC_TTY=m
++CONFIG_USB_USBNET=y
++CONFIG_USB_NET_CDCETHER=m
++CONFIG_USB_NET_CDC_EEM=m
++CONFIG_USB_NET_CDC_NCM=m
++CONFIG_USB_NET_CDC_MBIM=m
++CONFIG_USB_NET_DM9601=m
++CONFIG_USB_NET_SR9700=m
++CONFIG_USB_NET_SR9800=m
++CONFIG_USB_NET_SMSC75XX=y
++CONFIG_USB_NET_SMSC95XX=y
++CONFIG_USB_NET_NET1080=m
++CONFIG_USB_NET_PLUSB=m
++CONFIG_USB_NET_MCS7830=y
++CONFIG_USB_NET_CDC_SUBSET=m
++CONFIG_USB_NET_ZAURUS=m
++CONFIG_USB_NET_QMI_WWAN=m
++CONFIG_BCMDHD=m
++CONFIG_BCMDHD_SDIO=y
++CONFIG_IWLWIFI=m
++CONFIG_IWLMVM=m
++CONFIG_WL_TI=y
++CONFIG_WL18XX=m
++CONFIG_WLCORE=y
++CONFIG_WLCORE_SDIO=y
++# CONFIG_INPUT_MOUSEDEV_PSAUX is not set
++CONFIG_INPUT_EVDEV=y
++CONFIG_INPUT_EVBUG=m
++CONFIG_KEYBOARD_GPIO=y
++CONFIG_KEYBOARD_IMX=y
++CONFIG_MOUSE_PS2=m
++CONFIG_MOUSE_PS2_ELANTECH=y
++CONFIG_INPUT_JOYSTICK=y
++CONFIG_JOYSTICK_ANALOG=m
++CONFIG_INPUT_TOUCHSCREEN=y
++CONFIG_TOUCHSCREEN_ADS7846=m
++CONFIG_TOUCHSCREEN_IMX6UL_TSC=y
++CONFIG_TOUCHSCREEN_EGALAX=y
++CONFIG_TOUCHSCREEN_MC13783=y
++CONFIG_TOUCHSCREEN_TSC2007=y
++CONFIG_TOUCHSCREEN_STMPE=y
++CONFIG_INPUT_MISC=y
++CONFIG_INPUT_MMA8450=y
++CONFIG_SERIO_SERPORT=m
++# CONFIG_LEGACY_PTYS is not set
++# CONFIG_DEVKMEM is not set
++CONFIG_SERIAL_IMX=y
++CONFIG_SERIAL_IMX_CONSOLE=y
++CONFIG_SERIAL_FSL_LPUART=y
++CONFIG_SERIAL_FSL_LPUART_CONSOLE=y
++CONFIG_IMX_SEMA4=y
++CONFIG_HW_RANDOM=y
++# CONFIG_I2C_COMPAT is not set
++CONFIG_I2C_CHARDEV=y
++# CONFIG_I2C_HELPER_AUTO is not set
++CONFIG_I2C_ALGOPCF=m
++CONFIG_I2C_ALGOPCA=m
++CONFIG_I2C_IMX=y
++CONFIG_SPI=y
++CONFIG_SPI_IMX=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_PCA953X=y
++CONFIG_POWER_SUPPLY=y
++# CONFIG_HWMON is not set
++CONFIG_THERMAL=y
++CONFIG_CPU_THERMAL=y
++CONFIG_IMX_THERMAL=y
++CONFIG_WATCHDOG=y
++CONFIG_IMX2_WDT=y
++CONFIG_MFD_DA9052_I2C=y
++CONFIG_MFD_MC13XXX_SPI=y
++CONFIG_MFD_MC13XXX_I2C=y
++CONFIG_MFD_STMPE=y
++CONFIG_REGULATOR=y
++CONFIG_REGULATOR_FIXED_VOLTAGE=y
++CONFIG_REGULATOR_ANATOP=y
++CONFIG_REGULATOR_DA9052=y
++CONFIG_REGULATOR_MC13783=y
++CONFIG_REGULATOR_MC13892=y
++CONFIG_REGULATOR_PFUZE100=y
++CONFIG_MEDIA_SUPPORT=y
++CONFIG_MEDIA_CAMERA_SUPPORT=y
++CONFIG_MEDIA_RC_SUPPORT=y
++CONFIG_MEDIA_CONTROLLER=y
++CONFIG_VIDEO_V4L2_SUBDEV_API=y
++CONFIG_RC_DEVICES=y
++CONFIG_IR_GPIO_CIR=y
++CONFIG_V4L_PLATFORM_DRIVERS=y
++CONFIG_VIDEO_MXC_OUTPUT=y
++CONFIG_VIDEO_MXC_CAPTURE=y
++CONFIG_MXC_CAMERA_OV5640_MIPI=m
++CONFIG_MXC_IPU_DEVICE_QUEUE_SDC=y
++CONFIG_VIDEO_MXC_IPU_OUTPUT=y
++CONFIG_VIDEO_MXC_PXP_V4L2=y
++CONFIG_VIDEO_MXC_CSI_CAMERA=m
++CONFIG_MXC_MIPI_CSI=y
++CONFIG_SOC_CAMERA=y
++CONFIG_VIDEO_MX3=y
++CONFIG_V4L_MEM2MEM_DRIVERS=y
++CONFIG_VIDEO_CODA=y
++CONFIG_SOC_CAMERA_OV2640=y
++CONFIG_DRM=y
++CONFIG_DRM_VIVANTE=y
++CONFIG_FB=y
++CONFIG_FB_UDL=m
++CONFIG_FB_MXS=y
++CONFIG_FB_MXC_SYNC_PANEL=y
++CONFIG_FB_MXC_MIPI_DSI_SAMSUNG=y
++CONFIG_FB_MXC_SN65DSI8X=y
++CONFIG_LCD_CLASS_DEVICE=y
++CONFIG_LCD_L4F00242T03=y
++CONFIG_LCD_PLATFORM=y
++CONFIG_BACKLIGHT_PWM=y
++CONFIG_SIL164_SIMPLE=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
++CONFIG_LOGO=y
++CONFIG_SOUND=y
++CONFIG_SND=y
++CONFIG_SND_SEQUENCER=m
++CONFIG_SND_VIRMIDI=m
++CONFIG_SND_MTPAV=m
++CONFIG_SND_SERIAL_U16550=m
++CONFIG_SND_MPU401=m
++CONFIG_SND_USB_AUDIO=m
++CONFIG_SND_SOC=y
++CONFIG_SND_IMX_SOC=y
++CONFIG_SND_SOC_EUKREA_TLV320=y
++CONFIG_SND_SOC_IMX_WM8731=y
++CONFIG_SND_SOC_IMX_WM8962=y
++CONFIG_SND_SOC_IMX_SGTL5000=y
++CONFIG_SND_SOC_IMX_SPDIF=y
++CONFIG_SND_SOC_IMX_MC13783=y
++CONFIG_USB=y
++CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_MXC=y
++CONFIG_USB_ACM=m
++CONFIG_USB_STORAGE=y
++CONFIG_USB_CHIPIDEA=y
++CONFIG_USB_CHIPIDEA_UDC=y
++CONFIG_USB_CHIPIDEA_HOST=y
++CONFIG_USB_SERIAL=m
++CONFIG_USB_SERIAL_GENERIC=y
++CONFIG_USB_SERIAL_BELKIN=m
++CONFIG_USB_SERIAL_CP210X=m
++CONFIG_USB_SERIAL_CYPRESS_M8=m
++CONFIG_USB_SERIAL_FTDI_SIO=m
++CONFIG_USB_SERIAL_MCT_U232=m
++CONFIG_USB_SERIAL_MOS7720=m
++CONFIG_USB_SERIAL_MOS7840=m
++CONFIG_USB_SERIAL_PL2303=m
++CONFIG_USB_SERIAL_OPTION=m
++CONFIG_NOP_USB_XCEIV=y
++CONFIG_USB_MXS_PHY=y
++CONFIG_USB_GADGET=y
++CONFIG_USB_CONFIGFS=m
++CONFIG_USB_CONFIGFS_ACM=y
++CONFIG_USB_CONFIGFS_OBEX=y
++CONFIG_USB_CONFIGFS_NCM=y
++CONFIG_USB_CONFIGFS_ECM=y
++CONFIG_USB_CONFIGFS_ECM_SUBSET=y
++CONFIG_USB_CONFIGFS_RNDIS=y
++CONFIG_USB_CONFIGFS_EEM=y
++CONFIG_USB_CONFIGFS_MASS_STORAGE=y
++CONFIG_USB_CONFIGFS_F_LB_SS=y
++CONFIG_USB_CONFIGFS_F_FS=y
++CONFIG_USB_ZERO=m
++CONFIG_USB_ETH=m
++CONFIG_USB_GADGETFS=m
++CONFIG_USB_MASS_STORAGE=m
++CONFIG_FSL_UTP=y
++CONFIG_USB_G_SERIAL=m
++CONFIG_MMC=y
++CONFIG_MMC_BLOCK_MINORS=16
++CONFIG_MMC_SDHCI=y
++CONFIG_MMC_SDHCI_PLTFM=y
++CONFIG_MMC_SDHCI_ESDHC_IMX=y
++CONFIG_MXC_IPU=y
++CONFIG_MXC_IPU_V3_PRE=y
++CONFIG_MXC_MIPI_CSI2=m
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++CONFIG_LEDS_GPIO=y
++CONFIG_LEDS_TRIGGERS=y
++CONFIG_LEDS_TRIGGER_TIMER=y
++CONFIG_LEDS_TRIGGER_ONESHOT=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++CONFIG_LEDS_TRIGGER_BACKLIGHT=y
++CONFIG_LEDS_TRIGGER_GPIO=y
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_INTF_DEV_UIE_EMUL=y
++CONFIG_RTC_DRV_ABX80X=y
++CONFIG_RTC_DRV_EM3027=y
++CONFIG_RTC_DRV_MC13XXX=y
++CONFIG_RTC_DRV_MXC=y
++CONFIG_DMADEVICES=y
++CONFIG_MXC_PXP_V2=y
++CONFIG_MXC_PXP_V3=y
++CONFIG_IMX_SDMA=y
++CONFIG_IMX_DMA=y
++CONFIG_MXS_DMA=y
++CONFIG_FSL_EDMA=y
++CONFIG_STAGING=y
++CONFIG_STAGING_MEDIA=y
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_PWM=y
++CONFIG_PWM_IMX=y
++CONFIG_EXT2_FS=y
++CONFIG_EXT2_FS_XATTR=y
++CONFIG_EXT2_FS_POSIX_ACL=y
++CONFIG_EXT2_FS_SECURITY=y
++CONFIG_EXT3_FS=y
++CONFIG_EXT3_FS_POSIX_ACL=y
++CONFIG_EXT3_FS_SECURITY=y
++CONFIG_EXT4_FS=y
++CONFIG_EXT4_FS_POSIX_ACL=y
++CONFIG_EXT4_FS_SECURITY=y
++CONFIG_QUOTA=y
++CONFIG_QUOTA_NETLINK_INTERFACE=y
++# CONFIG_PRINT_QUOTA_WARNING is not set
++CONFIG_AUTOFS4_FS=y
++CONFIG_FUSE_FS=y
++CONFIG_ISO9660_FS=m
++CONFIG_JOLIET=y
++CONFIG_ZISOFS=y
++CONFIG_UDF_FS=m
++CONFIG_MSDOS_FS=m
++CONFIG_VFAT_FS=y
++CONFIG_TMPFS=y
++CONFIG_TMPFS_XATTR=y
++CONFIG_CONFIGFS_FS=y
++CONFIG_JFFS2_FS=y
++CONFIG_UBIFS_FS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V3_ACL=y
++CONFIG_NFS_V4=y
++CONFIG_ROOT_NFS=y
++CONFIG_NLS_DEFAULT="cp437"
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_NLS_ISO8859_15=m
++CONFIG_NLS_UTF8=y
++CONFIG_DEBUG_FS=y
++CONFIG_MAGIC_SYSRQ=y
++# CONFIG_SCHED_DEBUG is not set
++# CONFIG_DEBUG_BUGVERBOSE is not set
++# CONFIG_FTRACE is not set
++CONFIG_SECURITY=y
++CONFIG_SECURITYFS=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++# CONFIG_CRYPTO_HW is not set
++CONFIG_CRC_CCITT=m
++CONFIG_CRC_T10DIF=y
++CONFIG_CRC7=m
++CONFIG_LIBCRC32C=m
++CONFIG_FONTS=y
++CONFIG_FONT_8x8=y
++CONFIG_FONT_8x16=y
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index dba87a4..b6e3749 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -644,6 +644,13 @@ config SOC_IMX7D
+ 	help
+ 	  This enables support for Freescale i.MX7 Dual processor.
+ 
++config SOC_UCM_IMX7
++	bool "CompuLab UCM-iMX7 board support"
++	depends on SOC_IMX7D
++
++	help
++	  This enables support for CompuLab UCM-iMX7 board.
++
+ config SOC_VF610
+ 	bool "Vybrid Family VF610 support"
+ 	select IRQ_DOMAIN_HIERARCHY
+diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
+index d973b16..776ad8a 100644
+--- a/arch/arm/mach-imx/Makefile
++++ b/arch/arm/mach-imx/Makefile
+@@ -124,6 +124,7 @@ AFLAGS_smp_wfe.o :=-Wa,-march=armv7-a
+ AFLAGS_ddr3_freq_imx7d.o :=-Wa,-march=armv7-a
+ AFLAGS_lpddr3_freq_imx.o :=-Wa,-march=armv7-a
+ obj-$(CONFIG_SOC_IMX7) += pm-imx7.o  ddr3_freq_imx7d.o smp_wfe.o lpddr3_freq_imx.o
++obj-$(CONFIG_SOC_UCM_IMX7) += mach-ucm-imx7.o
+ 
+ obj-$(CONFIG_SOC_IMX50) += mach-imx50.o
+ obj-$(CONFIG_SOC_IMX51) += mach-imx51.o
+diff --git a/arch/arm/mach-imx/clk-imx7d.c b/arch/arm/mach-imx/clk-imx7d.c
+index c3e39eb..ca04766 100644
+--- a/arch/arm/mach-imx/clk-imx7d.c
++++ b/arch/arm/mach-imx/clk-imx7d.c
+@@ -858,7 +858,7 @@ static void __init imx7d_clocks_init(struct device_node *ccm_node)
+ 	clks[IMX7D_WDOG3_ROOT_CLK] = imx_clk_gate4("wdog3_root_clk", "wdog_post_div", base + 0x49e0, 0);
+ 	clks[IMX7D_WDOG4_ROOT_CLK] = imx_clk_gate4("wdog4_root_clk", "wdog_post_div", base + 0x49f0, 0);
+ 	clks[IMX7D_CSI_MCLK_ROOT_CLK] = imx_clk_gate4("csi_mclk_root_clk", "csi_mclk_post_div", base + 0x4490, 0);
+-	clks[IMX7D_AUDIO_MCLK_ROOT_CLK] = imx_clk_gate4("audio_mclk_root_clk", "audio_mclk_post_div", base + 0x4790, 0);
++	clks[IMX7D_AUDIO_MCLK_ROOT_CLK] = imx_clk_gate2_flags("audio_mclk_root_clk", "audio_mclk_post_div", base + 0x4790, 0, CLK_SET_RATE_PARENT);
+ 	clks[IMX7D_WRCLK_ROOT_CLK] = imx_clk_gate4("wrclk_root_clk", "wrclk_post_div", base + 0x47a0, 0);
+ 	clks[IMX7D_USB_CTRL_CLK] = imx_clk_gate4("usb_ctrl_clk", "ahb_root_clk", base + 0x4680, 0);
+ 	clks[IMX7D_USB_PHY1_CLK] = imx_clk_gate4("usb_phy1_clk", "pll_usb1_main_clk", base + 0x46a0, 0);
+diff --git a/arch/arm/mach-imx/mach-ucm-imx7.c b/arch/arm/mach-imx/mach-ucm-imx7.c
+new file mode 100644
+index 0000000..f4987a8
+--- /dev/null
++++ b/arch/arm/mach-imx/mach-ucm-imx7.c
+@@ -0,0 +1,64 @@
++/*
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++#include <linux/module.h>
++#include <linux/of_platform.h>
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/mfd/syscon.h>
++#include <linux/mfd/syscon/imx7-iomuxc-gpr.h>
++#include <linux/regmap.h>
++#include "common.h"
++#include "hardware.h"
++#include <linux/string.h>
++
++static void __init ucm_imx7_enet_clk_sel(void)
++{
++	struct regmap *gpr;
++	gpr = syscon_regmap_lookup_by_compatible("fsl,imx7d-iomuxc-gpr");
++	if (!IS_ERR(gpr)) {
++		regmap_update_bits(gpr, IOMUXC_GPR1, IMX7D_GPR1_ENET1_CLK_DIR_MASK, IMX7D_GPR1_ENET1_CLK_DIR_MASK);
++	} else {
++		pr_err("failed to find fsl,imx7d-iomux-gpr regmap\n");
++	}
++}
++
++static inline void ucm_imx7_enet_init(void)
++{
++	ucm_imx7_enet_clk_sel();
++}
++
++static int ucm_imx7_init(void)
++{
++	struct device_node *np;
++	np = of_find_compatible_node(NULL, NULL, "compulab,ucm-imx7");
++	if (!np)
++		return -EINVAL;
++
++	ucm_imx7_enet_init();
++
++	return 0;
++}
++
++static void __exit ucm_imx7_exit(void)
++{
++	return;
++}
++module_init(ucm_imx7_init);
++module_exit(ucm_imx7_exit);
++
++MODULE_AUTHOR("CompuLab, Ltd.");
++MODULE_DESCRIPTION("CompuLab UCM-iMX7 machine driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:ucm-imx7");
++
+diff --git a/drivers/bluetooth/btwilink.c b/drivers/bluetooth/btwilink.c
+index 55c135b..8afec1d 100644
+--- a/drivers/bluetooth/btwilink.c
++++ b/drivers/bluetooth/btwilink.c
+@@ -30,6 +30,7 @@
+ 
+ #include <linux/ti_wilink_st.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ 
+ /* Bluetooth Driver Version */
+ #define VERSION               "1.0"
+@@ -286,6 +287,14 @@ static int ti_st_send_frame(struct hci_dev *hdev, struct sk_buff *skb)
+ 	return 0;
+ }
+ 
++static const struct of_device_id btwilink_of_match[] = {
++{
++	.compatible = "btwilink",
++	},
++	{}
++};
++MODULE_DEVICE_TABLE(of, btwilink_of_match);
++
+ static int bt_ti_probe(struct platform_device *pdev)
+ {
+ 	static struct ti_st *hst;
+@@ -349,6 +358,7 @@ static struct platform_driver btwilink_driver = {
+ 	.remove = bt_ti_remove,
+ 	.driver = {
+ 		.name = "btwilink",
++		.of_match_table = of_match_ptr(btwilink_of_match),
+ 	},
+ };
+ 
+diff --git a/drivers/media/platform/mxc/output/mxc_pxp_v4l2.c b/drivers/media/platform/mxc/output/mxc_pxp_v4l2.c
+index b3bc181..1a7e606 100644
+--- a/drivers/media/platform/mxc/output/mxc_pxp_v4l2.c
++++ b/drivers/media/platform/mxc/output/mxc_pxp_v4l2.c
+@@ -1288,6 +1288,7 @@ static int pxp_probe(struct platform_device *pdev)
+ 	memcpy(pxp->vdev, &pxp_template, sizeof(pxp_template));
+ 	pxp->vdev->v4l2_dev = v4l2_dev;
+ 	video_set_drvdata(pxp->vdev, pxp);
++	pxp->s0_fmt = &pxp_s0_formats[0];
+ 
+ 	err = video_register_device(pxp->vdev, VFL_TYPE_GRABBER, video_nr);
+ 	if (err) {
+diff --git a/drivers/media/platform/mxc/subdev/mx6s_capture.c b/drivers/media/platform/mxc/subdev/mx6s_capture.c
+index 49d4f73..24d8c7d 100644
+--- a/drivers/media/platform/mxc/subdev/mx6s_capture.c
++++ b/drivers/media/platform/mxc/subdev/mx6s_capture.c
+@@ -339,9 +339,12 @@ struct mx6s_csi_dev {
+ 	struct v4l2_async_subdev	*async_subdevs[2];
+ 
+ 	bool csi_mux_mipi;
++	const bool *rx_fifo_rst;
+ 	struct mx6s_csi_mux csi_mux;
+ };
+ 
++static const struct of_device_id mx6s_csi_dt_ids[];
++
+ static inline int csi_read(struct mx6s_csi_dev *csi, unsigned int offset)
+ {
+ 	return __raw_readl(csi->regbase + offset);
+@@ -601,6 +604,35 @@ static void csi_set_imagpara(struct mx6s_csi_dev *csi,
+ 	__raw_writel(cr3 | BIT_DMA_REFLASH_RFF, csi->regbase + CSI_CSICR3);
+ }
+ 
++static void csi_error_recovery(struct mx6s_csi_dev *csi_dev)
++{
++	u32 cr1, cr3, cr18;
++	/* software reset */
++
++	/* Disable csi  */
++	cr18 = csi_read(csi_dev, CSI_CSICR18);
++	cr18 &= ~BIT_CSI_ENABLE;
++	csi_write(csi_dev, cr18, CSI_CSICR18);
++
++	/* Clear RX FIFO */
++	cr1 = csi_read(csi_dev, CSI_CSICR1);
++	csi_write(csi_dev, cr1 & ~BIT_FCC, CSI_CSICR1);
++	cr1 = csi_read(csi_dev, CSI_CSICR1);
++	csi_write(csi_dev, cr1 | BIT_CLR_RXFIFO, CSI_CSICR1);
++
++	cr1 = csi_read(csi_dev, CSI_CSICR1);
++	csi_write(csi_dev, cr1 | BIT_FCC, CSI_CSICR1);
++
++	/* DMA reflash */
++	cr3 = csi_read(csi_dev, CSI_CSICR3);
++	cr3 |= BIT_DMA_REFLASH_RFF;
++	csi_write(csi_dev, cr3, CSI_CSICR3);
++
++	/* Ensable csi  */
++	cr18 |= BIT_CSI_ENABLE;
++	csi_write(csi_dev, cr18, CSI_CSICR18);
++}
++
+ /*
+  *  Videobuf operations
+  */
+@@ -1046,7 +1078,7 @@ static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
+ {
+ 	struct mx6s_csi_dev *csi_dev =  data;
+ 	unsigned long status;
+-	u32 cr1, cr3, cr18;
++	u32 cr3, cr18;
+ 
+ 	spin_lock(&csi_dev->slock);
+ 
+@@ -1062,36 +1094,16 @@ static irqreturn_t mx6s_csi_irq_handler(int irq, void *data)
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-	if (status & BIT_RFF_OR_INT)
++	if (status & BIT_RFF_OR_INT) {
+ 		dev_warn(csi_dev->dev, "%s Rx fifo overflow\n", __func__);
++		if (*csi_dev->rx_fifo_rst)
++			csi_error_recovery(csi_dev);
++	}
+ 
+ 	if (status & BIT_HRESP_ERR_INT) {
+-		/* software reset */
+-
+-		/* Disable csi  */
+-		cr18 = csi_read(csi_dev, CSI_CSICR18);
+-		cr18 &= ~BIT_CSI_ENABLE;
+-		csi_write(csi_dev, cr18, CSI_CSICR18);
+-
+-		/* Clear RX FIFO */
+-		cr1 = csi_read(csi_dev, CSI_CSICR1);
+-		csi_write(csi_dev, cr1 & ~BIT_FCC, CSI_CSICR1);
+-		cr1 = csi_read(csi_dev, CSI_CSICR1);
+-		csi_write(csi_dev, cr1 | BIT_CLR_RXFIFO, CSI_CSICR1);
+-
+-		cr1 = csi_read(csi_dev, CSI_CSICR1);
+-		csi_write(csi_dev, cr1 | BIT_FCC, CSI_CSICR1);
+-
+-		/* DMA reflash */
+-		cr3 = csi_read(csi_dev, CSI_CSICR3);
+-		cr3 |= BIT_DMA_REFLASH_RFF;
+-		csi_write(csi_dev, cr3, CSI_CSICR3);
+-
+-		/* Ensable csi  */
+-		cr18 |= BIT_CSI_ENABLE;
+-		csi_write(csi_dev, cr18, CSI_CSICR18);
+-
+-		pr_warning("Hresponse error is detected.\n");
++		dev_warn(csi_dev->dev, "%s Hresponse error detected\n",
++			__func__);
++		csi_error_recovery(csi_dev);
+ 	}
+ 
+ 	if (status & BIT_ADDR_CH_ERR_INT) {
+@@ -1777,6 +1789,7 @@ static int mx6sx_register_subdevs(struct mx6s_csi_dev *csi_dev)
+ static int mx6s_csi_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	const struct of_device_id *of_id;
+ 	struct mx6s_csi_dev *csi_dev;
+ 	struct video_device *vdev;
+ 	struct resource *res;
+@@ -1831,6 +1844,11 @@ static int mx6s_csi_probe(struct platform_device *pdev)
+ 
+ 	mx6s_csi_mux_sel(csi_dev);
+ 
++	of_id = of_match_node(mx6s_csi_dt_ids, csi_dev->dev->of_node);
++	if (!of_id)
++		return -EINVAL;
++	csi_dev->rx_fifo_rst = of_id->data;
++
+ 	snprintf(csi_dev->v4l2_dev.name,
+ 		 sizeof(csi_dev->v4l2_dev.name), "CSI");
+ 
+@@ -1929,8 +1947,16 @@ static const struct dev_pm_ops mx6s_csi_pm_ops = {
+ 	SET_RUNTIME_PM_OPS(mx6s_csi_runtime_suspend, mx6s_csi_runtime_resume, NULL)
+ };
+ 
++static const u8 mx6s_fifo_rst = true;
++static const u8 mx6sl_fifo_rst = false;
++
+ static const struct of_device_id mx6s_csi_dt_ids[] = {
+-	{ .compatible = "fsl,imx6s-csi", },
++	{ .compatible = "fsl,imx6s-csi",
++	  .data = &mx6s_fifo_rst,
++	},
++	{ .compatible = "fsl,imx6sl-csi",
++	  .data = &mx6sl_fifo_rst,
++	},
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, mx6s_csi_dt_ids);
+diff --git a/drivers/media/platform/mxc/subdev/ov5640_mipi.c b/drivers/media/platform/mxc/subdev/ov5640_mipi.c
+index 739a24c..2627892 100644
+--- a/drivers/media/platform/mxc/subdev/ov5640_mipi.c
++++ b/drivers/media/platform/mxc/subdev/ov5640_mipi.c
+@@ -420,19 +420,41 @@ static const struct ov5640_datafmt
+ 	return NULL;
+ }
+ 
+-static inline void ov5640_power_down(int enable)
++static void ov5640_standby(int enable)
+ {
+-	if (pwn_gpio < 0)
+-		return;
++	gpio_set_value(pwn_gpio, enable);
++	msleep(2);
++}
+ 
+-	if (!enable)
+-		gpio_set_value_cansleep(pwn_gpio, 0);
+-	else
+-		gpio_set_value_cansleep(pwn_gpio, 1);
++#ifdef CONFIG_VIDEO_ADV_DEBUG
++static int ov5640_get_register(struct v4l2_subdev *sd,
++					struct v4l2_dbg_register *reg)
++{
++	int ret;
++	u8 val;
+ 
+-	msleep(2);
++	if (reg->reg & ~0xffff)
++		return -EINVAL;
++
++	reg->size = 1;
++
++	ret = ov5640_read_reg(reg->reg, &val);
++	if (!ret)
++		reg->val = (__u64)val;
++
++	return ret;
+ }
+ 
++static int ov5640_set_register(struct v4l2_subdev *sd,
++					const struct v4l2_dbg_register *reg)
++{
++	if (reg->reg & ~0xffff || reg->val & ~0xff)
++		return -EINVAL;
++
++	return ov5640_write_reg(reg->reg, reg->val);
++}
++#endif
++
+ static void ov5640_reset(void)
+ {
+ 	if (rst_gpio < 0 || pwn_gpio < 0)
+@@ -449,12 +471,13 @@ static void ov5640_reset(void)
+ 	msleep(5);
+ 
+ 	gpio_set_value(rst_gpio, 0);
+-	msleep(1);
++	msleep(10);
+ 
+ 	gpio_set_value(rst_gpio, 1);
+ 	msleep(5);
+ 
+ 	gpio_set_value(pwn_gpio, 1);
++	msleep(5);
+ }
+ 
+ static int ov5640_regulator_enable(struct device *dev)
+@@ -1142,6 +1165,8 @@ static int ov5640_s_power(struct v4l2_subdev *sd, int on)
+ 		if (analog_regulator)
+ 			if (regulator_enable(analog_regulator) != 0)
+ 				return -EIO;
++		/* Make sure power on */
++		ov5640_standby(0);
+ 	} else if (!on && sensor->on) {
+ 		if (analog_regulator)
+ 			regulator_disable(analog_regulator);
+@@ -1151,6 +1176,8 @@ static int ov5640_s_power(struct v4l2_subdev *sd, int on)
+ 			regulator_disable(io_regulator);
+ 		if (gpo_regulator)
+ 			regulator_disable(gpo_regulator);
++
++		ov5640_standby(1);
+ 	}
+ 
+ 	sensor->on = on;
+@@ -1221,6 +1248,9 @@ static int ov5640_s_parm(struct v4l2_subdev *sd, struct v4l2_streamparm *a)
+ 	enum ov5640_mode orig_mode;
+ 	int ret = 0;
+ 
++	/* Make sure power on */
++	ov5640_standby(0);
++
+ 	switch (a->type) {
+ 	/* This is the only case currently handled. */
+ 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+@@ -1574,7 +1604,7 @@ static int ov5640_probe(struct i2c_client *client,
+ 
+ 	ov5640_data.io_init = ov5640_reset;
+ 	ov5640_data.i2c_client = client;
+-	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_YUYV;
++	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;
+ 	ov5640_data.pix.width = 640;
+ 	ov5640_data.pix.height = 480;
+ 	ov5640_data.streamcap.capability = V4L2_MODE_HIGHQUALITY |
+@@ -1587,27 +1617,28 @@ static int ov5640_probe(struct i2c_client *client,
+ 
+ 	ov5640_reset();
+ 
+-	ov5640_power_down(0);
++	ov5640_standby(0);
+ 
+ 	retval = ov5640_read_reg(OV5640_CHIP_ID_HIGH_BYTE, &chip_id_high);
+ 	if (retval < 0 || chip_id_high != 0x56) {
+ 		pr_warning("camera ov5640_mipi is not found\n");
+ 		clk_disable_unprepare(ov5640_data.sensor_clk);
+-		return -ENODEV;
++		retval = -ENODEV;
++		goto exit;
+ 	}
+ 	retval = ov5640_read_reg(OV5640_CHIP_ID_LOW_BYTE, &chip_id_low);
+ 	if (retval < 0 || chip_id_low != 0x40) {
+ 		pr_warning("camera ov5640_mipi is not found\n");
+ 		clk_disable_unprepare(ov5640_data.sensor_clk);
+-		return -ENODEV;
++		retval = -ENODEV;
++		goto exit;
+ 	}
+ 
+ 	retval = init_device();
+ 	if (retval < 0) {
+ 		clk_disable_unprepare(ov5640_data.sensor_clk);
+ 		pr_warning("camera ov5640 init failed\n");
+-		ov5640_power_down(1);
+-		return retval;
++		goto exit;
+ 	}
+ 
+ 	v4l2_i2c_subdev_init(&ov5640_data.subdev, client, &ov5640_subdev_ops);
+@@ -1616,10 +1647,13 @@ static int ov5640_probe(struct i2c_client *client,
+ 	retval = v4l2_async_register_subdev(&ov5640_data.subdev);
+ 	if (retval < 0)
+ 		dev_err(&client->dev,
+-					"%s--Async register failed, ret=%d\n", __func__, retval);
++			"%s--Async register failed, ret=%d\n", __func__, retval);
+ 
+ 	OV5640_stream_off();
+ 	pr_info("camera ov5640_mipi is found\n");
++	retval = 0;
++exit:
++	ov5640_standby(1);
+ 	return retval;
+ }
+ 
+@@ -1637,7 +1671,7 @@ static int ov5640_remove(struct i2c_client *client)
+ 
+ 	clk_disable_unprepare(ov5640_data.sensor_clk);
+ 
+-	ov5640_power_down(1);
++	ov5640_standby(1);
+ 
+ 	if (gpo_regulator)
+ 		regulator_disable(gpo_regulator);
+diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
+index f34dcc5..f2df2c7 100644
+--- a/drivers/misc/ti-st/Kconfig
++++ b/drivers/misc/ti-st/Kconfig
+@@ -14,4 +14,12 @@ config TI_ST
+ 	  are returned to relevant protocol drivers based on their
+ 	  packet types.
+ 
++config ST_HCI
++	tristate "HCI TTY emulation driver for Bluetooth"
++	depends on TI_ST
++	help
++	  This enables the TTY device like emulation for HCI used by
++	  user-space Bluetooth stacks.
++	  It will provide a character device for user space Bluetooth stack to
++	  send/receive data over shared transport.
+ endmenu
+diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
+index 78d7ebb..4546219 100644
+--- a/drivers/misc/ti-st/Makefile
++++ b/drivers/misc/ti-st/Makefile
+@@ -4,3 +4,4 @@
+ #
+ obj-$(CONFIG_TI_ST) 		+= st_drv.o
+ st_drv-objs			:= st_core.o st_kim.o st_ll.o
++obj-$(CONFIG_ST_HCI)		+= tty_hci.o
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 18e7a03..1802b1b 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -38,6 +38,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
++#include <linux/of_gpio.h>
+ 
+ #define MAX_ST_DEVICES	3	/* Imagine 1 on each UART for now */
+ static struct platform_device *st_kim_devices[MAX_ST_DEVICES];
+@@ -482,9 +483,15 @@ long st_kim_start(void *kim_data)
+ 			pdata->chip_enable(kim_gdata);
+ 
+ 		/* Configure BT nShutdown to HIGH state */
+-		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
++		if (gpio_cansleep(kim_gdata->nshutdown))
++			gpio_set_value_cansleep(kim_gdata->nshutdown, GPIO_LOW);
++		else
++			gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
+ 		mdelay(5);	/* FIXME: a proper toggle */
+-		gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
++		if (gpio_cansleep(kim_gdata->nshutdown))
++			gpio_set_value_cansleep(kim_gdata->nshutdown, GPIO_HIGH);
++		else
++			gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
+ 		mdelay(100);
+ 		/* re-initialize the completion */
+ 		reinit_completion(&kim_gdata->ldisc_installed);
+@@ -566,11 +573,20 @@ long st_kim_stop(void *kim_data)
+ 	}
+ 
+ 	/* By default configure BT nShutdown to LOW state */
+-	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
++	if (gpio_cansleep(kim_gdata->nshutdown))
++		gpio_set_value_cansleep(kim_gdata->nshutdown, GPIO_LOW);
++	else
++		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
+ 	mdelay(1);
+-	gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
++	if (gpio_cansleep(kim_gdata->nshutdown))
++		gpio_set_value_cansleep(kim_gdata->nshutdown, GPIO_HIGH);
++	else
++		gpio_set_value(kim_gdata->nshutdown, GPIO_HIGH);
+ 	mdelay(1);
+-	gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
++	if (gpio_cansleep(kim_gdata->nshutdown))
++		gpio_set_value_cansleep(kim_gdata->nshutdown, GPIO_LOW);
++	else
++		gpio_set_value(kim_gdata->nshutdown, GPIO_LOW);
+ 
+ 	/* platform specific disable */
+ 	if (pdata->chip_disable)
+@@ -621,8 +637,8 @@ static ssize_t store_baud_rate(struct device *dev,
+ {
+ 	struct kim_data_s *kim_data = dev_get_drvdata(dev);
+ 	pr_debug("storing baud rate >%s<", buf);
+-	sscanf(buf, "%ld", &kim_data->baud_rate);
+-	pr_debug("stored baud rate >%ld<", kim_data->baud_rate);
++	sscanf(buf, "%ud", &kim_data->baud_rate);
++	pr_debug("stored baud rate >%ud<", kim_data->baud_rate);
+ 	return count;
+ }
+ #endif	/* if DEBUG */
+@@ -759,8 +775,7 @@ static struct ti_st_plat_data *get_platform_data(struct device *dev)
+ 	dt_property = of_get_property(np, "dev_name", &len);
+ 	if (dt_property)
+ 		memcpy(&dt_pdata->dev_name, dt_property, len);
+-	of_property_read_u32(np, "nshutdown_gpio",
+-			     &dt_pdata->nshutdown_gpio);
++	dt_pdata->nshutdown_gpio = of_get_named_gpio(np, "nshutdown_gpio", 0);
+ 	of_property_read_u32(np, "flow_cntrl", &dt_pdata->flow_cntrl);
+ 	of_property_read_u32(np, "baud_rate", &dt_pdata->baud_rate);
+ 
+diff --git a/drivers/misc/ti-st/tty_hci.c b/drivers/misc/ti-st/tty_hci.c
+new file mode 100644
+index 0000000..5b27b04
+--- /dev/null
++++ b/drivers/misc/ti-st/tty_hci.c
+@@ -0,0 +1,542 @@
++/*
++ *  TTY emulation for user-space Bluetooth stacks over HCI-H4
++ *  Copyright (C) 2011-2012 Texas Instruments
++ *  Author: Pavan Savoy <pavan_savoy@ti.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ */
++
++/** define one of the following for debugging
++#define DEBUG
++#define VERBOSE
++*/
++
++#define pr_fmt(fmt) "(hci_tty): " fmt
++#include <linux/module.h>
++#include <linux/cdev.h>
++#include <linux/fs.h>
++#include <linux/device.h>
++
++#include <linux/uaccess.h>
++#include <linux/tty.h>
++#include <linux/sched.h>
++
++#include <linux/delay.h>
++#include <linux/firmware.h>
++#include <linux/platform_device.h>
++#include <linux/poll.h>
++#include <linux/skbuff.h>
++#include <linux/interrupt.h>
++
++#include <linux/ti_wilink_st.h>
++
++/* Number of seconds to wait for registration completion
++ * when ST returns PENDING status.
++ */
++#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
++
++/**
++ * struct ti_st - driver operation structure
++ * @hdev: hci device pointer which binds to bt driver
++ * @reg_status: ST registration callback status
++ * @st_write: write function provided by the ST driver
++ *	to be used by the driver during send_frame.
++ * @wait_reg_completion - completion sync between ti_st_open
++ *	and st_reg_completion_cb.
++ */
++struct ti_st {
++	struct hci_dev *hdev;
++	char reg_status;
++	long (*st_write)(struct sk_buff *);
++	struct completion wait_reg_completion;
++	wait_queue_head_t data_q;
++	struct sk_buff_head rx_list;
++};
++
++#define DEVICE_NAME     "hci_tty"
++
++/***********Functions called from ST driver**********************************/
++/* Called by Shared Transport layer when receive data is
++ * available */
++static long st_receive(void *priv_data, struct sk_buff *skb)
++{
++	struct ti_st	*hst = (void *)priv_data;
++
++	pr_debug("@ %s", __func__);
++#ifdef VERBOSE
++	print_hex_dump(KERN_INFO, ">rx>", DUMP_PREFIX_NONE,
++		       16, 1, skb->data, skb->len, 0);
++#endif
++	skb_queue_tail(&hst->rx_list, skb);
++	wake_up_interruptible(&hst->data_q);
++	return 0;
++}
++
++/* Called by ST layer to indicate protocol registration completion
++ * status.ti_st_open() function will wait for signal from this
++ * API when st_register() function returns ST_PENDING.
++ */
++static void st_reg_completion_cb(void *priv_data, char data)
++{
++	struct ti_st	*lhst = (void *)priv_data;
++
++	pr_info("@ %s\n", __func__);
++	/* Save registration status for use in ti_st_open() */
++	lhst->reg_status = data;
++	/* complete the wait in ti_st_open() */
++	complete(&lhst->wait_reg_completion);
++}
++
++/* protocol structure registered with shared transport */
++#define MAX_BT_CHNL_IDS 3
++static struct st_proto_s ti_st_proto[MAX_BT_CHNL_IDS] = {
++	{
++		.chnl_id = 0x04, /* HCI Events */
++		.hdr_len = 2,
++		.offset_len_in_hdr = 1,
++		.len_size = 1, /* sizeof(plen) in struct hci_event_hdr */
++		.reserve = 8,
++	},
++	{
++		.chnl_id = 0x02, /* ACL */
++		.hdr_len = 4,
++		.offset_len_in_hdr = 2,
++		.len_size = 2,	/* sizeof(dlen) in struct hci_acl_hdr */
++		.reserve = 8,
++	},
++	{
++		.chnl_id = 0x03, /* SCO */
++		.hdr_len = 3,
++		.offset_len_in_hdr = 2,
++		.len_size = 1, /* sizeof(dlen) in struct hci_sco_hdr */
++		.reserve = 8,
++	},
++};
++/** hci_tty_open Function
++ *  This function will perform an register on ST driver.
++ *
++ *  Parameters :
++ *  @file  : File pointer for BT char driver
++ *  @inod  :
++ *  Returns  0 -  on success
++ *           else suitable error code
++ */
++int hci_tty_open(struct inode *inod, struct file *file)
++{
++	int i = 0, err = 0;
++	unsigned long timeleft;
++	struct ti_st *hst;
++
++	pr_info("inside %s (%p, %p)\n", __func__, inod, file);
++
++	hst = kzalloc(sizeof(*hst), GFP_KERNEL);
++	file->private_data = hst;
++	hst = file->private_data;
++
++	for (i = 0; i < MAX_BT_CHNL_IDS; i++) {
++		ti_st_proto[i].priv_data = hst;
++		ti_st_proto[i].max_frame_size = 1026;
++		ti_st_proto[i].recv = st_receive;
++		ti_st_proto[i].reg_complete_cb = st_reg_completion_cb;
++
++		/* Prepare wait-for-completion handler */
++		init_completion(&hst->wait_reg_completion);
++		/* Reset ST registration callback status flag,
++		 * this value will be updated in
++		 * st_reg_completion_cb()
++		 * function whenever it called from ST driver.
++		 */
++		hst->reg_status = -EINPROGRESS;
++
++		err = st_register(&ti_st_proto[i]);
++		if (!err)
++			goto done;
++
++		if (err != -EINPROGRESS) {
++			pr_err("st_register failed %d", err);
++			goto error;
++		}
++
++		/* ST is busy with either protocol
++		 * registration or firmware download.
++		 */
++		pr_debug("waiting for registration completion signal from ST");
++		timeleft = wait_for_completion_timeout
++			(&hst->wait_reg_completion,
++			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
++		if (!timeleft) {
++			pr_err("Timeout(%d sec),didn't get reg completion signal from ST",
++			       BT_REGISTER_TIMEOUT / 1000);
++			err = -ETIMEDOUT;
++			goto error;
++		}
++
++		/* Is ST registration callback
++		 * called with ERROR status? */
++		if (hst->reg_status != 0) {
++			pr_err("ST registration completed with invalid status %d",
++			       hst->reg_status);
++			err = -EAGAIN;
++			goto error;
++		}
++
++done:
++		hst->st_write = ti_st_proto[i].write;
++		if (!hst->st_write) {
++			pr_err("undefined ST write function");
++			for (i = 0; i < MAX_BT_CHNL_IDS; i++) {
++				/* Undo registration with ST */
++				err = st_unregister(&ti_st_proto[i]);
++				if (err)
++					pr_err("st_unregister() failed with error %d",
++					       err);
++				hst->st_write = NULL;
++			}
++			return -EIO;
++		}
++	}
++
++	skb_queue_head_init(&hst->rx_list);
++	init_waitqueue_head(&hst->data_q);
++
++	return 0;
++
++error:
++	kfree(hst);
++	return err;
++}
++
++/** hci_tty_release Function
++ *  This function will un-registers from the ST driver.
++ *
++ *  Parameters :
++ *  @file  : File pointer for BT char driver
++ *  @inod  :
++ *  Returns  0 -  on success
++ *           else suitable error code
++ */
++int hci_tty_release(struct inode *inod, struct file *file)
++{
++	int err, i;
++	struct ti_st *hst = file->private_data;
++
++	pr_info("inside %s (%p, %p)\n", __func__, inod, file);
++
++	for (i = 0; i < MAX_BT_CHNL_IDS; i++) {
++		err = st_unregister(&ti_st_proto[i]);
++		if (err)
++			pr_err("st_unregister(%d) failed with error %d",
++			       ti_st_proto[i].chnl_id, err);
++	}
++
++	hst->st_write = NULL;
++	skb_queue_purge(&hst->rx_list);
++	kfree(hst);
++	return err;
++}
++
++/** hci_tty_read Function
++ *
++ *  Parameters :
++ *  @file  : File pointer for BT char driver
++ *  @data  : Data which needs to be passed to APP
++ *  @size  : Length of the data passesd
++ *  offset :
++ *  Returns  Size of packet received -  on success
++ *           else suitable error code
++ */
++ssize_t hci_tty_read(struct file *file, char __user *data, size_t size,
++		loff_t *offset)
++{
++	int len = 0, tout;
++	struct sk_buff *skb = NULL, *rskb = NULL;
++	struct ti_st	*hst;
++
++	pr_debug("inside %s (%p, %p, %u, %p)\n",
++		 __func__, file, data, size, offset);
++
++	/* Validate input parameters */
++	if ((NULL == file) || (((NULL == data) || (0 == size)))) {
++		pr_err("Invalid input params passed to %s", __func__);
++		return -EINVAL;
++	}
++
++	hst = file->private_data;
++
++	/* cannot come here if poll-ed before reading
++	 * if not poll-ed wait on the same wait_q
++	 */
++	tout = wait_event_interruptible_timeout(hst->data_q,
++			!skb_queue_empty(&hst->rx_list),
++				msecs_to_jiffies(1000));
++	/* Check for timed out condition */
++	if (0 == tout) {
++		pr_err("Device Read timed out\n");
++		return -ETIMEDOUT;
++	}
++
++	/* hst->rx_list not empty skb already present */
++	skb = skb_dequeue(&hst->rx_list);
++	if (!skb) {
++		pr_err("dequed skb is null?\n");
++		return -EIO;
++	}
++
++#ifdef VERBOSE
++	print_hex_dump(KERN_INFO, ">in>", DUMP_PREFIX_NONE,
++		       16, 1, skb->data, skb->len, 0);
++#endif
++
++	/* Forward the data to the user */
++	if (skb->len >= size) {
++		pr_err("FIONREAD not done before read\n");
++		return -ENOMEM;
++	} else {
++		/* returning skb */
++		rskb = alloc_skb(size, GFP_KERNEL);
++		if (!rskb) {
++			pr_err("alloc_skb error\n");
++			return -ENOMEM;
++		}
++
++		/* cb[0] has the pkt_type 0x04 or 0x02 or 0x03 */
++		memcpy(skb_put(rskb, 1), &skb->cb[0], 1);
++		memcpy(skb_put(rskb, skb->len), skb->data, skb->len);
++
++		if (copy_to_user(data, rskb->data, rskb->len)) {
++			pr_err("unable to copy to user space\n");
++			/* Queue the skb back to head */
++			skb_queue_head(&hst->rx_list, skb);
++			kfree_skb(rskb);
++			return -EIO;
++		}
++	}
++
++	len = rskb->len;	/* len of returning skb */
++	kfree_skb(skb);
++	kfree_skb(rskb);
++	pr_debug("total size read= %d\n", len);
++	return len;
++}
++
++/* hci_tty_write Function
++ *
++ *  Parameters :
++ *  @file   : File pointer for BT char driver
++ *  @data   : packet data from BT application
++ *  @size   : Size of the packet data
++ *  @offset :
++ *  Returns  Size of packet on success
++ *           else suitable error code
++ */
++ssize_t hci_tty_write(struct file *file, const char __user *data,
++		size_t size, loff_t *offset)
++{
++	struct ti_st *hst = file->private_data;
++	struct	sk_buff *skb;
++
++	pr_debug("inside %s (%p, %p, %u, %p)\n",
++		 __func__, file, data, size, offset);
++
++	if (!hst->st_write) {
++		pr_err(" Can't write to ST, hhci_tty->st_write null ?");
++		return -EINVAL;
++	}
++
++	skb = alloc_skb(size, GFP_KERNEL);
++	/* Validate Created SKB */
++	if (NULL == skb) {
++		pr_err("Error aaloacting SKB");
++		return -ENOMEM;
++	}
++
++	/* Forward the data from the user space to ST core */
++	if (copy_from_user(skb_put(skb, size), data, size)) {
++		pr_err(" Unable to copy from user space");
++		kfree_skb(skb);
++		return -EIO;
++	}
++
++#ifdef VERBOSE
++	pr_debug("start data..");
++	print_hex_dump(KERN_INFO, "<out<", DUMP_PREFIX_NONE,
++		       16, 1, skb->data, size, 0);
++	pr_debug("\n..end data");
++#endif
++
++	hst->st_write(skb);
++	return size;
++}
++
++/** hci_tty_ioctl Function
++ *  This will peform the functions as directed by the command and command
++ *  argument.
++ *
++ *  Parameters :
++ *  @file  : File pointer for BT char driver
++ *  @cmd   : IOCTL Command
++ *  @arg   : Command argument for IOCTL command
++ *  Returns  0 on success
++ *           else suitable error code
++ */
++static long hci_tty_ioctl(struct file *file,
++		unsigned int cmd, unsigned long arg)
++{
++	struct sk_buff *skb = NULL;
++	int		retcode = 0;
++	struct ti_st	*hst;
++
++	pr_debug("inside %s (%p, %u, %lx)", __func__, file, cmd, arg);
++
++	/* Validate input parameters */
++	if ((NULL == file) || (0 == cmd)) {
++		pr_err("invalid input parameters passed to %s", __func__);
++		return -EINVAL;
++	}
++
++	hst = file->private_data;
++
++	switch (cmd) {
++	case FIONREAD:
++		/* Deque the SKB from the head if rx_list is not empty
++		 * update the argument with skb->len to provide amount of data
++		 * available in the available SKB +1 for the PKT_TYPE
++		 * field not provided in data by TI-ST.
++		 */
++		skb = skb_dequeue(&hst->rx_list);
++		if (skb != NULL) {
++			*(unsigned int *)arg = skb->len + 1;
++			/* Re-Store the SKB for furtur Read operations */
++			skb_queue_head(&hst->rx_list, skb);
++		} else {
++			*(unsigned int *)arg = 0;
++		}
++		pr_debug("returning %d\n", *(unsigned int *)arg);
++		break;
++	default:
++		pr_debug("Un-Identified IOCTL %d", cmd);
++		retcode = 0;
++		break;
++	}
++
++	return retcode;
++}
++
++/** hci_tty_poll Function
++ *  This function will wait till some data is received to the hci_tty driver from ST
++ *
++ *  Parameters :
++ *  @file  : File pointer for BT char driver
++ *  @wait  : POLL wait information
++ *  Returns  status of POLL on success
++ *           else suitable error code
++ */
++static unsigned int hci_tty_poll(struct file *file, poll_table *wait)
++{
++	struct ti_st	*hst = file->private_data;
++	unsigned long mask = 0;
++
++	pr_debug("@ %s\n", __func__);
++
++	/* wait to be completed by st_receive */
++	poll_wait(file, &hst->data_q, wait);
++	pr_debug("poll broke\n");
++
++	if (!skb_queue_empty(&hst->rx_list)) {
++		pr_debug("rx list que !empty\n");
++		mask |= POLLIN;	/* TODO: check app for mask */
++	}
++
++	return mask;
++}
++
++/* BT Char driver function pointers
++ * These functions are called from USER space by pefroming File Operations
++ * on /dev/hci_tty node exposed by this driver during init
++ */
++const struct file_operations hci_tty_chrdev_ops = {
++	.owner = THIS_MODULE,
++	.open = hci_tty_open,
++	.read = hci_tty_read,
++	.write = hci_tty_write,
++	.unlocked_ioctl = hci_tty_ioctl,
++	.poll = hci_tty_poll,
++	.release = hci_tty_release,
++};
++
++/*********Functions called during insmod and delmod****************************/
++
++static int hci_tty_major;		/* major number */
++static struct class *hci_tty_class;	/* class during class_create */
++static struct device *hci_tty_dev;	/* dev during device_create */
++/** hci_tty_init Function
++ *  This function Initializes the hci_tty driver parametes and exposes
++ *  /dev/hci_tty node to user space
++ *
++ *  Parameters : NULL
++ *  Returns  0 on success
++ *           else suitable error code
++ */
++static int __init hci_tty_init(void)
++{
++	pr_info("inside %s\n", __func__);
++
++	/* Expose the device DEVICE_NAME to user space
++	 * And obtain the major number for the device
++	 */
++	hci_tty_major = register_chrdev(0, DEVICE_NAME, &hci_tty_chrdev_ops);
++
++	if (0 > hci_tty_major) {
++		pr_err("Error when registering to char dev");
++		return hci_tty_major;
++	}
++
++	/*  udev */
++	hci_tty_class = class_create(THIS_MODULE, DEVICE_NAME);
++	if (IS_ERR(hci_tty_class)) {
++		pr_err("Something went wrong in class_create");
++		unregister_chrdev(hci_tty_major, DEVICE_NAME);
++		return -1;
++	}
++
++	hci_tty_dev =
++		device_create(hci_tty_class, NULL, MKDEV(hci_tty_major, 0),
++			      NULL, DEVICE_NAME);
++	if (IS_ERR(hci_tty_dev)) {
++		pr_err("Error in device create");
++		unregister_chrdev(hci_tty_major, DEVICE_NAME);
++		class_destroy(hci_tty_class);
++		return -1;
++	}
++	pr_info("allocated %d, %d\n", hci_tty_major, 0);
++	return 0;
++}
++
++/** hci_tty_exit Function
++ *  This function Destroys the hci_tty driver parametes and /dev/hci_tty node
++ *
++ *  Parameters : NULL
++ *  Returns   NULL
++ */
++static void __exit hci_tty_exit(void)
++{
++	pr_info("inside %s\n", __func__);
++	pr_info("bye.. freeing up %d\n", hci_tty_major);
++
++	device_destroy(hci_tty_class, MKDEV(hci_tty_major, 0));
++	class_destroy(hci_tty_class);
++	unregister_chrdev(hci_tty_major, DEVICE_NAME);
++}
++
++module_init(hci_tty_init);
++module_exit(hci_tty_exit);
++
++MODULE_AUTHOR("Pavan Savoy <pavan_savoy@ti.com>");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/net/wireless/bcmdhd/Makefile b/drivers/net/wireless/bcmdhd/Makefile
+index c3fea8d..e15f5cc 100644
+--- a/drivers/net/wireless/bcmdhd/Makefile
++++ b/drivers/net/wireless/bcmdhd/Makefile
+@@ -20,8 +20,6 @@ DHDCFLAGS += -DWL_CFG80211
+ # Print out kernel panic point of file and line info when assertion happened
+ DHDCFLAGS += -DBCMASSERT_LOG
+ 
+-DHDCFLAGS += -DENABLE_INSMOD_NO_FW_LOAD
+-
+ # keepalive
+ DHDCFLAGS += -DCUSTOM_KEEP_ALIVE_SETTING=28000
+ 
+@@ -96,7 +94,7 @@ DHDCFLAGS += -DWL_IFACE_COMB_NUM_CHANNELS
+ # m: module type driver
+ # y: built-in type driver
+ ##########################
+-DRIVER_TYPE ?= y
++DRIVER_TYPE ?= m
+ 
+ #########################
+ # Chip dependent feature
+diff --git a/drivers/net/wireless/bcmdhd/bcmsdh_sdmmc.c b/drivers/net/wireless/bcmdhd/bcmsdh_sdmmc.c
+index a2ac5c0..d1d7183 100644
+--- a/drivers/net/wireless/bcmdhd/bcmsdh_sdmmc.c
++++ b/drivers/net/wireless/bcmdhd/bcmsdh_sdmmc.c
+@@ -59,7 +59,12 @@ static void IRQHandler(struct sdio_func *func);
+ static void IRQHandlerF2(struct sdio_func *func);
+ #endif /* !defined(OOB_INTR_ONLY) */
+ static int sdioh_sdmmc_get_cisaddr(sdioh_info_t *sd, uint32 regaddr);
+-extern int sdio_reset_comm(struct mmc_card *card);
++
++/* workaround to simply return 0 as suggested by Broadcom */
++static int sdio_reset_comm(struct mmc_card *card)
++{
++	return 0;
++}
+ 
+ #define DEFAULT_SDIO_F2_BLKSIZE		512
+ #ifndef CUSTOM_SDIO_F2_BLKSIZE
+diff --git a/drivers/pci/host/pci-imx6.c b/drivers/pci/host/pci-imx6.c
+index 75f15ce..8272f7d 100644
+--- a/drivers/pci/host/pci-imx6.c
++++ b/drivers/pci/host/pci-imx6.c
+@@ -50,6 +50,7 @@ struct imx6_pcie {
+ 	int			dis_gpio;
+ 	int			power_on_gpio;
+ 	int			reset_gpio;
++	u32			phy_refclk;
+ 	struct clk		*pcie_bus;
+ 	struct clk		*pcie_inbound_axi;
+ 	struct clk		*pcie_phy;
+@@ -389,17 +390,7 @@ static int imx6_pcie_deassert_core_reset(struct pcie_port *pp)
+ 	/* allow the clocks to stabilize */
+ 	udelay(200);
+ 
+-	/* Some boards don't have PCIe reset GPIO. */
+-	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
+-		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 0);
+-		mdelay(20);
+-		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 1);
+-		mdelay(20);
+-	}
+-
+-	/*
+-	 * Release the PCIe PHY reset here
+-	 */
++	/* Release the i.MX7 PCIe PHY reset here */
+ 	if (is_imx7d_pcie(imx6_pcie)) {
+ 		/* wait for more than 10us to release phy g_rst and btnrst */
+ 		udelay(10);
+@@ -409,7 +400,18 @@ static int imx6_pcie_deassert_core_reset(struct pcie_port *pp)
+ 
+ 		/* wait for phy pll lock firstly. */
+ 		pci_imx_phy_pll_locked(imx6_pcie);
+-	} else if (is_imx6sx_pcie(imx6_pcie)) {
++	}
++
++	/* Some boards don't have PCIe reset GPIO. */
++	if (gpio_is_valid(imx6_pcie->reset_gpio)) {
++		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 0);
++		mdelay(20);
++		gpio_set_value_cansleep(imx6_pcie->reset_gpio, 1);
++		mdelay(20);
++	}
++
++	/* Release the i.MX6 PCIe PHY reset here */
++	if (is_imx6sx_pcie(imx6_pcie)) {
+ 		regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR5,
+ 				IMX6SX_GPR5_PCIE_BTNRST, 0);
+ 	} else if (is_imx6qp_pcie(imx6_pcie)) {
+@@ -452,7 +454,7 @@ static void imx6_pcie_init_phy(struct pcie_port *pp)
+ 
+ 		/* pcie phy ref clock select; 1? internal pll : external osc */
+ 		regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR12,
+-				BIT(5), 0);
++				BIT(5), imx6_pcie->phy_refclk ? BIT(5) : 0);
+ 	} else if (is_imx6sx_pcie(imx6_pcie)) {
+ 		/* Force PCIe PHY reset */
+ 		regmap_update_bits(imx6_pcie->iomuxc_gpr, IOMUXC_GPR5,
+@@ -1119,6 +1121,11 @@ static int __init imx6_pcie_probe(struct platform_device *pdev)
+ 	if (IS_ERR(pp->dbi_base))
+ 		return PTR_ERR(pp->dbi_base);
+ 
++	/* Fetch PHY Reference Clock */
++	if (of_property_read_u32(np, "phy-ref-clk", &imx6_pcie->phy_refclk))
++		imx6_pcie->phy_refclk = 0;
++	pr_info("%s: phy_refclk = %d\n", __func__, imx6_pcie->phy_refclk);
++
+ 	/* Fetch GPIOs */
+ 	imx6_pcie->dis_gpio = of_get_named_gpio(np, "disable-gpio", 0);
+ 	if (gpio_is_valid(imx6_pcie->dis_gpio)) {
+diff --git a/drivers/rtc/rtc-abx80x.c b/drivers/rtc/rtc-abx80x.c
+index afea84c..f4a9171 100644
+--- a/drivers/rtc/rtc-abx80x.c
++++ b/drivers/rtc/rtc-abx80x.c
+@@ -31,6 +31,12 @@
+ #define ABX8XX_CTRL_WRITE	BIT(0)
+ #define ABX8XX_CTRL_12_24	BIT(6)
+ 
++#define ABX8XX_REG_SQW		0x13
++#define ABX8XX_SQWE		BIT(7)
++#define ABX8XX_SQFS		(BIT(4) | BIT(3) | BIT(2) | \
++				BIT(1) | BIT(0))
++#define ABX8XX_SQFS_DEFAULT	(BIT(2) | BIT(1))
++
+ #define ABX8XX_REG_CFG_KEY	0x1f
+ #define ABX8XX_CFG_KEY_MISC	0x9d
+ 
+@@ -49,17 +55,18 @@ enum abx80x_chip {AB0801, AB0803, AB0804, AB0805,
+ struct abx80x_cap {
+ 	u16 pn;
+ 	bool has_tc;
++	bool has_sqw;
+ };
+ 
+ static struct abx80x_cap abx80x_caps[] = {
+ 	[AB0801] = {.pn = 0x0801},
+ 	[AB0803] = {.pn = 0x0803},
+ 	[AB0804] = {.pn = 0x0804, .has_tc = true},
+-	[AB0805] = {.pn = 0x0805, .has_tc = true},
++	[AB0805] = {.pn = 0x0805, .has_tc = true, .has_sqw = true},
+ 	[AB1801] = {.pn = 0x1801},
+ 	[AB1803] = {.pn = 0x1803},
+ 	[AB1804] = {.pn = 0x1804, .has_tc = true},
+-	[AB1805] = {.pn = 0x1805, .has_tc = true},
++	[AB1805] = {.pn = 0x1805, .has_tc = true, .has_sqw = true},
+ 	[ABX80X] = {.pn = 0}
+ };
+ 
+@@ -185,6 +192,54 @@ static int abx80x_dt_trickle_cfg(struct device_node *np)
+ 	return (trickle_cfg | i);
+ }
+ 
++static char *sqw_freq_out[] =
++{
++	"1 century","32.768 kHz", "8.192 kHz",   "4.096 kHz",
++	"2.048 kHz", "1.024 kHz",  "512 Hz",     "256 Hz",
++	"128 Hz",    "64 Hz",      "32 Hz",      "16 Hz",
++	"8 Hz",      "4 Hz",       "2 Hz",       "1 Hz",
++	"1/2 Hz",    "1/4 Hz",     "1/8 Hz",     "1/16 Hz",
++	"1/32 Hz",   "1/60 Hz",    "16.384 kHz", "100 Hz",
++	"1 hour",    "1 day",      "TIRQ",       "NOT TIRQ",
++	"1 year",                  "1 Hz to Counters",
++	"1/32 Hz from Acal",       "1/8 Hz from Acal",
++};
++
++static int abx80x_dt_sqw_cfg(struct i2c_client *client)
++{
++	struct device_node *np = client->dev.of_node;
++	u8 ret, sqw_freq_sel, sqw;
++
++	sqw = i2c_smbus_read_byte_data(client, ABX8XX_REG_SQW);
++	if (sqw < 0) {
++		dev_err(&client->dev, "Unable to read SQW register\n");
++		return sqw;
++	}
++
++	ret = of_property_read_u8(np, "abracon,sqw-freq-sel", &sqw_freq_sel);
++	if (ret == 0)
++		sqw_freq_sel &= ABX8XX_SQFS;
++	else
++		sqw_freq_sel = ABX8XX_SQFS_DEFAULT;
++
++	dev_info(&client->dev, "Set the square wave output to \'%s\'\n",
++		 sqw_freq_out[sqw_freq_sel]);
++
++	sqw &= ~(ABX8XX_SQFS);
++	sqw |= sqw_freq_sel;
++
++	if (of_property_read_bool(np, "abracon,sqw-enable")) {
++		dev_info(&client->dev, "Enable the square wave output\n");
++		sqw |= ABX8XX_SQWE;
++	}
++	else {
++		dev_info(&client->dev, "Disable the square wave output\n");
++		sqw &= ~(ABX8XX_SQWE);
++	}
++
++	return i2c_smbus_write_byte_data(client, ABX8XX_REG_SQW, sqw);
++}
++
+ static int abx80x_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
+ {
+@@ -260,6 +315,9 @@ static int abx80x_probe(struct i2c_client *client,
+ 		abx80x_enable_trickle_charger(client, trickle_cfg);
+ 	}
+ 
++	if (np && abx80x_caps[part].has_sqw)
++		abx80x_dt_sqw_cfg(client);
++
+ 	rtc = devm_rtc_device_register(&client->dev, abx80x_driver.driver.name,
+ 				       &abx80x_rtc_ops, THIS_MODULE);
+ 
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 8cd3534..2dc38c7 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -574,6 +574,7 @@ config SERIAL_IMX
+ 	depends on ARCH_MXC
+ 	select SERIAL_CORE
+ 	select RATIONAL
++	select SERIAL_MCTRL_GPIO if GPIOLIB
+ 	help
+ 	  If you have a machine based on a Motorola IMX CPU you
+ 	  can enable its onboard serial port by enabling this option.
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 85323ff..3c0f976 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -2583,7 +2583,7 @@ static int atmel_init_gpios(struct atmel_uart_port *p, struct device *dev)
+ 	enum mctrl_gpio_idx i;
+ 	struct gpio_desc *gpiod;
+ 
+-	p->gpios = mctrl_gpio_init(dev, 0);
++	p->gpios = mctrl_gpio_init_noauto(dev, 0);
+ 	if (IS_ERR(p->gpios))
+ 		return PTR_ERR(p->gpios);
+ 
+diff --git a/drivers/tty/serial/clps711x.c b/drivers/tty/serial/clps711x.c
+index d5d2dd7..b3a4e0c 100644
+--- a/drivers/tty/serial/clps711x.c
++++ b/drivers/tty/serial/clps711x.c
+@@ -500,7 +500,7 @@ static int uart_clps711x_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, s);
+ 
+-	s->gpios = mctrl_gpio_init(&pdev->dev, 0);
++	s->gpios = mctrl_gpio_init_noauto(&pdev->dev, 0);
+ 	if (IS_ERR(s->gpios))
+ 	    return PTR_ERR(s->gpios);
+ 
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index c9bd603..4eadece 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -44,6 +44,8 @@
+ #include <linux/platform_data/serial-imx.h>
+ #include <linux/platform_data/dma-imx.h>
+ 
++#include "serial_mctrl_gpio.h"
++
+ /* Register definitions */
+ #define URXD0 0x0  /* Receiver Register */
+ #define URTX0 0x40 /* Transmitter Register */
+@@ -218,6 +220,7 @@ struct imx_port {
+ 	struct timer_list	timer;
+ 	unsigned int		old_status;
+ 	unsigned int		have_rtscts:1;
++	unsigned int		have_rtsgpio:1;
+ 	unsigned int		dte_mode:1;
+ 	unsigned int		irda_inv_rx:1;
+ 	unsigned int		irda_inv_tx:1;
+@@ -226,6 +229,8 @@ struct imx_port {
+ 	struct clk		*clk_per;
+ 	const struct imx_uart_data *devdata;
+ 
++	struct mctrl_gpios *gpios;
++
+ 	/* DMA fields */
+ 	unsigned int		dma_is_inited:1;
+ 	unsigned int		dma_is_enabled:1;
+@@ -330,49 +335,26 @@ static void imx_port_ucrs_restore(struct uart_port *port,
+ }
+ #endif
+ 
+-/*
+- * Handle any change of modem status signal since we were last called.
+- */
+-static void imx_mctrl_check(struct imx_port *sport)
++static void imx_port_rts_active(struct imx_port *sport, unsigned long *ucr2)
+ {
+-	unsigned int status, changed;
++	*ucr2 &= ~(UCR2_CTSC | UCR2_CTS);
+ 
+-	status = sport->port.ops->get_mctrl(&sport->port);
+-	changed = status ^ sport->old_status;
+-
+-	if (changed == 0)
+-		return;
+-
+-	sport->old_status = status;
+-
+-	if (changed & TIOCM_RI)
+-		sport->port.icount.rng++;
+-	if (changed & TIOCM_DSR)
+-		sport->port.icount.dsr++;
+-	if (changed & TIOCM_CAR)
+-		uart_handle_dcd_change(&sport->port, status & TIOCM_CAR);
+-	if (changed & TIOCM_CTS)
+-		uart_handle_cts_change(&sport->port, status & TIOCM_CTS);
+-
+-	wake_up_interruptible(&sport->port.state->port.delta_msr_wait);
++	/*pr_info("%s: call mctrl_gpio_set()\n", __func__);*/
++	mctrl_gpio_set(sport->gpios, sport->port.mctrl | TIOCM_RTS);
+ }
+ 
+-/*
+- * This is our per-port timeout handler, for checking the
+- * modem status signals.
+- */
+-static void imx_timeout(unsigned long data)
++static void imx_port_rts_inactive(struct imx_port *sport, unsigned long *ucr2)
+ {
+-	struct imx_port *sport = (struct imx_port *)data;
+-	unsigned long flags;
++	*ucr2 &= ~UCR2_CTSC;
++	*ucr2 |= UCR2_CTS;
+ 
+-	if (sport->port.state) {
+-		spin_lock_irqsave(&sport->port.lock, flags);
+-		imx_mctrl_check(sport);
+-		spin_unlock_irqrestore(&sport->port.lock, flags);
++	/*pr_info("%s: call mctrl_gpio_set()\n", __func__);*/
++	mctrl_gpio_set(sport->gpios, sport->port.mctrl & ~TIOCM_RTS);
++}
+ 
+-		mod_timer(&sport->timer, jiffies + MCTRL_TIMEOUT);
+-	}
++static void imx_port_rts_auto(struct imx_port *sport, unsigned long *ucr2)
++{
++	*ucr2 |= UCR2_CTSC;
+ }
+ 
+ /*
+@@ -398,9 +380,10 @@ static void imx_stop_tx(struct uart_port *port)
+ 	    readl(port->membase + USR2) & USR2_TXDC) {
+ 		temp = readl(port->membase + UCR2);
+ 		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
+-			temp &= ~UCR2_CTS;
++			imx_port_rts_active(sport, &temp);
+ 		else
+-			temp |= UCR2_CTS;
++			imx_port_rts_inactive(sport, &temp);
++		temp |= UCR2_RXEN;
+ 		writel(temp, port->membase + UCR2);
+ 
+ 		temp = readl(port->membase + UCR4);
+@@ -444,6 +427,8 @@ static void imx_enable_ms(struct uart_port *port)
+ 	struct imx_port *sport = (struct imx_port *)port;
+ 
+ 	mod_timer(&sport->timer, jiffies);
++
++	mctrl_gpio_enable_ms(sport->gpios);
+ }
+ 
+ static inline void imx_transmit_buffer(struct imx_port *sport)
+@@ -599,11 +584,14 @@ static void imx_start_tx(struct uart_port *port)
+ 		/* enable transmitter and shifter empty irq */
+ 		temp = readl(port->membase + UCR2);
+ 		if (port->rs485.flags & SER_RS485_RTS_ON_SEND)
+-			temp &= ~UCR2_CTS;
++			imx_port_rts_active(sport, &temp);
+ 		else
+-			temp |= UCR2_CTS;
++			imx_port_rts_inactive(sport, &temp);
++		if (!(port->rs485.flags & SER_RS485_RX_DURING_TX))
++			temp &= ~UCR2_RXEN;
+ 		writel(temp, port->membase + UCR2);
+ 
++		/* enable transmitter and shifter empty irq */
+ 		temp = readl(port->membase + UCR4);
+ 		temp |= UCR4_TCEN;
+ 		writel(temp, port->membase + UCR4);
+@@ -784,9 +772,8 @@ static unsigned int imx_tx_empty(struct uart_port *port)
+ /*
+  * We have a modem side uart, so the meanings of RTS and CTS are inverted.
+  */
+-static unsigned int imx_get_mctrl(struct uart_port *port)
++static unsigned int imx_get_hwmctrl(struct imx_port *sport)
+ {
+-	struct imx_port *sport = (struct imx_port *)port;
+ 	unsigned int tmp = TIOCM_DSR | TIOCM_CAR;
+ 
+ 	if (readl(sport->port.membase + USR1) & USR1_RTSS)
+@@ -801,6 +788,16 @@ static unsigned int imx_get_mctrl(struct uart_port *port)
+ 	return tmp;
+ }
+ 
++static unsigned int imx_get_mctrl(struct uart_port *port)
++{
++	struct imx_port *sport = (struct imx_port *)port;
++	unsigned int ret = imx_get_hwmctrl(sport);
++
++	mctrl_gpio_get(sport->gpios, &ret);
++
++	return ret;
++}
++
+ static void imx_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
+@@ -818,6 +815,8 @@ static void imx_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 	if (mctrl & TIOCM_LOOP)
+ 		temp |= UTS_LOOP;
+ 	writel(temp, sport->port.membase + uts_reg(sport));
++
++	mctrl_gpio_set(sport->gpios, mctrl);
+ }
+ 
+ /*
+@@ -840,6 +839,51 @@ static void imx_break_ctl(struct uart_port *port, int break_state)
+ 	spin_unlock_irqrestore(&sport->port.lock, flags);
+ }
+ 
++/*
++ * Handle any change of modem status signal since we were last called.
++ */
++static void imx_mctrl_check(struct imx_port *sport)
++{
++	unsigned int status, changed;
++
++	status = imx_get_hwmctrl(sport);
++	changed = status ^ sport->old_status;
++
++	if (changed == 0)
++		return;
++
++	sport->old_status = status;
++
++	if (changed & TIOCM_RI)
++		sport->port.icount.rng++;
++	if (changed & TIOCM_DSR)
++		sport->port.icount.dsr++;
++	if (changed & TIOCM_CAR)
++		uart_handle_dcd_change(&sport->port, status & TIOCM_CAR);
++	if (changed & TIOCM_CTS)
++		uart_handle_cts_change(&sport->port, status & TIOCM_CTS);
++
++	wake_up_interruptible(&sport->port.state->port.delta_msr_wait);
++}
++
++/*
++ * This is our per-port timeout handler, for checking the
++ * modem status signals.
++ */
++static void imx_timeout(unsigned long data)
++{
++	struct imx_port *sport = (struct imx_port *)data;
++	unsigned long flags;
++
++	if (sport->port.state) {
++		spin_lock_irqsave(&sport->port.lock, flags);
++		imx_mctrl_check(sport);
++		spin_unlock_irqrestore(&sport->port.lock, flags);
++
++		mod_timer(&sport->timer, jiffies + MCTRL_TIMEOUT);
++	}
++}
++
+ #define TXTL 2 /* reset default */
+ #define RXTL 1 /* For console port */
+ #define RXTL_UART 16 /* For uart */
+@@ -1224,6 +1268,8 @@ static void imx_shutdown(struct uart_port *port)
+ 		imx_uart_dma_exit(sport);
+ 	}
+ 
++	mctrl_gpio_disable_ms(sport->gpios);
++
+ 	spin_lock_irqsave(&sport->port.lock, flags);
+ 	temp = readl(sport->port.membase + UCR2);
+ 	temp &= ~(UCR2_TXEN);
+@@ -1301,9 +1347,10 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
+ 	unsigned long flags;
+-	unsigned int ucr2, old_ucr1, old_txrxen, baud, quot;
++	unsigned long ucr2, old_ucr1, old_txrxen;
++	unsigned int baud, quot;
+ 	unsigned int old_csize = old ? old->c_cflag & CSIZE : CS8;
+-	unsigned int div, ufcr;
++	unsigned long div, ufcr;
+ 	unsigned long num, denom;
+ 	uint64_t tdiv64;
+ 
+@@ -1332,19 +1379,25 @@ imx_set_termios(struct uart_port *port, struct ktermios *termios,
+ 				 * it under manual control and keep transmitter
+ 				 * disabled.
+ 				 */
+-				if (!(port->rs485.flags &
+-				      SER_RS485_RTS_AFTER_SEND))
+-					ucr2 |= UCR2_CTS;
++				if (port->rs485.flags &
++				    SER_RS485_RTS_AFTER_SEND)
++					imx_port_rts_active(sport, &ucr2);
++				else
++					imx_port_rts_inactive(sport, &ucr2);
+ 			} else {
+-				ucr2 |= UCR2_CTSC;
++				imx_port_rts_auto(sport, &ucr2);
+ 			}
+ 		} else {
+ 			termios->c_cflag &= ~CRTSCTS;
+ 		}
+-	} else if (port->rs485.flags & SER_RS485_ENABLED)
++	} else if (port->rs485.flags & SER_RS485_ENABLED) {
+ 		/* disable transmitter */
+-		if (!(port->rs485.flags & SER_RS485_RTS_AFTER_SEND))
+-			ucr2 |= UCR2_CTS;
++		if (port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
++			imx_port_rts_active(sport, &ucr2);
++		else
++			imx_port_rts_inactive(sport, &ucr2);
++	}
++
+ 
+ 	if (termios->c_cflag & CSTOPB)
+ 		ucr2 |= UCR2_STPB;
+@@ -1580,26 +1633,31 @@ static int imx_rs485_config(struct uart_port *port,
+ 			    struct serial_rs485 *rs485conf)
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
++	unsigned long temp;
+ 
+ 	/* unimplemented */
+ 	rs485conf->delay_rts_before_send = 0;
+ 	rs485conf->delay_rts_after_send = 0;
+-	rs485conf->flags |= SER_RS485_RX_DURING_TX;
+ 
+ 	/* RTS is required to control the transmitter */
+-	if (!sport->have_rtscts)
++	if (!sport->have_rtscts && !sport->have_rtsgpio)
+ 		rs485conf->flags &= ~SER_RS485_ENABLED;
+ 
+ 	if (rs485conf->flags & SER_RS485_ENABLED) {
+-		unsigned long temp;
+-
+ 		/* disable transmitter */
+ 		temp = readl(sport->port.membase + UCR2);
+-		temp &= ~UCR2_CTSC;
+ 		if (rs485conf->flags & SER_RS485_RTS_AFTER_SEND)
+-			temp &= ~UCR2_CTS;
++			imx_port_rts_active(sport, &temp);
+ 		else
+-			temp |= UCR2_CTS;
++			imx_port_rts_inactive(sport, &temp);
++		writel(temp, sport->port.membase + UCR2);
++	}
++
++	/* Make sure Rx is enabled in case Tx is active with Rx disabled */
++	if (!(rs485conf->flags & SER_RS485_ENABLED) ||
++	    rs485conf->flags & SER_RS485_RX_DURING_TX) {
++		temp = readl(sport->port.membase + UCR2);
++		temp |= UCR2_RXEN;
+ 		writel(temp, sport->port.membase + UCR2);
+ 	}
+ 
+@@ -1939,6 +1997,20 @@ static int serial_imx_probe_dt(struct imx_port *sport,
+ 	if (of_get_property(np, "fsl,dte-mode", NULL))
+ 		sport->dte_mode = 1;
+ 
++	if (of_get_property(np, "rts-gpios", NULL))
++		sport->have_rtsgpio = 1;
++
++	if (of_property_read_bool(np, "linux,rs485-enabled-at-boot-time"))
++		sport->port.rs485.flags |= SER_RS485_ENABLED;
++
++	if (of_property_read_bool(np, "rs485-rx-during-tx"))
++		sport->port.rs485.flags |= SER_RS485_RX_DURING_TX;
++
++	if (of_property_read_bool(np, "rs485-rts-active-high"))
++		sport->port.rs485.flags |= SER_RS485_RTS_ON_SEND;
++	else
++		sport->port.rs485.flags |= SER_RS485_RTS_AFTER_SEND;
++
+ 	sport->devdata = of_id->data;
+ 
+ 	return 0;
+@@ -2002,13 +2074,18 @@ static int serial_imx_probe(struct platform_device *pdev)
+ 	sport->port.fifosize = 32;
+ 	sport->port.ops = &imx_pops;
+ 	sport->port.rs485_config = imx_rs485_config;
+-	sport->port.rs485.flags =
+-		SER_RS485_RTS_ON_SEND | SER_RS485_RX_DURING_TX;
++	if (!sport->port.rs485.flags)
++		sport->port.rs485.flags =
++			SER_RS485_RTS_ON_SEND | SER_RS485_RX_DURING_TX;
+ 	sport->port.flags = UPF_BOOT_AUTOCONF;
+ 	init_timer(&sport->timer);
+ 	sport->timer.function = imx_timeout;
+ 	sport->timer.data     = (unsigned long)sport;
+ 
++	sport->gpios = mctrl_gpio_init(&sport->port, 0);
++	if (IS_ERR(sport->gpios))
++		return PTR_ERR(sport->gpios);
++
+ 	sport->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
+ 	if (IS_ERR(sport->clk_ipg)) {
+ 		ret = PTR_ERR(sport->clk_ipg);
+diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
+index f7e5825..dda904c 100644
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -1160,7 +1160,7 @@ static int mxs_auart_init_gpios(struct mxs_auart_port *s, struct device *dev)
+ 	enum mctrl_gpio_idx i;
+ 	struct gpio_desc *gpiod;
+ 
+-	s->gpios = mctrl_gpio_init(dev, 0);
++	s->gpios = mctrl_gpio_init_noauto(dev, 0);
+ 	if (IS_ERR(s->gpios))
+ 		return PTR_ERR(s->gpios);
+ 
+diff --git a/drivers/tty/serial/serial_mctrl_gpio.c b/drivers/tty/serial/serial_mctrl_gpio.c
+index 0ec756c..a1832b1 100644
+--- a/drivers/tty/serial/serial_mctrl_gpio.c
++++ b/drivers/tty/serial/serial_mctrl_gpio.c
+@@ -12,18 +12,24 @@
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+- *
+  */
+ 
+ #include <linux/err.h>
+ #include <linux/device.h>
++#include <linux/irq.h>
+ #include <linux/gpio/consumer.h>
+ #include <linux/termios.h>
++#include <linux/serial_core.h>
++#include <linux/module.h>
+ 
+ #include "serial_mctrl_gpio.h"
+ 
+ struct mctrl_gpios {
++	struct uart_port *port;
+ 	struct gpio_desc *gpio[UART_GPIO_MAX];
++	int irq[UART_GPIO_MAX];
++	unsigned int mctrl_prev;
++	bool mctrl_on;
+ };
+ 
+ static const struct {
+@@ -37,8 +43,6 @@ static const struct {
+ 	{ "rng", TIOCM_RNG, false, },
+ 	{ "rts", TIOCM_RTS, true, },
+ 	{ "dtr", TIOCM_DTR, true, },
+-	{ "out1", TIOCM_OUT1, true, },
+-	{ "out2", TIOCM_OUT2, true, },
+ };
+ 
+ void mctrl_gpio_set(struct mctrl_gpios *gpios, unsigned int mctrl)
+@@ -48,9 +52,11 @@ void mctrl_gpio_set(struct mctrl_gpios *gpios, unsigned int mctrl)
+ 	int value_array[UART_GPIO_MAX];
+ 	unsigned int count = 0;
+ 
++	if (gpios == NULL)
++		return;
++
+ 	for (i = 0; i < UART_GPIO_MAX; i++)
+-		if (!IS_ERR_OR_NULL(gpios->gpio[i]) &&
+-		    mctrl_gpios_desc[i].dir_out) {
++		if (gpios->gpio[i] && mctrl_gpios_desc[i].dir_out) {
+ 			desc_array[count] = gpios->gpio[i];
+ 			value_array[count] = !!(mctrl & mctrl_gpios_desc[i].mctrl);
+ 			count++;
+@@ -70,6 +76,9 @@ unsigned int mctrl_gpio_get(struct mctrl_gpios *gpios, unsigned int *mctrl)
+ {
+ 	enum mctrl_gpio_idx i;
+ 
++	if (gpios == NULL)
++		return *mctrl;
++
+ 	for (i = 0; i < UART_GPIO_MAX; i++) {
+ 		if (gpios->gpio[i] && !mctrl_gpios_desc[i].dir_out) {
+ 			if (gpiod_get_value(gpios->gpio[i]))
+@@ -83,7 +92,7 @@ unsigned int mctrl_gpio_get(struct mctrl_gpios *gpios, unsigned int *mctrl)
+ }
+ EXPORT_SYMBOL_GPL(mctrl_gpio_get);
+ 
+-struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
++struct mctrl_gpios *mctrl_gpio_init_noauto(struct device *dev, unsigned int idx)
+ {
+ 	struct mctrl_gpios *gpios;
+ 	enum mctrl_gpio_idx i;
+@@ -111,15 +120,153 @@ struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
+ 
+ 	return gpios;
+ }
++EXPORT_SYMBOL_GPL(mctrl_gpio_init_noauto);
++
++#define MCTRL_ANY_DELTA (TIOCM_RI | TIOCM_DSR | TIOCM_CD | TIOCM_CTS)
++static irqreturn_t mctrl_gpio_irq_handle(int irq, void *context)
++{
++	struct mctrl_gpios *gpios = context;
++	struct uart_port *port = gpios->port;
++	u32 mctrl = gpios->mctrl_prev;
++	u32 mctrl_diff;
++	unsigned long flags;
++
++	mctrl_gpio_get(gpios, &mctrl);
++
++	spin_lock_irqsave(&port->lock, flags);
++
++	mctrl_diff = mctrl ^ gpios->mctrl_prev;
++	gpios->mctrl_prev = mctrl;
++
++	if (mctrl_diff & MCTRL_ANY_DELTA && port->state != NULL) {
++		if ((mctrl_diff & mctrl) & TIOCM_RI)
++			port->icount.rng++;
++
++		if ((mctrl_diff & mctrl) & TIOCM_DSR)
++			port->icount.dsr++;
++
++		if (mctrl_diff & TIOCM_CD)
++			uart_handle_dcd_change(port, mctrl & TIOCM_CD);
++
++		if (mctrl_diff & TIOCM_CTS)
++			uart_handle_cts_change(port, mctrl & TIOCM_CTS);
++
++		wake_up_interruptible(&port->state->port.delta_msr_wait);
++	}
++
++	spin_unlock_irqrestore(&port->lock, flags);
++
++	return IRQ_HANDLED;
++}
++
++struct mctrl_gpios *mctrl_gpio_init(struct uart_port *port, unsigned int idx)
++{
++	struct mctrl_gpios *gpios;
++	enum mctrl_gpio_idx i;
++
++	gpios = mctrl_gpio_init_noauto(port->dev, idx);
++	if (IS_ERR(gpios))
++		return gpios;
++
++	gpios->port = port;
++
++	for (i = 0; i < UART_GPIO_MAX; ++i) {
++		int ret;
++
++		if (!gpios->gpio[i] || mctrl_gpios_desc[i].dir_out)
++			continue;
++
++		ret = gpiod_to_irq(gpios->gpio[i]);
++		if (ret <= 0) {
++			dev_err(port->dev,
++				"failed to find corresponding irq for %s (idx=%d, err=%d)\n",
++				mctrl_gpios_desc[i].name, idx, ret);
++			return ERR_PTR(ret);
++		}
++		gpios->irq[i] = ret;
++
++		/* irqs should only be enabled in .enable_ms */
++		irq_set_status_flags(gpios->irq[i], IRQ_NOAUTOEN);
++
++		ret = devm_request_irq(port->dev, gpios->irq[i],
++				       mctrl_gpio_irq_handle,
++				       IRQ_TYPE_EDGE_BOTH, dev_name(port->dev),
++				       gpios);
++		if (ret) {
++			/* alternatively implement polling */
++			dev_err(port->dev,
++				"failed to request irq for %s (idx=%d, err=%d)\n",
++				mctrl_gpios_desc[i].name, idx, ret);
++			return ERR_PTR(ret);
++		}
++	}
++
++	return gpios;
++}
+ EXPORT_SYMBOL_GPL(mctrl_gpio_init);
+ 
+ void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios)
+ {
+ 	enum mctrl_gpio_idx i;
+ 
+-	for (i = 0; i < UART_GPIO_MAX; i++)
+-		if (!IS_ERR_OR_NULL(gpios->gpio[i]))
++	if (gpios == NULL)
++		return;
++
++	for (i = 0; i < UART_GPIO_MAX; i++) {
++		if (gpios->irq[i])
++			devm_free_irq(gpios->port->dev, gpios->irq[i], gpios);
++
++		if (gpios->gpio[i])
+ 			devm_gpiod_put(dev, gpios->gpio[i]);
++	}
+ 	devm_kfree(dev, gpios);
+ }
+ EXPORT_SYMBOL_GPL(mctrl_gpio_free);
++
++void mctrl_gpio_enable_ms(struct mctrl_gpios *gpios)
++{
++	enum mctrl_gpio_idx i;
++
++	if (gpios == NULL)
++		return;
++
++	/* .enable_ms may be called multiple times */
++	if (gpios->mctrl_on)
++		return;
++
++	gpios->mctrl_on = true;
++
++	/* get initial status of modem lines GPIOs */
++	mctrl_gpio_get(gpios, &gpios->mctrl_prev);
++
++	for (i = 0; i < UART_GPIO_MAX; ++i) {
++		if (!gpios->irq[i])
++			continue;
++
++		enable_irq(gpios->irq[i]);
++	}
++}
++EXPORT_SYMBOL_GPL(mctrl_gpio_enable_ms);
++
++void mctrl_gpio_disable_ms(struct mctrl_gpios *gpios)
++{
++	enum mctrl_gpio_idx i;
++
++	if (gpios == NULL)
++		return;
++
++	if (!gpios->mctrl_on)
++		return;
++
++	gpios->mctrl_on = false;
++
++	for (i = 0; i < UART_GPIO_MAX; ++i) {
++		if (!gpios->irq[i])
++			continue;
++
++		disable_irq(gpios->irq[i]);
++	}
++}
++EXPORT_SYMBOL_GPL(mctrl_gpio_disable_ms);
++
++MODULE_LICENSE("GPL");
+diff --git a/drivers/tty/serial/serial_mctrl_gpio.h b/drivers/tty/serial/serial_mctrl_gpio.h
+index 400ba04..10632e7 100644
+--- a/drivers/tty/serial/serial_mctrl_gpio.h
++++ b/drivers/tty/serial/serial_mctrl_gpio.h
+@@ -22,6 +22,8 @@
+ #include <linux/device.h>
+ #include <linux/gpio/consumer.h>
+ 
++struct uart_port;
++
+ enum mctrl_gpio_idx {
+ 	UART_GPIO_CTS,
+ 	UART_GPIO_DSR,
+@@ -30,8 +32,6 @@ enum mctrl_gpio_idx {
+ 	UART_GPIO_RI = UART_GPIO_RNG,
+ 	UART_GPIO_RTS,
+ 	UART_GPIO_DTR,
+-	UART_GPIO_OUT1,
+-	UART_GPIO_OUT2,
+ 	UART_GPIO_MAX,
+ };
+ 
+@@ -60,12 +60,22 @@ struct gpio_desc *mctrl_gpio_to_gpiod(struct mctrl_gpios *gpios,
+ 				      enum mctrl_gpio_idx gidx);
+ 
+ /*
++ * Request and set direction of modem control lines GPIOs and sets up irq
++ * handling.
++ * devm_* functions are used, so there's no need to call mctrl_gpio_free().
++ * Returns a pointer to the allocated mctrl structure if ok, -ENOMEM on
++ * allocation error.
++ */
++struct mctrl_gpios *mctrl_gpio_init(struct uart_port *port, unsigned int idx);
++
++/*
+  * Request and set direction of modem control lines GPIOs.
+  * devm_* functions are used, so there's no need to call mctrl_gpio_free().
+  * Returns a pointer to the allocated mctrl structure if ok, -ENOMEM on
+  * allocation error.
+  */
+-struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx);
++struct mctrl_gpios *mctrl_gpio_init_noauto(struct device *dev,
++					   unsigned int idx);
+ 
+ /*
+  * Free the mctrl_gpios structure.
+@@ -74,6 +84,16 @@ struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx);
+  */
+ void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios);
+ 
++/*
++ * Enable gpio interrupts to report status line changes.
++ */
++void mctrl_gpio_enable_ms(struct mctrl_gpios *gpios);
++
++/*
++ * Disable gpio interrupts to report status line changes.
++ */
++void mctrl_gpio_disable_ms(struct mctrl_gpios *gpios);
++
+ #else /* GPIOLIB */
+ 
+ static inline
+@@ -95,7 +115,13 @@ struct gpio_desc *mctrl_gpio_to_gpiod(struct mctrl_gpios *gpios,
+ }
+ 
+ static inline
+-struct mctrl_gpios *mctrl_gpio_init(struct device *dev, unsigned int idx)
++struct mctrl_gpios *mctrl_gpio_init(struct uart_port *port, unsigned int idx)
++{
++	return ERR_PTR(-ENOSYS);
++}
++
++static inline
++struct mctrl_gpios *mctrl_gpio_init_noauto(struct device *dev, unsigned int idx)
+ {
+ 	return ERR_PTR(-ENOSYS);
+ }
+@@ -105,6 +131,14 @@ void mctrl_gpio_free(struct device *dev, struct mctrl_gpios *gpios)
+ {
+ }
+ 
++static inline void mctrl_gpio_enable_ms(struct mctrl_gpios *gpios)
++{
++}
++
++static inline void mctrl_gpio_disable_ms(struct mctrl_gpios *gpios)
++{
++}
++
+ #endif /* GPIOLIB */
+ 
+ #endif
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 4021846..bcb505b 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -316,6 +316,7 @@ static void option_instat_callback(struct urb *urb);
+ #define TOSHIBA_PRODUCT_G450			0x0d45
+ 
+ #define ALINK_VENDOR_ID				0x1e0e
++#define SIMCOM_PRODUCT_SIM7100E			0x9001 /* Yes, ALINK_VENDOR_ID */
+ #define ALINK_PRODUCT_PH300			0x9100
+ #define ALINK_PRODUCT_3GU			0x9200
+ 
+@@ -608,6 +609,10 @@ static const struct option_blacklist_info zte_1255_blacklist = {
+ 	.reserved = BIT(3) | BIT(4),
+ };
+ 
++static const struct option_blacklist_info simcom_sim7100e_blacklist = {
++	.reserved = BIT(5) | BIT(6),
++};
++
+ static const struct option_blacklist_info telit_le910_blacklist = {
+ 	.sendsetup = BIT(0),
+ 	.reserved = BIT(1) | BIT(2),
+@@ -1641,6 +1646,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(ALINK_VENDOR_ID, 0x9000) },
+ 	{ USB_DEVICE(ALINK_VENDOR_ID, ALINK_PRODUCT_PH300) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ALINK_VENDOR_ID, ALINK_PRODUCT_3GU, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE(ALINK_VENDOR_ID, SIMCOM_PRODUCT_SIM7100E),
++	  .driver_info = (kernel_ulong_t)&simcom_sim7100e_blacklist },
+ 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
+ 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
+ 	},
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 8bf495f..5c2d238 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -32,6 +32,8 @@ endmenu
+ 
+ source "drivers/video/backlight/Kconfig"
+ 
++source "drivers/video/si/Kconfig"
++
+ config VGASTATE
+        tristate
+        default n
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 9ad3c17..5f2cc3f 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -11,3 +11,5 @@ obj-$(CONFIG_VIDEOMODE_HELPERS) += display_timing.o videomode.o
+ ifeq ($(CONFIG_OF),y)
+ obj-$(CONFIG_VIDEOMODE_HELPERS) += of_display_timing.o of_videomode.o
+ endif
++
++obj-$(CONFIG_SIL164_SIMPLE)              += si/
+diff --git a/drivers/video/fbdev/mxc/Kconfig b/drivers/video/fbdev/mxc/Kconfig
+index 3650a53..24a3da1 100644
+--- a/drivers/video/fbdev/mxc/Kconfig
++++ b/drivers/video/fbdev/mxc/Kconfig
+@@ -28,6 +28,12 @@ config FB_MXC_MIPI_DSI_SAMSUNG
+ 	depends on FB_MXC_SYNC_PANEL
+ 	depends on FB_MXS
+ 
++config FB_MXC_SN65DSI8X
++	tristate "MXC SN65DSI8x support"
++	depends on FB_MXC_SYNC_PANEL
++	depends on FB_MXC_MIPI_DSI_SAMSUNG
++	depends on I2C
++
+ config FB_MXC_TRULY_WVGA_SYNC_PANEL
+ 	tristate "TRULY WVGA Panel"
+ 	depends on FB_MXC_SYNC_PANEL
+diff --git a/drivers/video/fbdev/mxc/Makefile b/drivers/video/fbdev/mxc/Makefile
+index dafc050..4097150 100644
+--- a/drivers/video/fbdev/mxc/Makefile
++++ b/drivers/video/fbdev/mxc/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_FB_MXC_TRULY_PANEL_TFT3P5581E)	+= mxcfb_hx8363_wvga.o
+ obj-$(CONFIG_FB_MXC_LDB) += ldb.o
+ obj-$(CONFIG_FB_MXC_HDMI)			+= mxc_hdmi.o
+ obj-$(CONFIG_FB_MXC_EDID)			+= mxc_edid.o
++obj-$(CONFIG_FB_MXC_SN65DSI8X)			+= mxcfb_sn65dsi83.o
+ obj-$(CONFIG_FB_MXC_SYNC_PANEL) += mxc_dispdrv.o mxc_lcdif.o mxc_ipuv3_fb.o
+ obj-$(CONFIG_FB_MXC_EINK_PANEL)			+= mxc_epdc_fb.o
+ obj-$(CONFIG_FB_MXC_EINK_V2_PANEL)		+= mxc_epdc_v2_fb.o
+diff --git a/drivers/video/fbdev/mxc/mipi_dsi.h b/drivers/video/fbdev/mxc/mipi_dsi.h
+index 1f8db55..a06e3da 100644
+--- a/drivers/video/fbdev/mxc/mipi_dsi.h
++++ b/drivers/video/fbdev/mxc/mipi_dsi.h
+@@ -48,12 +48,22 @@ struct mipi_dsi_lcd_callback {
+ 	void (*get_mipi_lcd_videomode)(struct fb_videomode **, int *,
+ 			struct mipi_lcd_config **);
+ 	int  (*mipi_lcd_setup)(struct mipi_dsi_info *);
++	int  (*mipi_lcd_start)(struct mipi_dsi_info *);
++	int  (*mipi_lcd_stop)(struct mipi_dsi_info *);
+ 
+ };
+ 
++struct mipi_dsi_host_timing {
++	u32 mipi_dsi_pllctrl_pms;
++	u32 mipi_dsi_phytiming;
++	u32 mipi_dsi_phytiming1;
++	u32 mipi_dsi_phytiming2;
++};
++
+ struct mipi_dsi_match_lcd {
+ 	char *lcd_panel;
+ 	struct mipi_dsi_lcd_callback lcd_callback;
++	struct mipi_dsi_host_timing host_timing;
+ };
+ 
+ struct mipi_dsi_bus_mux {
+@@ -85,6 +95,8 @@ struct mipi_dsi_info {
+ 	struct backlight_device		*bl;
+ 	/* callback for lcd panel operation */
+ 	struct mipi_dsi_lcd_callback	*lcd_callback;
++	/* mipi front end timings */
++	struct mipi_dsi_host_timing	*host_timing;
+ 
+ 	int (*mipi_dsi_pkt_read)(struct mipi_dsi_info *mipi,
+ 			u8 data_type, u32 *buf, int len);
+@@ -110,7 +122,16 @@ void mipid_hx8363_get_lcd_videomode(struct fb_videomode **mode, int *size,
+ int mipid_hx8363_lcd_setup(struct mipi_dsi_info *);
+ #endif
+ 
+-#ifndef CONFIG_FB_MXC_TRULY_WVGA_SYNC_PANEL
++#ifdef CONFIG_FB_MXC_SN65DSI8X
++void sn65dsi83_get_lcd_videomode(struct fb_videomode **mode, int *size,
++				 struct mipi_lcd_config **data);
++int sn65dsi83_lcd_setup(struct mipi_dsi_info *);
++int sn65dsi83_lcd_start(struct mipi_dsi_info *mipi_dsi);
++int sn65dsi83_lcd_stop(struct mipi_dsi_info *mipi_dsi);
++#endif
++
++#if !defined(CONFIG_FB_MXC_TRULY_WVGA_SYNC_PANEL) && \
++	!defined(CONFIG_FB_MXC_SN65DSI8X)
+ #error "Please configure MIPI LCD panel, we cannot find one!"
+ #endif
+ 
+diff --git a/drivers/video/fbdev/mxc/mipi_dsi_samsung.c b/drivers/video/fbdev/mxc/mipi_dsi_samsung.c
+index 7de2e24..fa0f5a0 100644
+--- a/drivers/video/fbdev/mxc/mipi_dsi_samsung.c
++++ b/drivers/video/fbdev/mxc/mipi_dsi_samsung.c
+@@ -53,19 +53,41 @@ static struct mipi_dsi_match_lcd mipi_dsi_lcd_db[] = {
+ #ifdef CONFIG_FB_MXC_TRULY_WVGA_SYNC_PANEL
+ 	{
+ 	 "TRULY-WVGA",
+-	 {mipid_hx8369_get_lcd_videomode, mipid_hx8369_lcd_setup}
++	 {mipid_hx8369_get_lcd_videomode, mipid_hx8369_lcd_setup},
++	{ MIPI_DSI_PMS(0x4190),
++	(MIPI_DSI_M_TLPXCTL(11) | MIPI_DSI_M_THSEXITCTL(18)),
++	(MIPI_DSI_M_TCLKPRPRCTL(13) | MIPI_DSI_M_TCLKZEROCTL(65) | MIPI_DSI_M_TCLKPOSTCTL(17) | MIPI_DSI_M_TCLKTRAILCTL(13)),
++	(MIPI_DSI_M_THSPRPRCTL(16) | MIPI_DSI_M_THSZEROCTL(24) | MIPI_DSI_M_THSTRAILCTL(16)) }
+ 	},
+ #endif
+ #ifdef CONFIG_FB_MXC_TRULY_PANEL_TFT3P5079E
+ 	{
+ 	 "TRULY-WVGA-TFT3P5079E",
+-	 {mipid_otm8018b_get_lcd_videomode, mipid_otm8018b_lcd_setup}
++	 {mipid_otm8018b_get_lcd_videomode, mipid_otm8018b_lcd_setup},
++	{ MIPI_DSI_PMS(0x4190),
++	(MIPI_DSI_M_TLPXCTL(11) | MIPI_DSI_M_THSEXITCTL(18)),
++	(MIPI_DSI_M_TCLKPRPRCTL(13) | MIPI_DSI_M_TCLKZEROCTL(65) | MIPI_DSI_M_TCLKPOSTCTL(17) | MIPI_DSI_M_TCLKTRAILCTL(13)),
++	(MIPI_DSI_M_THSPRPRCTL(16) | MIPI_DSI_M_THSZEROCTL(24) | MIPI_DSI_M_THSTRAILCTL(16)) }
+ 	},
+ #endif
+ #ifdef CONFIG_FB_MXC_TRULY_PANEL_TFT3P5581E
+ 	{
+ 	 "TRULY-WVGA-TFT3P5581E",
+-	 {mipid_hx8363_get_lcd_videomode, mipid_hx8363_lcd_setup}
++	 {mipid_hx8363_get_lcd_videomode, mipid_hx8363_lcd_setup},
++	{ MIPI_DSI_PMS(0x3141),
++	(MIPI_DSI_M_TLPXCTL(2) | MIPI_DSI_M_THSEXITCTL(4)),
++	(MIPI_DSI_M_TCLKPRPRCTL(5) | MIPI_DSI_M_TCLKZEROCTL(14) | MIPI_DSI_M_TCLKPOSTCTL(8) | MIPI_DSI_M_TCLKTRAILCTL(3)),
++	(MIPI_DSI_M_THSPRPRCTL(3) | MIPI_DSI_M_THSZEROCTL(3) | MIPI_DSI_M_THSTRAILCTL(3)) }
++	},
++#endif
++#ifdef CONFIG_FB_MXC_SN65DSI8X
++	{
++	 "SN65DSI_default",
++	 {sn65dsi83_get_lcd_videomode, sn65dsi83_lcd_setup, sn65dsi83_lcd_start, sn65dsi83_lcd_stop},
++	{ MIPI_DSI_PMS(0x4268),
++	(MIPI_DSI_M_TLPXCTL(3) | MIPI_DSI_M_THSEXITCTL(5)),
++	(MIPI_DSI_M_TCLKPRPRCTL(3) | MIPI_DSI_M_TCLKZEROCTL(20) | MIPI_DSI_M_TCLKPOSTCTL(9) | MIPI_DSI_M_TCLKTRAILCTL(4)),
++	(MIPI_DSI_M_THSPRPRCTL(5) | MIPI_DSI_M_THSZEROCTL(6) | MIPI_DSI_M_THSTRAILCTL(7)) }
+ 	},
+ #endif
+ 	{
+@@ -104,6 +126,9 @@ static int mipi_dsi_lcd_init(struct mipi_dsi_info *mipi_dsi,
+ 			mipi_dsi_lcd_db[i].lcd_panel)) {
+ 			mipi_dsi->lcd_callback =
+ 				&mipi_dsi_lcd_db[i].lcd_callback;
++
++			mipi_dsi->host_timing =
++				&mipi_dsi_lcd_db[i].host_timing;
+ 			break;
+ 		}
+ 	}
+@@ -112,6 +137,10 @@ static int mipi_dsi_lcd_init(struct mipi_dsi_info *mipi_dsi,
+ 		return -EINVAL;
+ 	}
+ 
++	/* set default bpp to 32 if not set*/
++	if (!setting->default_bpp)
++		setting->default_bpp = 32;
++
+ 	mipi_dsi->lcd_callback->get_mipi_lcd_videomode(&mipi_lcd_modedb, &size,
+ 					&mipi_dsi->lcd_config);
+ 
+@@ -392,12 +421,9 @@ static int mipi_dsi_master_init(struct mipi_dsi_info *mipi_dsi,
+ 	       MIPI_DSI_PLL_BYPASS(0) |
+ 	       MIPI_DSI_BYTE_CLK_SRC(0),
+ 	       mipi_dsi->mmio_base + MIPI_DSI_CLKCTRL);
+-	if (!strcmp(mipi_dsi->lcd_panel, "TRULY-WVGA-TFT3P5581E"))
+-		writel(MIPI_DSI_PLL_EN(1) | MIPI_DSI_PMS(0x3141),
+-		       mipi_dsi->mmio_base + MIPI_DSI_PLLCTRL);
+-	else
+-		writel(MIPI_DSI_PLL_EN(1) | MIPI_DSI_PMS(0x4190),
+-		       mipi_dsi->mmio_base + MIPI_DSI_PLLCTRL);
++
++	writel(MIPI_DSI_PLL_EN(1) | mipi_dsi->host_timing->mipi_dsi_pllctrl_pms,
++	       mipi_dsi->mmio_base + MIPI_DSI_PLLCTRL);
+ 
+ 	/* set PLLTMR: stable time */
+ 	writel(33024, mipi_dsi->mmio_base + MIPI_DSI_PLLTMR);
+@@ -453,31 +479,13 @@ static int mipi_dsi_master_init(struct mipi_dsi_info *mipi_dsi,
+ 	       mipi_dsi->mmio_base + MIPI_DSI_MSYNC);
+ 
+ 	/* configure d-phy timings */
+-	if (!strcmp(mipi_dsi->lcd_panel, "TRULY-WVGA-TFT3P5581E")) {
+-		writel(MIPI_DSI_M_TLPXCTL(2) | MIPI_DSI_M_THSEXITCTL(4),
+-			mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING);
+-		writel(MIPI_DSI_M_TCLKPRPRCTL(5) |
+-			MIPI_DSI_M_TCLKZEROCTL(14) |
+-			MIPI_DSI_M_TCLKPOSTCTL(8) |
+-			MIPI_DSI_M_TCLKTRAILCTL(3),
+-			mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING1);
+-		writel(MIPI_DSI_M_THSPRPRCTL(3) |
+-			MIPI_DSI_M_THSZEROCTL(3) |
+-			MIPI_DSI_M_THSTRAILCTL(3),
+-			mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING2);
+-	} else {
+-		writel(MIPI_DSI_M_TLPXCTL(11) | MIPI_DSI_M_THSEXITCTL(18),
+-			mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING);
+-		writel(MIPI_DSI_M_TCLKPRPRCTL(13) |
+-			MIPI_DSI_M_TCLKZEROCTL(65) |
+-			MIPI_DSI_M_TCLKPOSTCTL(17) |
+-			MIPI_DSI_M_TCLKTRAILCTL(13),
+-			mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING1);
+-		writel(MIPI_DSI_M_THSPRPRCTL(16) |
+-			MIPI_DSI_M_THSZEROCTL(24) |
+-			MIPI_DSI_M_THSTRAILCTL(16),
+-			mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING2);
+-	}
++	writel(mipi_dsi->host_timing->mipi_dsi_phytiming,
++		mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING);
++	writel(mipi_dsi->host_timing->mipi_dsi_phytiming1,
++		mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING1);
++	writel(mipi_dsi->host_timing->mipi_dsi_phytiming2,
++		mipi_dsi->mmio_base + MIPI_DSI_PHYTIMING2);
++
+ 
+ 	writel(0xf000f, mipi_dsi->mmio_base + MIPI_DSI_TIMEOUT);
+ 
+@@ -622,6 +630,11 @@ static int mipi_dsi_enable(struct mxc_dispdrv_handle *disp,
+ 
+ 	mipi_dsi_set_main_standby(mipi_dsi, 1);
+ 
++	if (mipi_dsi->lcd_callback->mipi_lcd_start) {
++		msleep(120);
++		mipi_dsi->lcd_callback->mipi_lcd_start(mipi_dsi);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -642,8 +655,12 @@ static void mipi_dsi_disable(struct mxc_dispdrv_handle *disp,
+ 		if (mipi_dsi->disp_power_on)
+ 			regulator_disable(mipi_dsi->disp_power_on);
+ 
+-		mipi_dsi->lcd_inited = 0;
+ 	}
++
++	if (mipi_dsi->lcd_callback->mipi_lcd_stop)
++		mipi_dsi->lcd_callback->mipi_lcd_stop(mipi_dsi);
++
++	mipi_dsi->lcd_inited = 0;
+ }
+ 
+ static int mipi_dsi_setup(struct mxc_dispdrv_handle *disp,
+@@ -827,6 +844,8 @@ static int mipi_dsi_probe(struct platform_device *pdev)
+ 	dev_set_drvdata(&pdev->dev, mipi_dsi);
+ 
+ 	dev_info(&pdev->dev, "i.MX MIPI DSI driver probed\n");
++	ret = 0;
++
+ 	return ret;
+ 
+ dispdrv_reg_fail:
+diff --git a/drivers/video/fbdev/mxc/mxcfb_sn65dsi83.c b/drivers/video/fbdev/mxc/mxcfb_sn65dsi83.c
+new file mode 100644
+index 0000000..3d7fcb3
+--- /dev/null
++++ b/drivers/video/fbdev/mxc/mxcfb_sn65dsi83.c
+@@ -0,0 +1,461 @@
++/*
++ * SN65DSI83 DSI-to-LVDS bridge IC driver
++ *
++ * Copyright (C) 2017 CompuLab Ltd.
++ * Author: Valentin Raevsky <valentin@compulab.co.il>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ */
++
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/platform_device.h>
++#include <linux/err.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_graph.h>
++#include <linux/mipi_dsi.h>
++#include <linux/mxcfb.h>
++#include "mipi_dsi.h"
++#include <video/of_display_timing.h>
++#include <video/videomode.h>
++
++#define DRV_NAME "sn65dsi83"
++
++#define SN65DSI83_SOFT_RESET_REG		0x09
++
++#define SN65DSI83_CLOCK_REG			0x0A
++#define SN65DSI83_LVDS_CLK_RANGE_MASK		0xE
++#define SN65DSI83_LVDS_CLK_RANGE_SHIFT		1
++#define SN65DSI83_HS_CLK_SRC_MASK		0x1
++#define SN65DSI83_HS_CLK_SRC_SHIFT		0
++
++#define SN65DSI83_CLOCK_ADJUST_REG		0x0B
++#define SN65DSI83_DSI_CLK_DIV_MASK		0xF8
++#define SN65DSI83_DSI_CLK_DIV_SHIFT		3
++#define SN65DSI83_REFCLK_MULTIPLIER_MASK	0x3
++#define SN65DSI83_REFCLK_MULTIPLIER_SHIFT	0
++
++#define SN65DSI83_PLL_EN_REG			0x0D
++
++#define SN65DSI83_DSI_LANES_REG			0x10
++#define SN65DSI83_CHA_DSI_LANES_MASK		0x18
++#define SN65DSI83_CHA_DSI_LANES_SHIFT		3
++#define SN65DSI83_SOT_ERR_TOL_DIS_MASK		0x1
++#define SN65DSI83_SOT_ERR_TOL_DIS_SHIFT		0
++
++#define SN65DSI83_DSI_LANES_EQ_REG		0x11
++
++#define SN65DSI83_CHA_DSI_CLK_RANGE_REG		0x12
++#define SN65DSI83_CHA_DSI_CLK_RANGE_MASK	0xFF
++#define SN65DSI83_CHA_DSI_CLK_RANGE_SHIFT	0xFF
++
++#define SN65DSI83_VIDEO_FORMAT_REG		0x18
++#define SN65DSI83_DE_NEG_POLARITY_SHIFT		7
++#define SN65DSI83_HS_NEG_POLARITY_SHIFT		6
++#define SN65DSI83_VS_NEG_POLARITY_SHIFT		5
++#define SN65DSI83_LVDS_LINK_CFG_SHIFT		4
++#define SN65DSI83_CHA_24BPP_MODE_SHIFT		3
++#define SN65DSI83_CHA_24BPP_FMT1_SHIFT		1
++
++#define SN65DSI83_LVDS_VOLATGE_REG		0x19
++
++#define SN65DSI83_LVDS_PINS_REG			0x1A
++#define SN65DSI83_CHA_REVERSE_LVDS_MASK		0x20
++#define SN65DSI83_CHA_REVERSE_LVDS_SHIFT	5
++#define SN65DSI83_CHA_LVDS_TERM_MASK		0x1
++#define SN65DSI83_CHA_LVDS_TERM_SHIFT		0
++
++#define SN65DSI83_LVDS_CM_ADJUST_REG		0x1B
++#define SN65DSI83_CHA_HACTIVE_LOW_REG		0x20
++#define SN65DSI83_CHA_HACTIVE_HIGH_REG		0x21
++#define SN65DSI83_CHA_VACTIVE_LOW_REG		0x24
++#define SN65DSI83_CHA_VACTIVE_HIGH_REG		0x25
++#define SN65DSI83_CHA_SYNC_DEL_LOW_REG		0x28
++#define SN65DSI83_CHA_SYNC_DEL_HIGH_REG		0x29
++#define SN65DSI83_CHA_HSYNC_LEN_LOW_REG		0x2C
++#define SN65DSI83_CHA_HSYNC_LEN_HIGH_REG	0x2D
++#define SN65DSI83_CHA_VSYNC_LEN_LOW_REG		0x30
++#define SN65DSI83_CHA_VSYNC_LEN_HIGH_REG	0x31
++#define SN65DSI83_CHA_HBACK_PORCH_REG		0x34
++#define SN65DSI83_CHA_VBACK_PORCH_REG		0x36
++#define SN65DSI83_CHA_HFRONT_PORCH_REG		0x38
++#define SN65DSI83_CHA_VFRONT_PORCH_REG		0x3A
++
++#define SN65DSI83_TEST_PATTERN_REG		0x3C
++#define SN65DSI83_CHA_TEST_PATTERN_SHIFT	4
++
++#define SN65DSI83_CHA_ERR_REG			0xE5
++
++static struct fb_videomode sn65dsi_modedb[] = {
++	{
++		/* CHIMEI N116B6-L02 datasheet values */
++		.name		= "SN65DSI_default",
++		.xres		= 1366,
++		.yres		= 768,
++		.pixclock	= 13256,
++		.left_margin	= 98,
++		.right_margin 	= 31,
++		.upper_margin	= 22,
++		.lower_margin	= 4,
++		.hsync_len	= 65,
++		.vsync_len	= 12,
++		.sync		= FB_SYNC_OE_LOW_ACT,
++		.vmode		= FB_VMODE_NONINTERLACED,
++		.flag		= 0,
++	},
++};
++
++static struct mipi_lcd_config lcd_config = {
++	.virtual_ch	= 0x0,
++	.data_lane_num	= 2,
++	.max_phy_clk	= 800,
++	.dpi_fmt	= MIPI_RGB888,
++};
++
++struct panel_drv_data {
++	struct i2c_client *client;
++	struct fb_videomode *fb_vm;
++	int pixclk_src;
++	int mode_24bpp;
++	int format_24bpp;
++	struct gpio_desc *enable_gpio;
++} sn65dsi_panel;
++
++static void dump_fb_videomode(struct fb_videomode *m)
++{
++	pr_info("fb_videomode = %d %d %d %ul %d %d %d %d %d %d %d %d %d\n",
++		m->refresh, m->xres, m->yres, m->pixclock, m->left_margin,
++		m->right_margin, m->upper_margin, m->lower_margin,
++		m->hsync_len, m->vsync_len, m->sync, m->vmode, m->flag);
++}
++
++static void dump_videomode(struct videomode *m)
++{
++	pr_info("videomode = %lu %d %d %d %d %d %d %d %d %d\n",
++		m->pixelclock,
++		m->hactive, m->hfront_porch, m->hback_porch, m->hsync_len,
++		m->vactive, m->vfront_porch, m->vback_porch, m->vsync_len,
++		m->flags);
++}
++
++static int sn65dsi_write(u8 reg, u8 val)
++{
++	struct i2c_client *client = sn65dsi_panel.client;
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, reg, val);
++
++	if (ret)
++		dev_err(&client->dev, "failed to write at 0x%02x", reg);
++
++	dev_dbg(&client->dev, "%s: write reg 0x%02x data 0x%02x", __func__, reg, val);
++
++	return ret;
++}
++
++static int sn65dsi_read(u8 reg)
++{
++	struct i2c_client *client = sn65dsi_panel.client;
++	int ret;
++
++	dev_notice(&client->dev, "client 0x%p", client);
++	ret = i2c_smbus_read_byte_data(client, reg);
++
++	if (ret < 0) {
++		dev_err(&client->dev, "failed reading at 0x%02x", reg);
++		return ret;
++	}
++
++	dev_dbg(&client->dev, "%s: read reg 0x%02x data 0x%02x", __func__, reg, ret);
++
++	return ret;
++}
++
++static int sn65dsi_probe_of(void)
++{
++	struct device_node *np = sn65dsi_panel.client->dev.of_node;
++	struct device dev = sn65dsi_panel.client->dev;
++	struct device_node *port;
++	struct device_node *endpoint;
++	struct device_node *panel;
++	struct display_timing of_timing;
++	struct videomode vm;
++	struct fb_videomode fb_vm;
++	struct gpio_desc *gpio;
++	int ret;
++
++	gpio = devm_gpiod_get(&dev, "enable");
++	if (IS_ERR(gpio)) {
++		dev_err(&dev, "failed to parse enable gpio");
++		return PTR_ERR(gpio);
++	} else {
++		gpiod_direction_output(gpio, 0);
++		sn65dsi_panel.enable_gpio = gpio;
++		dev_err(&dev, "enable gpio found");
++	}
++
++	dev_notice(&dev, "node %s", np->name);
++
++	port = of_graph_get_port_by_id(np, 0);
++	if (!port)
++		return -EINVAL;
++
++	of_node_put(port);
++
++	endpoint = of_graph_get_next_endpoint(np, NULL);
++	dev_notice(&dev, "endpoint %s", endpoint->name);
++
++	panel = of_graph_get_remote_port_parent(endpoint);
++	if (!panel) {
++		dev_err(&dev, "failed to find panel");
++		return -ENODEV;
++	}
++	of_node_put(endpoint);
++
++	dev_notice(&dev, "panel %s", panel->name);
++
++	memset(&vm, 0 ,sizeof(vm));
++	memset(&fb_vm, 0 ,sizeof(fb_vm));
++	ret = of_get_display_timing(panel, "panel-timing", &of_timing);
++	if (!ret) {
++		videomode_from_timing(&of_timing, &vm);
++		dump_videomode(&vm);
++		ret = fb_videomode_from_videomode(&vm, &fb_vm);
++		if (ret)
++			return ret;
++
++		dump_fb_videomode(&fb_vm);
++
++	}
++	else
++		dev_info(&dev, "use default video timing settings");
++
++	if (of_find_property(panel, "lvds-24bpp-mode", NULL))
++		sn65dsi_panel.mode_24bpp = 1;
++
++	ret = of_property_read_u32(panel, "lvds-24bpp-format",
++				&sn65dsi_panel.format_24bpp);
++
++	if (ret || (sn65dsi_panel.format_24bpp != 1 && sn65dsi_panel.format_24bpp != 2))
++		sn65dsi_panel.format_24bpp = 2;
++
++	ret = of_property_read_u32(panel, "lvds-pixclk-src",
++				   &sn65dsi_panel.pixclk_src);
++	if (ret)
++		sn65dsi_panel.pixclk_src = 0;
++
++	of_node_put(panel);
++
++	return 0;
++}
++
++static int sn65dsi_power_on(void)
++{
++
++	gpiod_set_value_cansleep(sn65dsi_panel.enable_gpio, 1);
++	/* Wait for 1ms for the internal voltage regulator to stabilize */
++	msleep(1);
++
++	return 0;
++}
++
++static void sn65dsi_power_off(void)
++{
++	gpiod_set_value_cansleep(sn65dsi_panel.enable_gpio, 0);
++	/*
++	 * The EN pin must be held low for at least 10 ms
++	 * before being asserted high
++	 */
++	msleep(10);
++}
++
++static int sn65dsi_start_stream(void)
++{
++	struct device dev = sn65dsi_panel.client->dev;
++	int regval;
++
++	/* Set the PLL_EN bit (CSR 0x0D.0) */
++	sn65dsi_write(SN65DSI83_PLL_EN_REG, 0x1);
++	/* Wait for the PLL_LOCK bit to be set (CSR 0x0A.7) */
++	msleep(200);
++
++	/* Perform SW reset to apply changes */
++	sn65dsi_write(SN65DSI83_SOFT_RESET_REG, 0x01);
++
++	/* Read CHA Error register */
++	regval = sn65dsi_read(SN65DSI83_CHA_ERR_REG);
++	dev_info(&dev, "CHA (0x%02x) = 0x%02x",
++		 SN65DSI83_CHA_ERR_REG, regval);
++
++	return 0;
++}
++
++static void sn65dsi_stop_stream(void)
++{
++	/* Clear the PLL_EN bit (CSR 0x0D.0) */
++	sn65dsi_write(SN65DSI83_PLL_EN_REG, 0x00);
++}
++
++static int sn65dsi_configure(void)
++{
++	sn65dsi_write(0x09,0x00);
++	sn65dsi_write(0x0A,0x05);
++	sn65dsi_write(0x0B,0x28);
++	sn65dsi_write(0x0D,0x00);
++	sn65dsi_write(0x10,0x36);
++	sn65dsi_write(0x11,0x00);
++	sn65dsi_write(0x12,0x5c);
++	sn65dsi_write(0x13,0x00);
++	sn65dsi_write(0x18,0x72);
++	sn65dsi_write(0x19,0x00);
++	sn65dsi_write(0x1A,0x03);
++	sn65dsi_write(0x1B,0x00);
++	sn65dsi_write(0x20,0x56);
++	sn65dsi_write(0x21,0x05);
++	sn65dsi_write(0x22,0x00);
++	sn65dsi_write(0x23,0x00);
++	sn65dsi_write(0x24,0x00);
++	sn65dsi_write(0x25,0x00);
++	sn65dsi_write(0x26,0x00);
++	sn65dsi_write(0x27,0x00);
++	sn65dsi_write(0x28,0x21);
++	sn65dsi_write(0x29,0x00);
++	sn65dsi_write(0x2A,0x00);
++	sn65dsi_write(0x2B,0x00);
++	sn65dsi_write(0x2C,0x41);
++	sn65dsi_write(0x2D,0x00);
++	sn65dsi_write(0x2E,0x00);
++	sn65dsi_write(0x2F,0x00);
++	sn65dsi_write(0x30,0x0c);
++	sn65dsi_write(0x31,0x00);
++	sn65dsi_write(0x32,0x00);
++	sn65dsi_write(0x33,0x00);
++	sn65dsi_write(0x34,0x62);
++	sn65dsi_write(0x35,0x00);
++	sn65dsi_write(0x36,0x00);
++	sn65dsi_write(0x37,0x00);
++	sn65dsi_write(0x38,0x00);
++	sn65dsi_write(0x39,0x00);
++	sn65dsi_write(0x3A,0x00);
++	sn65dsi_write(0x3B,0x00);
++	sn65dsi_write(0x3C,0x00);
++	sn65dsi_write(0x3D,0x00);
++	sn65dsi_write(0x3E,0x00);
++	return 0;
++}
++
++int sn65dsi83_lcd_setup(struct mipi_dsi_info *mipi_dsi)
++{
++	struct device dev = mipi_dsi->pdev->dev;
++	dev_notice(&dev, "MIPI DSI LCD setup.\n");
++
++	sn65dsi_power_on();
++	sn65dsi_configure();
++
++	return 0;
++}
++
++int sn65dsi83_lcd_start(struct mipi_dsi_info *mipi_dsi)
++{
++	struct device dev = mipi_dsi->pdev->dev;
++	dev_notice(&dev, "MIPI DSI LCD start.\n");
++
++	sn65dsi_start_stream();
++
++	return 0;
++}
++
++int sn65dsi83_lcd_stop(struct mipi_dsi_info *mipi_dsi)
++{
++	struct device dev = mipi_dsi->pdev->dev;
++	dev_notice(&dev, "MIPI DSI LCD stop.\n");
++
++	sn65dsi_stop_stream();
++	sn65dsi_power_off();
++
++	return 0;
++}
++
++void sn65dsi83_get_lcd_videomode(struct fb_videomode **mode, int *size,
++		struct mipi_lcd_config **data)
++{
++	*mode = &sn65dsi_modedb[0];
++	*size = ARRAY_SIZE(sn65dsi_modedb);
++	*data = &lcd_config;
++}
++
++static int sn65dsi_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	int ret;
++
++	dev_notice(&client->dev, "probe, client 0x%p\n", client);
++	memset(&sn65dsi_panel, 0, sizeof(sn65dsi_panel));
++
++	sn65dsi_panel.client = client;
++	sn65dsi_panel.fb_vm = &sn65dsi_modedb[0];
++
++	/* Check if the adapter supports the needed features */
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
++		return -EIO;
++
++	ret = sn65dsi_probe_of();
++	if (ret) {
++		dev_err(&client->dev, "failed to parse DT data");
++		return -1;
++	}
++
++	sn65dsi_power_off();
++	sn65dsi_power_on();
++
++	/* Soft Reset reg value at power on should be 0x00 */
++	ret = sn65dsi_read(SN65DSI83_SOFT_RESET_REG);
++	if (ret != 0x00)
++		return -ENODEV;
++
++	sn65dsi_power_off();
++
++	return ret;
++}
++
++static int __exit sn65dsi_remove(struct i2c_client *client)
++{
++	sn65dsi_stop_stream();
++	sn65dsi_power_off();
++	return 0;
++}
++
++static const struct i2c_device_id sn65dsi_id[] = {
++	{ DRV_NAME, 0},
++	{ },
++};
++
++MODULE_DEVICE_TABLE(i2c, sn65dsi_id);
++
++static const struct of_device_id sn65dsi_of_match[] = {
++	{ .compatible = "ti,sn65dsi83", },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(of, sn65dsi_of_match);
++
++static struct i2c_driver sn65dsi_driver = {
++	.probe	= sn65dsi_probe,
++	.remove	= __exit_p(sn65dsi_remove),
++	.id_table = sn65dsi_id,
++	.driver	= {
++		.name	= DRV_NAME,
++		.owner	= THIS_MODULE,
++		.of_match_table = sn65dsi_of_match,
++	},
++};
++
++module_i2c_driver(sn65dsi_driver);
++
++MODULE_AUTHOR("Valentin Raevsky <valentin@compulab.co.il>");
++MODULE_DESCRIPTION("SN65DSI83 DSI-to-LVDS bridge IC driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/video/si/Kconfig b/drivers/video/si/Kconfig
+new file mode 100644
+index 0000000..300eae7
+--- /dev/null
++++ b/drivers/video/si/Kconfig
+@@ -0,0 +1,6 @@
++config SIL164_SIMPLE
++	tristate "Silicon Image sil164 TMDS transmitter simple"
++	depends on I2C
++	help
++	  Support for sil164 simple used in some cl-sb-som boards.
++
+diff --git a/drivers/video/si/Makefile b/drivers/video/si/Makefile
+new file mode 100644
+index 0000000..6836f96
+--- /dev/null
++++ b/drivers/video/si/Makefile
+@@ -0,0 +1,2 @@
++sil164_simple-y := sil164_simple_drv.o
++obj-$(CONFIG_SIL164_SIMPLE) += sil164_simple.o
+diff --git a/drivers/video/si/sil164_simple_drv.c b/drivers/video/si/sil164_simple_drv.c
+new file mode 100644
+index 0000000..69551114
+--- /dev/null
++++ b/drivers/video/si/sil164_simple_drv.c
+@@ -0,0 +1,241 @@
++/*
++ * Copyright (C) 2015 CompuLab LTD.
++ * All Rights Reserved.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++
++struct sil164_encoder_params {
++	enum {
++		SIL164_INPUT_EDGE_FALLING = 0,
++		SIL164_INPUT_EDGE_RISING
++	} input_edge;
++
++	enum {
++		SIL164_INPUT_WIDTH_12BIT = 0,
++		SIL164_INPUT_WIDTH_24BIT
++	} input_width;
++
++	enum {
++		SIL164_INPUT_SINGLE_EDGE = 0,
++		SIL164_INPUT_DUAL_EDGE
++	} input_dual;
++
++	enum {
++		SIL164_PLL_FILTER_ON = 0,
++		SIL164_PLL_FILTER_OFF,
++	} pll_filter;
++
++	int input_skew; /** < Allowed range [-4, 3], use 0 for no de-skew. */
++	int duallink_skew; /** < Allowed range [-4, 3]. */
++};
++
++#define sil164_info(client, format, ...)		\
++	dev_info(&client->dev, format, __VA_ARGS__)
++#define sil164_err(client, format, ...)			\
++	dev_err(&client->dev, format, __VA_ARGS__)
++
++/* HW register definitions */
++
++#define SIL164_VENDOR_LO			0x0
++#define SIL164_VENDOR_HI			0x1
++#define SIL164_DEVICE_LO			0x2
++#define SIL164_DEVICE_HI			0x3
++#define SIL164_REVISION				0x4
++#define SIL164_FREQ_MIN				0x6
++#define SIL164_FREQ_MAX				0x7
++
++#define SIL164_CONTROL0				0x8
++#define SIL164_CONTROL0_POWER_ON		0x01
++#define SIL164_CONTROL0_EDGE_RISING		0x02
++#define SIL164_CONTROL0_INPUT_24BIT		0x04
++#define SIL164_CONTROL0_DUAL_EDGE		0x08
++#define SIL164_CONTROL0_HSYNC_ON		0x10
++#define SIL164_CONTROL0_VSYNC_ON		0x20
++
++#define SIL164_DETECT				0x9
++#define SIL164_DETECT_INTR_STAT			0x01
++#define SIL164_DETECT_HOTPLUG_STAT		0x02
++#define SIL164_DETECT_RECEIVER_STAT		0x04
++#define SIL164_DETECT_INTR_MODE_RECEIVER	0x00
++#define SIL164_DETECT_INTR_MODE_HOTPLUG		0x08
++#define SIL164_DETECT_OUT_MODE_HIGH		0x00
++#define SIL164_DETECT_OUT_MODE_INTR		0x10
++#define SIL164_DETECT_OUT_MODE_RECEIVER		0x20
++#define SIL164_DETECT_OUT_MODE_HOTPLUG		0x30
++#define SIL164_DETECT_VSWING_STAT		0x80
++
++#define SIL164_CONTROL1				0xa
++#define SIL164_CONTROL1_DESKEW_ENABLE		0x10
++#define SIL164_CONTROL1_DESKEW_INCR_SHIFT	5
++
++#define SIL164_GPIO				0xb
++
++#define SIL164_CONTROL2				0xc
++#define SIL164_CONTROL2_FILTER_ENABLE		0x01
++#define SIL164_CONTROL2_FILTER_SETTING_SHIFT	1
++#define SIL164_CONTROL2_DUALLINK_MASTER		0x40
++#define SIL164_CONTROL2_SYNC_CONT		0x80
++
++#define SIL164_DUALLINK				0xd
++#define SIL164_DUALLINK_ENABLE			0x10
++#define SIL164_DUALLINK_SKEW_SHIFT		5
++
++#define SIL164_PLLZONE				0xe
++#define SIL164_PLLZONE_STAT			0x08
++#define SIL164_PLLZONE_FORCE_ON			0x10
++#define SIL164_PLLZONE_FORCE_HIGH		0x20
++
++/* HW access functions */
++
++static void
++sil164_write(struct i2c_client *client, uint8_t addr, uint8_t val)
++{
++	uint8_t buf[] = {addr, val};
++	int ret;
++
++	ret = i2c_master_send(client, buf, ARRAY_SIZE(buf));
++	if (ret < 0)
++		sil164_err(client, "Error %d writing to subaddress 0x%x\n",
++			   ret, addr);
++}
++
++static uint8_t
++sil164_read(struct i2c_client *client, uint8_t addr)
++{
++	uint8_t val;
++	int ret;
++
++	ret = i2c_master_send(client, &addr, sizeof(addr));
++	if (ret < 0)
++		goto fail;
++
++	ret = i2c_master_recv(client, &val, sizeof(val));
++	if (ret < 0)
++		goto fail;
++
++	return val;
++
++fail:
++	sil164_err(client, "Error %d reading from subaddress 0x%x\n",
++		   ret, addr);
++	return 0;
++}
++
++static void
++sil164_set_power_state(struct i2c_client *client, bool on)
++{
++	uint8_t control0 = sil164_read(client, SIL164_CONTROL0);
++
++	if (on)
++		control0 |= SIL164_CONTROL0_POWER_ON;
++	else
++		control0 &= ~SIL164_CONTROL0_POWER_ON;
++
++	sil164_write(client, SIL164_CONTROL0, control0);
++}
++
++static void
++sil164_init_state(struct i2c_client *client,
++		  struct sil164_encoder_params *config,
++		  bool duallink)
++{
++	sil164_write(client, SIL164_CONTROL0,
++		     SIL164_CONTROL0_HSYNC_ON |
++		     SIL164_CONTROL0_VSYNC_ON |
++		     (config->input_edge ? SIL164_CONTROL0_EDGE_RISING : 0) |
++		     (config->input_width ? SIL164_CONTROL0_INPUT_24BIT : 0) |
++		     (config->input_dual ? SIL164_CONTROL0_DUAL_EDGE : 0));
++
++	sil164_write(client, SIL164_DETECT,
++		     SIL164_DETECT_INTR_STAT |
++		     SIL164_DETECT_OUT_MODE_RECEIVER);
++
++	sil164_write(client, SIL164_CONTROL1,
++		     (config->input_skew ? SIL164_CONTROL1_DESKEW_ENABLE : 0) |
++		     (((config->input_skew + 4) & 0x7)
++		      << SIL164_CONTROL1_DESKEW_INCR_SHIFT));
++
++	sil164_write(client, SIL164_CONTROL2,
++		     SIL164_CONTROL2_SYNC_CONT |
++		     (config->pll_filter ? 0 : SIL164_CONTROL2_FILTER_ENABLE) |
++		     (4 << SIL164_CONTROL2_FILTER_SETTING_SHIFT));
++
++	sil164_write(client, SIL164_PLLZONE, 0);
++
++	if (duallink)
++		sil164_write(client, SIL164_DUALLINK,
++			     SIL164_DUALLINK_ENABLE |
++			     (((config->duallink_skew + 4) & 0x7)
++			      << SIL164_DUALLINK_SKEW_SHIFT));
++	else
++		sil164_write(client, SIL164_DUALLINK, 0);
++}
++
++/* I2C driver functions */
++
++static int
++sil164_probe(struct i2c_client *client, const struct i2c_device_id *id)
++{
++	struct sil164_encoder_params *config;
++
++	int vendor = sil164_read(client, SIL164_VENDOR_HI) << 8 |
++		sil164_read(client, SIL164_VENDOR_LO);
++	int device = sil164_read(client, SIL164_DEVICE_HI) << 8 |
++		sil164_read(client, SIL164_DEVICE_LO);
++	int rev = sil164_read(client, SIL164_REVISION);
++
++	if (vendor != 0x1 || device != 0x6) {
++		sil164_info(client, "Unknown device %x:%x.%x\n",
++			   vendor, device, rev);
++		return -ENODEV;
++	}
++
++	config = kzalloc(sizeof(*config), GFP_KERNEL);
++	if (!config)
++		return -ENOMEM;
++
++	config->input_width = SIL164_CONTROL0_INPUT_24BIT;
++
++	sil164_init_state(client, config, 0);
++
++	sil164_set_power_state(client, 1);
++
++	sil164_info(client, "Detected device %x:%x.%x\n",
++		    vendor, device, rev);
++
++	kfree(config);
++
++	return 0;
++}
++
++static int
++sil164_remove(struct i2c_client *client)
++{
++	sil164_set_power_state(client, 0);
++	return 0;
++}
++
++static struct i2c_device_id sil164_ids[] = {
++	{ "sil164_simple", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, sil164_ids);
++
++static struct i2c_driver sil164_simple_driver = {
++		.probe = sil164_probe,
++		.remove = sil164_remove,
++		.driver = {
++			.name = "sil164_simple",
++		},
++		.id_table = sil164_ids,
++};
++
++module_i2c_driver(sil164_simple_driver);
++
++MODULE_AUTHOR("CompuLab Ltd.");
++MODULE_DESCRIPTION("Silicon Image sil164 TMDS transmitter simple driver");
++MODULE_LICENSE("GPL and additional rights");
+diff --git a/include/sound/simple_card.h b/include/sound/simple_card.h
+index b9b4f28..f930ad3 100644
+--- a/include/sound/simple_card.h
++++ b/include/sound/simple_card.h
+@@ -17,8 +17,12 @@
+ struct asoc_simple_dai {
+ 	const char *name;
+ 	unsigned int sysclk;
++	int sysclk_dir;
++	int sysclk_id;
+ 	int slots;
+ 	int slot_width;
++	unsigned int tx_slot_mask;
++	unsigned int rx_slot_mask;
+ 	struct clk *clk;
+ };
+ 
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index 8d948aa..b1dfbf6 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -1528,6 +1528,8 @@ int snd_soc_of_parse_card_name(struct snd_soc_card *card,
+ int snd_soc_of_parse_audio_simple_widgets(struct snd_soc_card *card,
+ 					  const char *propname);
+ int snd_soc_of_parse_tdm_slot(struct device_node *np,
++			      unsigned int *tx_mask,
++			      unsigned int *rx_mask,
+ 			      unsigned int *slots,
+ 			      unsigned int *slot_width);
+ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+diff --git a/sound/soc/fsl/Kconfig b/sound/soc/fsl/Kconfig
+index a4054f3..4c71284 100644
+--- a/sound/soc/fsl/Kconfig
++++ b/sound/soc/fsl/Kconfig
+@@ -288,6 +288,18 @@ config SND_SOC_IMX_CS42888
+ 	 Say Y if you want to add support for SoC audio on an i.MX board with
+ 	 a cs42888 codec.
+ 
++config SND_SOC_IMX_WM8731
++	tristate "SoC Audio support for i.MX boards with wm8731"
++	depends on OF && I2C
++	select SND_SIMPLE_CARD
++	select SND_SOC_WM8731
++	select SND_SOC_IMX_PCM_DMA
++	select SND_SOC_FSL_SAI
++	select SND_SOC_FSL_UTILS
++	help
++	  Say Y if you want to add support for SoC audio on an i.MX board with
++	  a wm8731 codec.
++
+ config SND_SOC_IMX_WM8962
+ 	tristate "SoC Audio support for i.MX boards with wm8962"
+ 	depends on OF && I2C && INPUT
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 33feee9..b3e0e78 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -76,13 +76,17 @@ static int asoc_simple_card_hw_params(struct snd_pcm_substream *substream,
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+ 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+ 	struct simple_card_data *priv = snd_soc_card_get_drvdata(rtd->card);
++	struct simple_dai_props *dai_props =
++		&priv->dai_props[rtd - rtd->card->rtd];
++	unsigned int sysclk_id = dai_props->codec_dai.sysclk_id;
++	unsigned int sysclk_dir = dai_props->codec_dai.sysclk_dir;
+ 	unsigned int mclk;
+ 	int ret = 0;
+ 
+ 	if (priv->mclk_fs) {
+ 		mclk = params_rate(params) * priv->mclk_fs;
+-		ret = snd_soc_dai_set_sysclk(codec_dai, 0, mclk,
+-					     SND_SOC_CLOCK_IN);
++		ret = snd_soc_dai_set_sysclk(codec_dai, sysclk_id, mclk,
++					     sysclk_dir);
+ 	}
+ 
+ 	return ret;
+@@ -126,7 +130,8 @@ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
+ 	int ret;
+ 
+ 	if (set->sysclk) {
+-		ret = snd_soc_dai_set_sysclk(dai, 0, set->sysclk, 0);
++		ret = snd_soc_dai_set_sysclk(dai, set->sysclk_id, set->sysclk,
++					     set->sysclk_dir);
+ 		if (ret && ret != -ENOTSUPP) {
+ 			dev_err(dai->dev, "simple-card: set_sysclk error\n");
+ 			goto err;
+@@ -134,7 +139,9 @@ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
+ 	}
+ 
+ 	if (set->slots) {
+-		ret = snd_soc_dai_set_tdm_slot(dai, 0, 0,
++		ret = snd_soc_dai_set_tdm_slot(dai,
++					       set->tx_slot_mask,
++					       set->rx_slot_mask,
+ 						set->slots,
+ 						set->slot_width);
+ 		if (ret && ret != -ENOTSUPP) {
+@@ -203,6 +210,7 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
+ {
+ 	struct of_phandle_args args;
+ 	struct clk *clk;
++	const char *str;
+ 	u32 val;
+ 	int ret;
+ 
+@@ -226,10 +234,31 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
+ 		return ret;
+ 
+ 	/* Parse TDM slot */
+-	ret = snd_soc_of_parse_tdm_slot(np, &dai->slots, &dai->slot_width);
++	ret = snd_soc_of_parse_tdm_slot(np, &dai->tx_slot_mask,
++					&dai->rx_slot_mask,
++					&dai->slots, &dai->slot_width);
+ 	if (ret)
+ 		return ret;
+ 
++	ret = of_property_read_string(np, "system-clock-direction", &str);
++	if (ret == 0) {
++		if (!strcmp(str, "out"))
++			dai->sysclk_dir = SND_SOC_CLOCK_OUT;
++		else if (!strcmp(str, "in"))
++			dai->sysclk_dir = SND_SOC_CLOCK_IN;
++		else
++			return -EINVAL;
++	}
++
++	ret = of_property_read_string(np, "system-clock-type", &str);
++	if (ret == 0) {
++		if (!strcmp(str, "xtal"))
++			dai->sysclk_id = 1;
++		else if (!strcmp(str, "mclk"))
++			dai->sysclk_id = 2;
++		else
++			return -EINVAL;
++	}
+ 	/*
+ 	 * Parse dai->sysclk come from "clocks = <&xxx>"
+ 	 * (if system has common clock)
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 2373252..6549e86 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -3286,13 +3286,38 @@ int snd_soc_of_parse_audio_simple_widgets(struct snd_soc_card *card,
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_of_parse_audio_simple_widgets);
+ 
++static int snd_soc_of_get_slot_mask(struct device_node *np,
++				    const char *prop_name,
++				    unsigned int *mask)
++{
++	u32 val;
++	const u32 *of_slot_mask = of_get_property(np, prop_name, &val);
++	int i;
++
++	if (!of_slot_mask)
++		return 0;
++	val /= sizeof(u32);
++	for (i = 0; i < val; i++)
++		if (be32_to_cpup(&of_slot_mask[i]))
++			*mask |= (1 << i);
++
++	return val;
++}
++
+ int snd_soc_of_parse_tdm_slot(struct device_node *np,
++			      unsigned int *tx_mask,
++			      unsigned int *rx_mask,
+ 			      unsigned int *slots,
+ 			      unsigned int *slot_width)
+ {
+ 	u32 val;
+ 	int ret;
+ 
++	if (tx_mask)
++		snd_soc_of_get_slot_mask(np, "dai-tdm-slot-tx-mask", tx_mask);
++	if (rx_mask)
++		snd_soc_of_get_slot_mask(np, "dai-tdm-slot-rx-mask", rx_mask);
++
+ 	if (of_property_read_bool(np, "dai-tdm-slot-num")) {
+ 		ret = of_property_read_u32(np, "dai-tdm-slot-num", &val);
+ 		if (ret)

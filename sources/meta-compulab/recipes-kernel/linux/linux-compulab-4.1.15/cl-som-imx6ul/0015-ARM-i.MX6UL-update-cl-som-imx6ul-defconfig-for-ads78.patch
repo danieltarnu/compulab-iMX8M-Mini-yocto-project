@@ -1,0 +1,30 @@
+From 1c28655371efadb93190e4681186146039075ae6 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 3 Jan 2016 13:27:33 +0200
+Subject: [PATCH 15/38] ARM: i.MX6UL: update cl-som-imx6ul defconfig for
+ ads7846
+
+Update cl-som-imx6ul defconfig for ads7846.
+Compile the ads7846 driver as a part of the cl-som-imx6ul kernel.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6ul_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/cl_som_imx6ul_defconfig b/arch/arm/configs/cl_som_imx6ul_defconfig
+index a658e70..860e485 100644
+--- a/arch/arm/configs/cl_som_imx6ul_defconfig
++++ b/arch/arm/configs/cl_som_imx6ul_defconfig
+@@ -200,7 +200,7 @@ CONFIG_KEYBOARD_IMX=y
+ CONFIG_MOUSE_PS2=m
+ CONFIG_MOUSE_PS2_ELANTECH=y
+ CONFIG_INPUT_TOUCHSCREEN=y
+-CONFIG_TOUCHSCREEN_ADS7846=m
++CONFIG_TOUCHSCREEN_ADS7846=y
+ CONFIG_TOUCHSCREEN_EGALAX=y
+ CONFIG_TOUCHSCREEN_ELAN=y
+ CONFIG_TOUCHSCREEN_MAX11801=y
+-- 
+1.9.1
+

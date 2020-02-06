@@ -1,0 +1,46 @@
+From d7ed8fa908d58bcaad37c4623e6c734122ad192a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 18 Jun 2017 09:58:57 +0300
+Subject: ARM: i.MX6: cm-fx6: dts: tvp5150 to enable; uart5 to disable
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6dl-sbc-fx6-parallel.dts | 8 ++++++++
+ arch/arm/boot/dts/imx6q-sbc-fx6-parallel.dts  | 8 ++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6dl-sbc-fx6-parallel.dts b/arch/arm/boot/dts/imx6dl-sbc-fx6-parallel.dts
+index 7a90707..362ea82 100644
+--- a/arch/arm/boot/dts/imx6dl-sbc-fx6-parallel.dts
++++ b/arch/arm/boot/dts/imx6dl-sbc-fx6-parallel.dts
+@@ -30,3 +30,11 @@
+ &mipi_csi {
+ 	status = "disabled";
+ };
++
++&uart5 {
++	status = "disabled";
++};
++
++&adv5150 {
++	status = "okey";
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-fx6-parallel.dts b/arch/arm/boot/dts/imx6q-sbc-fx6-parallel.dts
+index 05f5023..a44c014 100644
+--- a/arch/arm/boot/dts/imx6q-sbc-fx6-parallel.dts
++++ b/arch/arm/boot/dts/imx6q-sbc-fx6-parallel.dts
+@@ -30,3 +30,11 @@
+ &mipi_csi {
+ 	status = "disabled";
+ };
++
++&uart5 {
++	status = "disabled";
++};
++
++&adv5150 {
++	status = "okey";
++};
+-- 
+1.9.1
+

@@ -1,0 +1,74 @@
+From 2bd1368403657c24d5e07cbec2e979d04549924a Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 23 Aug 2017 10:00:48 +0300
+Subject: [PATCH 01/57] imx: mx7: fix the CCM_ macros
+
+The CCM_ macros use the CCM_BASE_ADDRESS macro, which doesn't exist.
+Replace the CCM_BASE_ADDRESS macros with CCM_BASE_ADDR.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+---
+ arch/arm/include/asm/arch-mx7/crm_regs.h | 46 ++++++++++++------------
+ 1 file changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch-mx7/crm_regs.h b/arch/arm/include/asm/arch-mx7/crm_regs.h
+index d65d4d9daf..e54a254259 100644
+--- a/arch/arm/include/asm/arch-mx7/crm_regs.h
++++ b/arch/arm/include/asm/arch-mx7/crm_regs.h
+@@ -2000,29 +2000,29 @@ struct mxc_ccm_anatop_reg {
+ #define TEMPMON_HW_ANADIG_TEMPSENSE_TRIM_TOG_T_MUX_ADDR(x) (((uint32_t)(((uint32_t)(x))<<TEMPMON_HW_ANADIG_TEMPSENSE_TRIM_TOG_T_MUX_ADDR_SHIFT))&TEMPMON_HW_ANADIG_TEMPSENSE_TRIM_TOG_T_MUX_ADDR_MASK)
+ 
+ 
+-#define CCM_GPR(i)		(CCM_BASE_ADDRESS + CCM_GPR0_OFFSET + 0x10 * (i))
+-#define CCM_OBSERVE(i)		(CCM_BASE_ADDRESS + CCM_OBSERVE0_OFFSET + 0x10 * (i))
+-#define CCM_SCTRL(i)		(CCM_BASE_ADDRESS + CCM_SCTRL0_OFFSET + 0x10 * (i))
+-#define CCM_CCGR(i)		(CCM_BASE_ADDRESS + CCM_CCGR0_OFFSET + 0x10 * (i))
+-#define CCM_ROOT_TARGET(i)	(CCM_BASE_ADDRESS + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i))
+-
+-#define CCM_GPR_SET(i)		(CCM_BASE_ADDRESS + CCM_GPR0_OFFSET + 0x10 * (i) + 4)
+-#define CCM_OBSERVE_SET(i)	(CCM_BASE_ADDRESS + CCM_OBSERVE0_OFFSET + 0x10 * (i) + 4)
+-#define CCM_SCTRL_SET(i)	(CCM_BASE_ADDRESS + CCM_SCTRL0_OFFSET + 0x10 * (i) + 4)
+-#define CCM_CCGR_SET(i)		(CCM_BASE_ADDRESS + CCM_CCGR0_OFFSET + 0x10 * (i) + 4)
+-#define CCM_ROOT_TARGET_SET(i)	(CCM_BASE_ADDRESS + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i) + 4)
+-
+-#define CCM_GPR_CLR(i)		(CCM_BASE_ADDRESS + CCM_GPR0_OFFSET + 0x10 * (i) + 8)
+-#define CCM_OBSERVE_CLR(i)	(CCM_BASE_ADDRESS + CCM_OBSERVE0_OFFSET + 0x10 * (i) + 8)
+-#define CCM_SCTRL_CLR(i)	(CCM_BASE_ADDRESS + CCM_SCTRL0_OFFSET + 0x10 * (i) + 8)
+-#define CCM_CCGR_CLR(i)		(CCM_BASE_ADDRESS + CCM_CCGR0_OFFSET + 0x10 * (i) + 8)
+-#define CCM_ROOT_TARGET_CLR(i)	(CCM_BASE_ADDRESS + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i) + 8)
+-
+-#define CCM_GPR_TOGGLE(i)	(CCM_BASE_ADDRESS + CCM_GPR0_OFFSET + 0x10 * (i) + 12)
+-#define CCM_OBSERVE_TOGGLE(i)	(CCM_BASE_ADDRESS + CCM_OBSERVE0_OFFSET + 0x10 * (i) + 12)
+-#define CCM_SCTRL_TOGGLE(i)	(CCM_BASE_ADDRESS + CCM_SCTRL0_OFFSET + 0x10 * (i) + 12)
+-#define CCM_CCGR_TOGGLE(i)	(CCM_BASE_ADDRESS + CCM_CCGR0_OFFSET + 0x10 * (i) + 12)
+-#define CCM_ROOT_TARGET_TOGGLE(i)	(CCM_BASE_ADDRESS + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i) + 12)
++#define CCM_GPR(i)		(CCM_BASE_ADDR + CCM_GPR0_OFFSET + 0x10 * (i))
++#define CCM_OBSERVE(i)		(CCM_BASE_ADDR + CCM_OBSERVE0_OFFSET + 0x10 * (i))
++#define CCM_SCTRL(i)		(CCM_BASE_ADDR + CCM_SCTRL0_OFFSET + 0x10 * (i))
++#define CCM_CCGR(i)		(CCM_BASE_ADDR + CCM_CCGR0_OFFSET + 0x10 * (i))
++#define CCM_ROOT_TARGET(i)	(CCM_BASE_ADDR + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i))
++
++#define CCM_GPR_SET(i)		(CCM_BASE_ADDR + CCM_GPR0_OFFSET + 0x10 * (i) + 4)
++#define CCM_OBSERVE_SET(i)	(CCM_BASE_ADDR + CCM_OBSERVE0_OFFSET + 0x10 * (i) + 4)
++#define CCM_SCTRL_SET(i)	(CCM_BASE_ADDR + CCM_SCTRL0_OFFSET + 0x10 * (i) + 4)
++#define CCM_CCGR_SET(i)		(CCM_BASE_ADDR + CCM_CCGR0_OFFSET + 0x10 * (i) + 4)
++#define CCM_ROOT_TARGET_SET(i)	(CCM_BASE_ADDR + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i) + 4)
++
++#define CCM_GPR_CLR(i)		(CCM_BASE_ADDR + CCM_GPR0_OFFSET + 0x10 * (i) + 8)
++#define CCM_OBSERVE_CLR(i)	(CCM_BASE_ADDR + CCM_OBSERVE0_OFFSET + 0x10 * (i) + 8)
++#define CCM_SCTRL_CLR(i)	(CCM_BASE_ADDR + CCM_SCTRL0_OFFSET + 0x10 * (i) + 8)
++#define CCM_CCGR_CLR(i)		(CCM_BASE_ADDR + CCM_CCGR0_OFFSET + 0x10 * (i) + 8)
++#define CCM_ROOT_TARGET_CLR(i)	(CCM_BASE_ADDR + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i) + 8)
++
++#define CCM_GPR_TOGGLE(i)	(CCM_BASE_ADDR + CCM_GPR0_OFFSET + 0x10 * (i) + 12)
++#define CCM_OBSERVE_TOGGLE(i)	(CCM_BASE_ADDR + CCM_OBSERVE0_OFFSET + 0x10 * (i) + 12)
++#define CCM_SCTRL_TOGGLE(i)	(CCM_BASE_ADDR + CCM_SCTRL0_OFFSET + 0x10 * (i) + 12)
++#define CCM_CCGR_TOGGLE(i)	(CCM_BASE_ADDR + CCM_CCGR0_OFFSET + 0x10 * (i) + 12)
++#define CCM_ROOT_TARGET_TOGGLE(i)	(CCM_BASE_ADDR + CCM_ROOT0_TARGET_OFFSET + 0x80 * (i) + 12)
+ 
+ #define HW_CCM_GPR_WR(i, v)		writel((v), CCM_GPR(i))
+ #define HW_CCM_CCM_OBSERVE_WR(i, v)	writel((v), CCM_OBSERVE(i))
+-- 
+2.17.1
+

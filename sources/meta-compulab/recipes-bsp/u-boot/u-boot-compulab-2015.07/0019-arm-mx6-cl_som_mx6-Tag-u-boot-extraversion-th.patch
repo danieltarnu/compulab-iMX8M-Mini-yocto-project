@@ -1,0 +1,34 @@
+From db024a81528d1bffe5af8ece6ecd99a276587861 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 20 Apr 2017 15:09:17 +0300
+Subject: [PATCH 19/19] arm: mx6: cl_som_mx6: Tag u-boot extraversion -th
+
+Tag u-boot extraversion -th
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ configs/cl_som_imx6_defconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/configs/cl_som_imx6_defconfig b/configs/cl_som_imx6_defconfig
+index 19144a3..fdebddd 100644
+--- a/configs/cl_som_imx6_defconfig
++++ b/configs/cl_som_imx6_defconfig
+@@ -1,5 +1,6 @@
+ CONFIG_ARM=y
+ CONFIG_TARGET_CL_SOM_IMX6=y
++CONFIG_LOCALVERSION="-th"
+ CONFIG_SPL=y
+ CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=arch/arm/imx-common/spl_sd.cfg,MX6QDL,SPL"
+ # CONFIG_CMD_IMLS is not set
+@@ -9,6 +10,6 @@ CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=arch/arm/imx-common/spl_sd.cfg,MX6QDL,SPL"
+ # CONFIG_CMD_FLASH is not set
+ # CONFIG_CMD_FPGA is not set
+ # CONFIG_CMD_SETEXPR is not set
+-CONFIG_SPI_FLASH=y
+ CONFIG_CMD_DHCP=y
+ CONFIG_CMD_PING=y
++CONFIG_SPI_FLASH=y
+-- 
+1.9.1
+

@@ -1,0 +1,53 @@
+From 1c41446ac6b91382691a6916193d1a089bc74bde Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 15:40:52 +0200
+Subject: [PATCH 38/58] ARM: i.MX6: cl-som-imx6: enable fec/phy
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 11789f2..ece5c3f 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -227,7 +227,11 @@
+ 				/* POWER_BUTTON */
+ 				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
+ 				/* PHY_RST */
++#ifndef __SOM_iMX6__
+ 				MX6QDL_PAD_SD4_DAT0__GPIO2_IO08	0x80000000
++#else
++				MX6QDL_PAD_EIM_A19__GPIO2_IO19 0x80000000
++#endif
+ 				/* mipi camera rst pwn */
+ 				MX6QDL_PAD_DI0_PIN4__GPIO4_IO20 0x80000000
+ 				MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25 0x80000000
+@@ -252,7 +256,11 @@
+ 				MX6QDL_PAD_RGMII_TD3__RGMII_TD3      0x1b0b0
+ 				MX6QDL_PAD_RGMII_TX_CTL__RGMII_TX_CTL   0x1b0b0
+ 				MX6QDL_PAD_ENET_REF_CLK__ENET_TX_CLK   0x1b0b0
++#ifndef __SOM_iMX6__
+ 				MX6QDL_PAD_ENET_MDIO__ENET_MDIO      0x1b0b0
++#else
++				MX6QDL_PAD_ENET_MDIO__ENET_MDIO      0x1f0b0
++#endif
+ 				MX6QDL_PAD_ENET_MDC__ENET_MDC      0x1b0b0
+ 			>;
+ 		};
+@@ -588,7 +596,11 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_enet>;
+ 	phy-mode = "rgmii";
++#ifndef __SOM_iMX6__
+ 	phy-reset-gpios = <&gpio2 8 0>;
++#else
++	phy-reset-gpios = <&gpio2 19 0>;
++#endif
+ 	status = "okay";
+ };
+ 
+-- 
+1.9.1
+

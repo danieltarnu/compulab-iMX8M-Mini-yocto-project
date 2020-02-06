@@ -1,0 +1,28 @@
+From 81aabb0f7adf1975602112ab03ab1e6bf5baa723 Mon Sep 17 00:00:00 2001
+From: Yaniv Levinsky <yaniv.levinsky@compulab.co.il>
+Date: Thu, 14 Jun 2018 13:59:10 +0300
+Subject: [PATCH 55/57] arm: imx7d: cl-som-imx7: remove unused configs
+
+Remove unused configs from cl-som-imx7-defconfig
+
+Signed-off-by: Yaniv Levinsky <yaniv.levinsky@compulab.co.il>
+---
+ configs/cl-som-imx7_defconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/configs/cl-som-imx7_defconfig b/configs/cl-som-imx7_defconfig
+index 1ce6e0fff9..7cb03488e0 100644
+--- a/configs/cl-som-imx7_defconfig
++++ b/configs/cl-som-imx7_defconfig
+@@ -4,8 +4,6 @@ CONFIG_SPL_GPIO_SUPPORT=y
+ CONFIG_SPL_LIBCOMMON_SUPPORT=y
+ CONFIG_SPL_LIBGENERIC_SUPPORT=y
+ CONFIG_TARGET_CL_SOM_IMX7=y
+-CONFIG_SYS_I2C_EEPROM_BASE_BUS=1
+-CONFIG_SYS_I2C_EEPROM_BASE_ADDR=0x54
+ CONFIG_SPL_MMC_SUPPORT=y
+ CONFIG_SPL_SERIAL_SUPPORT=y
+ CONFIG_SPL_SPI_FLASH_SUPPORT=y
+-- 
+2.17.1
+

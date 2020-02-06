@@ -1,0 +1,30 @@
+From 7f772b538a2d019767911d4e965ef776700d527a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 4 Jun 2017 14:30:52 +0300
+Subject: [PATCH 59/59] ARM: i.MX6: dts: fix usdhc3 bus settings
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi
+index e7305f78d..5652997 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi
+@@ -108,11 +108,8 @@
+ 	pinctrl-0 = <&pinctrl_usdhc3>;
+ 	pinctrl-1 = <&pinctrl_usdhc3_100mhz>;
+ 	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
+-#ifndef __SOM_iMX6__
+-	no-1-8-v;
+-#else
+ 	bus-width = <4>;
+-#endif
++	no-1-8-v;
+ 	keep-power-in-suspend;
+ 	vmmc-supply = <&reg_3p3v>;
+ 	status = "disabled";
+-- 
+1.9.1
+

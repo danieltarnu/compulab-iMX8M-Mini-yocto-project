@@ -1,0 +1,50 @@
+From 1febc0e3a49edb36484becd34c9282a4cb119003 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 5 Apr 2017 13:49:03 +0300
+Subject: [PATCH 11/19] arm: mx6: cl-som-imx6: Define heart beat led
+
+Define heart beat led gpio for debug purpose.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 9b3abed..7949848 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -448,6 +448,21 @@ int board_phy_config(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++#ifdef CL_SOM_IMX6
++static iomux_v3_cfg_t const heartbeat_pads[] = {
++	IOMUX_PADS(PAD_EIM_EB3__GPIO2_IO31 | MUX_PAD_CTRL(NO_PAD_CTRL)),
++};
++void cm_fx6_hb_led(void) {
++	SETUP_IOMUX_PADS(heartbeat_pads);
++
++	gpio_request(IMX_GPIO_NR(2, 31),"heart beat");
++	gpio_direction_output(IMX_GPIO_NR(2, 31), 1);
++
++};
++#else
++void cm_fx6_hb_led(void) {};
++#endif
++
+ static iomux_v3_cfg_t const enet_pads[] = {
+ 	IOMUX_PADS(PAD_ENET_REF_CLK__ENET_TX_CLK  |
+ 						MUX_PAD_CTRL(ENET_PAD_CTRL)),
+@@ -744,6 +759,8 @@ int board_init(void)
+ {
+ 	int ret;
+ 
++	cm_fx6_hb_led();
++
+ 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
+ 	cm_fx6_setup_gpmi_nand();
+ 
+-- 
+1.9.1
+

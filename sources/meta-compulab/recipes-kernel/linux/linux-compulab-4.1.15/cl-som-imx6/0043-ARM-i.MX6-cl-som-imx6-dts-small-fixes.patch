@@ -1,0 +1,45 @@
+From d5e83f76860f9a6ab61b0b2e36e1ac82c7369f4e Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 16:14:31 +0200
+Subject: [PATCH 43/58] ARM: i.MX6: cl-som-imx6: dts small fixes
+
+1) NAND: Remove unnesesary pin CS0 definition
+2) mmc3: som-imx6: add bus-width=<4>; remove no-1-8-v.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi  | 1 -
+ arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi | 4 ++++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index fb47be9..50b7d68 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -346,7 +346,6 @@
+ 				MX6QDL_PAD_NANDF_WP_B__NAND_WP_B   0xb0b1
+ 				MX6QDL_PAD_NANDF_RB0__NAND_READY_B   0xb000
+ 				MX6QDL_PAD_NANDF_CS0__NAND_CE0_B   0xb0b1
+-				MX6QDL_PAD_NANDF_CS1__NAND_CE1_B   0xb0b1
+ 				MX6QDL_PAD_SD4_CMD__NAND_RE_B      0xb0b1
+ 				MX6QDL_PAD_SD4_CLK__NAND_WE_B      0xb0b1
+ 				MX6QDL_PAD_NANDF_D0__NAND_DATA00   0xb0b1
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi
+index 77a77fe..e7305f78d 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6x.dtsi
+@@ -108,7 +108,11 @@
+ 	pinctrl-0 = <&pinctrl_usdhc3>;
+ 	pinctrl-1 = <&pinctrl_usdhc3_100mhz>;
+ 	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
++#ifndef __SOM_iMX6__
+ 	no-1-8-v;
++#else
++	bus-width = <4>;
++#endif
+ 	keep-power-in-suspend;
+ 	vmmc-supply = <&reg_3p3v>;
+ 	status = "disabled";
+-- 
+1.9.1
+

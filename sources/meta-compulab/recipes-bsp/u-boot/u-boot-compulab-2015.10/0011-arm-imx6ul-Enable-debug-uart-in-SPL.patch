@@ -1,0 +1,53 @@
+From a0acd936be0340dd9393965b82e3b82c0c38f742 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 25 Mar 2018 19:08:18 +0300
+Subject: [PATCH 11/12] arm: imx6ul: Enable debug uart in SPL
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cl_som_imx6ul/cl_som_imx6ul.c | 9 ++-------
+ include/configs/cl_som_imx6ul.h              | 1 -
+ 2 files changed, 2 insertions(+), 8 deletions(-)
+
+diff --git a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+index d294273..2f3fb6c 100644
+--- a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
++++ b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+@@ -510,13 +510,6 @@ static void setup_gpmi_nand(void)
+ static void setup_gpmi_nand(void) {}
+ #endif
+ 
+-int board_early_init_f(void)
+-{
+-	setup_iomux_uart();
+-
+-	return 0;
+-}
+-
+ int board_init(void)
+ {
+ 	/* Address of boot parameters */
+@@ -724,6 +717,8 @@ void board_init_f(ulong dummy)
+ 	/* setup GP timer */
+ 	timer_init();
+ 
++	setup_iomux_uart();
++
+ #ifdef CONFIG_SPL_SPI_SUPPORT
+ 	board_spi_init();
+ #endif
+diff --git a/include/configs/cl_som_imx6ul.h b/include/configs/cl_som_imx6ul.h
+index f41dae1..3c1f4e5 100644
+--- a/include/configs/cl_som_imx6ul.h
++++ b/include/configs/cl_som_imx6ul.h
+@@ -41,7 +41,6 @@
+ /* Size of malloc() pool */
+ #define CONFIG_SYS_MALLOC_LEN		(16 * SZ_1M)
+ 
+-#define CONFIG_BOARD_EARLY_INIT_F
+ #define CONFIG_BOARD_LATE_INIT
+ 
+ #define CONFIG_MXC_UART
+-- 
+1.9.1
+

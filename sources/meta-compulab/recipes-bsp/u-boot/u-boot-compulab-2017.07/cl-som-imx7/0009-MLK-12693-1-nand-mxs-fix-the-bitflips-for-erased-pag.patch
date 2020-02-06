@@ -1,0 +1,207 @@
+From 1026ae6b73572b0b89ec56113cf8bcaa6243ca7e Mon Sep 17 00:00:00 2001
+From: Peng Fan <peng.fan@nxp.com>
+Date: Thu, 6 Jul 2017 15:36:16 +0300
+Subject: [PATCH 09/57] MLK-12693-1 nand: mxs: fix the bitflips for erased page
+ when uncorrectable error
+
+This patch is porting from linux:
+http://git.freescale.com/git/cgit.cgi/imx/linux-2.6-imx.git/commit/?h=imx_4.1.15_1.0.0_ga&id=3d42fcece496224fde59f9343763fb2dfc5b0768
+
+"
+We may meet the bitflips in reading an erased page(contains all 0xFF),
+this may causes the UBIFS corrupt, please see the log from Elie:
+
+-----------------------------------------------------------------
+[    3.831323] UBI warning: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read only 16384 bytes, retry
+[    3.845026] UBI warning: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read only 16384 bytes, retry
+[    3.858710] UBI warning: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read only 16384 bytes, retry
+[    3.872408] UBI error: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read 16384 bytes
+...
+[    4.011529] UBIFS error (pid 36): ubifs_recover_leb: corrupt empty
+space LEB 27:237568, corruption starts at 9815
+[    4.021897] UBIFS error (pid 36): ubifs_scanned_corruption:
+corruption at LEB 27:247383
+[    4.030000] UBIFS error (pid 36): ubifs_scanned_corruption: first
+6569 bytes from LEB 27:247383
+-----------------------------------------------------------------
+
+This patch does a check for the uncorrectable failure in the following
+steps:
+
+   [0] set the threshold.
+       The threshold is set based on the truth:
+       "A single 0 bit will lead to gf_len(13 or 14) bits 0 after the
+BCH
+        do the ECC."
+
+        For the sake of safe, we will set the threshold with half the
+gf_len, and
+        do not make it bigger the ECC strength.
+
+   [1] count the bitflips of the current ECC chunk, assume it is N.
+
+   [2] if the (N <= threshold) is true, we continue to read out the page
+with
+       ECC disabled. and we count the bitflips again, assume it is N2.
+       (We read out the whole page, not just a chunk, this makes the
+check
+        more strictly, and make the code more simple.)
+
+   [3] if the (N2 <= threshold) is true again, we can regard this is a
+erased
+       page. This is because a real erased page is full of 0xFF(maybe
+also has
+       several bitflips), while a page contains the 0xFF data will
+definitely
+       has many bitflips in the ECC parity areas.
+
+   [4] if the [3] fails, we can regard this is a page filled with the
+'0xFF'
+       data.
+"
+
+Signed-off-by: Peng Fan <peng.fan@nxp.com>
+MLK-12693-1 nand: mxs: fix the bitflips for erased page
+ when uncorrectable error
+
+This patch is porting from linux:
+http://git.freescale.com/git/cgit.cgi/imx/linux-2.6-imx.git/commit/?h=imx_4.1.15_1.0.0_ga&id=3d42fcece496224fde59f9343763fb2dfc5b0768
+
+"
+We may meet the bitflips in reading an erased page(contains all 0xFF),
+this may causes the UBIFS corrupt, please see the log from Elie:
+
+-----------------------------------------------------------------
+[    3.831323] UBI warning: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read only 16384 bytes, retry
+[    3.845026] UBI warning: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read only 16384 bytes, retry
+[    3.858710] UBI warning: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read only 16384 bytes, retry
+[    3.872408] UBI error: ubi_io_read: error -74 (ECC error) while
+reading 16384 bytes from PEB 443:245760, read 16384 bytes
+...
+[    4.011529] UBIFS error (pid 36): ubifs_recover_leb: corrupt empty
+space LEB 27:237568, corruption starts at 9815
+[    4.021897] UBIFS error (pid 36): ubifs_scanned_corruption:
+corruption at LEB 27:247383
+[    4.030000] UBIFS error (pid 36): ubifs_scanned_corruption: first
+6569 bytes from LEB 27:247383
+-----------------------------------------------------------------
+
+This patch does a check for the uncorrectable failure in the following
+steps:
+
+   [0] set the threshold.
+       The threshold is set based on the truth:
+       "A single 0 bit will lead to gf_len(13 or 14) bits 0 after the
+BCH
+        do the ECC."
+
+        For the sake of safe, we will set the threshold with half the
+gf_len, and
+        do not make it bigger the ECC strength.
+
+   [1] count the bitflips of the current ECC chunk, assume it is N.
+
+   [2] if the (N <= threshold) is true, we continue to read out the page
+with
+       ECC disabled. and we count the bitflips again, assume it is N2.
+       (We read out the whole page, not just a chunk, this makes the
+check
+        more strictly, and make the code more simple.)
+
+   [3] if the (N2 <= threshold) is true again, we can regard this is a
+erased
+       page. This is because a real erased page is full of 0xFF(maybe
+also has
+       several bitflips), while a page contains the 0xFF data will
+definitely
+       has many bitflips in the ECC parity areas.
+
+   [4] if the [3] fails, we can regard this is a page filled with the
+'0xFF'
+       data.
+"
+
+Signed-off-by: Peng Fan <peng.fan@nxp.com>
+---
+ drivers/mtd/nand/mxs_nand.c | 44 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/drivers/mtd/nand/mxs_nand.c b/drivers/mtd/nand/mxs_nand.c
+index bb758ebea2..3834bc75a8 100644
+--- a/drivers/mtd/nand/mxs_nand.c
++++ b/drivers/mtd/nand/mxs_nand.c
+@@ -639,6 +639,45 @@ static uint8_t mxs_nand_read_byte(struct mtd_info *mtd)
+ 	return buf;
+ }
+ 
++static bool mxs_nand_erased_page(struct mtd_info *mtd, struct nand_chip *nand,
++				 uint8_t *buf, int chunk, int page)
++{
++	int gf_len = galois_field;
++	unsigned int flip_bits = 0, flip_bits_noecc = 0;
++	unsigned int threshold;
++	unsigned int ecc_chunkn_size = MXS_NAND_CHUNK_DATA_CHUNK_SIZE;
++	unsigned int base = ecc_chunkn_size * chunk;
++	uint32_t *dma_buf = (uint32_t *)buf;
++	int i;
++
++	threshold = gf_len / 2;
++	if (threshold > ecc_strength)
++		threshold = ecc_strength;
++
++	for (i = 0; i < ecc_chunkn_size; i++) {
++		flip_bits += hweight8(~buf[base + i]);
++		if (flip_bits > threshold)
++			return false;
++	}
++
++	nand->cmdfunc(mtd, NAND_CMD_READ0, 0, page);
++	nand->read_buf(mtd, buf, mtd->writesize);
++
++	for (i = 0; i < mtd->writesize / 4; i++) {
++		flip_bits_noecc += hweight32(~dma_buf[i]);
++		if (flip_bits_noecc > threshold)
++			return false;
++	}
++
++	mtd->ecc_stats.corrected += flip_bits;
++
++	memset(buf, 0xff, mtd->writesize);
++
++	printf("The page(%d) is an erased page(%d,%d,%d,%d).\n", page, chunk, threshold, flip_bits, flip_bits_noecc);
++
++	return true;
++}
++
+ /*
+  * Read a page from NAND.
+  */
+@@ -741,6 +780,8 @@ static int mxs_nand_ecc_read_page(struct mtd_info *mtd, struct nand_chip *nand,
+ 		goto rtn;
+ 	}
+ 
++	mxs_nand_return_dma_descs(nand_info);
++
+ 	/* Invalidate caches */
+ 	mxs_nand_inval_data_buf(nand_info);
+ 
+@@ -757,6 +798,9 @@ static int mxs_nand_ecc_read_page(struct mtd_info *mtd, struct nand_chip *nand,
+ 			continue;
+ 
+ 		if (status[i] == 0xfe) {
++			if (mxs_nand_erased_page(mtd, nand,
++						 nand_info->data_buf, i, page))
++				break;
+ 			failed++;
+ 			continue;
+ 		}
+-- 
+2.17.1
+

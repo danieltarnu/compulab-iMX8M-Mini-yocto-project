@@ -1,0 +1,111 @@
+From 8306449125a4e609ac0ea0801392ddd809d73f88 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 29 Nov 2017 08:44:29 +0200
+Subject: [PATCH 33/57] compulab: eeprom: layout: update read serial function
+
+The read serial number function return string.
+Update the function to fields bytes in a reverse order.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/common/eeprom.c | 30 +-----------------------------
+ common/eeprom/eeprom_field.c   | 21 +++++++++++++++++++++
+ include/eeprom_field.h         |  2 ++
+ 3 files changed, 24 insertions(+), 29 deletions(-)
+
+diff --git a/board/compulab/common/eeprom.c b/board/compulab/common/eeprom.c
+index b98f5a9e64..bdbc100eae 100644
+--- a/board/compulab/common/eeprom.c
++++ b/board/compulab/common/eeprom.c
+@@ -431,34 +431,6 @@ int eeprom_field_update_date(struct eeprom_field *field, uchar *fbuf,
+ 	return 0;
+ }
+ 
+-/**
+- * eeprom_field_read_serial() - Read serial number
+- *
+- * @field:     an initialized field
+- * @fbuf:      field buffer
+- * @buf:       read buffer
+- * @buf_size:  read buffer size
+- */
+-int eeprom_field_read_serial(const struct eeprom_field *field, uchar *fbuf,
+-			     uchar *buf, int buf_size)
+-{
+-	u32 *serial = (u32*) fbuf;
+-	struct tag_serialnr *serialnr = (struct tag_serialnr*) buf;
+-
+-	if ((field->size < (2*sizeof(u32))) ||
+-	    (buf_size < sizeof(struct tag_serialnr)))
+-		return -1;
+-
+-	memset(buf, 0, buf_size);
+-
+-	if (serial[0] != 0xffffffff && serial[1] != 0xffffffff) {
+-		serialnr->low = serial[0];
+-		serialnr->high = serial[1];
+-	}
+-
+-	return 0;
+-}
+-
+ #define	LAYOUT_VERSION_LEGACY 1
+ #define	LAYOUT_VERSION_VER1 2
+ #define	LAYOUT_VERSION_VER2 3
+@@ -475,7 +447,7 @@ extern struct eeprom_field layout_unknown[1];
+ 
+ #define FIELD_FUNC_SERIAL eeprom_field_print_bin_rev,  \
+ 			  eeprom_field_update_bin_rev, \
+-			  eeprom_field_read_serial
++			  eeprom_field_read_rev
+ 
+ #ifdef CONFIG_CM_T3X
+ struct eeprom_field layout_legacy[5] = {
+diff --git a/common/eeprom/eeprom_field.c b/common/eeprom/eeprom_field.c
+index 42e1d7ddeb..decda0b81a 100644
+--- a/common/eeprom/eeprom_field.c
++++ b/common/eeprom/eeprom_field.c
+@@ -204,6 +204,27 @@ int eeprom_field_update_bin_rev(struct eeprom_field *field, uchar *fbuf,
+ 	return __eeprom_field_update_bin(field, fbuf, value, true);
+ }
+ 
++/**
++ * eeprom_field_read_rev() - Read reversed binary data
++ *
++ * @field:     an initialized field
++ * @fbuf:      field buffer
++ * @buf:       read buffer
++ * @buf_size:  read buffer size
++ */
++int eeprom_field_read_rev(const struct eeprom_field *field, uchar *fbuf,
++			  uchar *buf, int buf_size)
++{
++	int i;
++
++	memset(buf, 0, buf_size);
++
++	for (i = field->size - 1; i >= 0; i--, buf++)
++		*buf = fbuf[i];
++
++	return 0;
++}
++
+ /**
+  * eeprom_field_print_mac_addr() - print a field which contains a mac address
+  *
+diff --git a/include/eeprom_field.h b/include/eeprom_field.h
+index d068980fdd..aff91a31dc 100644
+--- a/include/eeprom_field.h
++++ b/include/eeprom_field.h
+@@ -32,6 +32,8 @@ int eeprom_field_read_bin(const struct eeprom_field *field, uchar *fbuf,
+ void eeprom_field_print_bin_rev(const struct eeprom_field *field, uchar *fbuf);
+ int eeprom_field_update_bin_rev(struct eeprom_field *field, uchar *fbuf,
+ 				char *value);
++int eeprom_field_read_rev(const struct eeprom_field *field, uchar *fbuf,
++			  uchar *buf, int buf_size);
+ 
+ void eeprom_field_print_mac(const struct eeprom_field *field, uchar *fbuf);
+ int eeprom_field_update_mac(struct eeprom_field *field, uchar *fbuf,
+-- 
+2.17.1
+

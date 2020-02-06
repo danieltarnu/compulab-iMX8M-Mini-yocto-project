@@ -1,0 +1,30 @@
+From 9bdf63d15f183670f52105dbb16d892f5eb5724d Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 17 Apr 2016 14:57:31 +0300
+Subject: [PATCH 19/38] ARM: i.MX6UL: dts: fix the spi flash compatibility
+ string
+
+Fix the spi flash compatibility string in order to
+match the m25p80 drivers' compatible devices.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index ba83ee7..43546d9 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -383,7 +383,7 @@
+ 	m25px16@0 {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+-		compatible = "st,m25px16", "st,m25p";
++		compatible = "st,m25p16", "st,m25p";
+ 		spi-max-frequency = <20000000>;
+ 		reg = <0>;
+ 
+-- 
+1.9.1
+

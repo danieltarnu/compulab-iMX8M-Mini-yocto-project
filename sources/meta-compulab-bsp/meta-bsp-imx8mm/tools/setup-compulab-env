@@ -1,0 +1,113 @@
+#!/bin/bash
+
+SUPPORTED_MACHINE=" ucm-imx8m-mini "
+
+get_meta_compulab() {
+meta_cpl_dir="../sources/meta-compulab"
+branch="devel"
+meta_url="https://github.com/compulab-yokneam/meta-compulab"
+if [[ -d ${meta_cpl_dir} ]];then
+git -C ${meta_cpl_dir} remote update
+git -C ${meta_cpl_dir} pull
+else
+git clone -b ${branch} ${meta_url} ${meta_cpl_dir}
+fi
+}
+
+mod_bblayer() {
+# Get CompuLab Main meta layer
+get_meta_compulab
+# A mandatory bsp layer: kernel, u-boot, imx-boot
+cat << eof | tee -a ${BBLAYERS_CONF} > /dev/null
+BBLAYERS += " \\
+	\${BSPDIR}/sources/meta-compulab-bsp/meta-bsp-imx8mm \\
+	\${BSPDIR}/sources/meta-compulab-bsp/meta-desktop \\
+	\${BSPDIR}/sources/meta-compulab-bsp/meta-multimedia \\
+	\${BSPDIR}/sources/meta-compulab \\
+	\${BSPDIR}/sources/meta-compulab-bsp/meta-xfce \\
+"
+eof
+}
+
+mod_local() {
+# Modify local.conf
+CORE_IMAGE_EXTRA_INSTALL+=" dhcp-client memtester cl-uboot cl-deploy u-boot-fw-utils bt-start cl-stest "
+IMAGE_FEATURES+=" package-management ssh-server-openssh "
+cat << eof | tee -a ${LOCAL_CONF} > /dev/null
+CORE_IMAGE_EXTRA_INSTALL += "${CORE_IMAGE_EXTRA_INSTALL}"
+IMAGE_FEATURES += "${IMAGE_FEATURES}"
+LICENSE_FLAGS_WHITELIST = "commercial"
+PREFERRED_RPROVIDER_u-boot-fw-utils = "u-boot-fw-utils"
+eof
+}
+
+CWD=$(pwd)
+PROGNAME=${BASH_SOURCE[0]}
+[ $(basename -- $BASH_SOURCE) == $(basename -- $0) ] && EXIT="exit" || EXIT="return"
+
+if [[ $(id -u) -eq 0 ]]; then
+    echo "ERROR: do not use the BSP as root. Exiting..."
+    ${EXIT}
+fi
+
+BBLAYERS_CONF=conf/bblayers.conf
+BB_CL_CONF_DONE=conf/bb_cl_conf.done
+LOCAL_CONF=conf/local.conf
+
+if ([ ! -f ${BBLAYERS_CONF} ] || [ ! -f ${LOCAL_CONF} ]);then
+cat << eom
+    Warning: Files ${BBLAYERS_CONF} and ${LOCAL_CONF} not found.
+    Make sure that the scritp issued at a correct location.
+eom
+    ${EXIT} 2
+fi
+
+[[ -n ${FORCE} ]] && rm -rf ${BB_CL_CONF_DONE}
+
+if [ -f ${BB_CL_CONF_DONE} ];then
+cat << eom
+    Note: Already issued.
+    Nothing to be done.
+eom
+    ${EXIT} 0
+fi
+
+add_bbmask() {
+declare -a bbmask=('meta-compulab/recipes-xfce/images/compulab-eval-image-xfce.bb' \
+	'meta-compulab/recipes-xfce/xfce4-power-manager/xfce4-power-manager_%.bbappend')
+
+for i in  ${bbmask[@]}; do
+cat << eof | tee -a ${LOCAL_CONF} > /dev/null
+BBMASK += "${i}"
+eof
+done
+}
+
+eval $(awk '(/MACHINE|DISTRO/)&&(gsub(/'"'"'/,"")&&($0=$1"="$NF))' ORS=";" ${LOCAL_CONF})
+
+if [[ ! ${SUPPORTED_MACHINE} =~ ${MACHINE} ]];then
+cat << eom
+    ${MACHINE} is not in supported machine list: [ ${SUPPORTED_MACHINE} ]
+    Error exit.
+eom
+    ${EXIT} 0
+fi
+
+cat << eom
+    Prepare: ${MACHINE}:${DISTRO} ...
+eom
+
+mod_bblayer
+mod_local
+add_bbmask
+
+cat << eom
+    Note: Files ${BBLAYERS_CONF} and ${LOCAL_CONF} updated successfully.
+eom
+
+cat << eom > ${BB_CL_CONF_DONE}
+$(date)
+eom
+
+unset IMAGE_FEATURES CORE_IMAGE_EXTRA_INSTALL
+${EXIT} 0

@@ -1,0 +1,31 @@
+From ed15a205d8367ac443a72dc6b17b502101875409 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 29 May 2016 13:47:48 +0300
+Subject: [PATCH 36/38] ARM: i.MX6UL: audio-3: update defconfig for analog
+ audio
+
+Update the cl-som-imx6ul defconfig for analog audio.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+
+Conflicts:
+	arch/arm/configs/cl_som_imx6ul_defconfig
+---
+ arch/arm/configs/cl_som_imx6ul_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/cl_som_imx6ul_defconfig b/arch/arm/configs/cl_som_imx6ul_defconfig
+index d0b07ac..09df3d0 100644
+--- a/arch/arm/configs/cl_som_imx6ul_defconfig
++++ b/arch/arm/configs/cl_som_imx6ul_defconfig
+@@ -382,6 +382,7 @@ CONFIG_SND_USB_AUDIO=m
+ CONFIG_SND_SOC=y
+ CONFIG_SND_IMX_SOC=y
+ CONFIG_SND_SOC_EUKREA_TLV320=y
++CONFIG_SND_SOC_IMX_WM8731=y
+ CONFIG_SND_SOC_IMX_WM8960=y
+ CONFIG_SND_SOC_IMX_SII902X=y
+ CONFIG_SND_SOC_IMX_WM8958=y
+-- 
+1.9.1
+

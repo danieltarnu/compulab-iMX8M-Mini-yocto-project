@@ -1,0 +1,66 @@
+From 29b52ad669edd21450e96a7eb0cf84d91b0ef4e9 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Sun, 4 Feb 2018 16:17:35 +0200
+Subject: [PATCH 42/57] arm: imx7d: cl-som-imx7: add support for SB-IOT
+ baseboard
+
+The support for the SB-IOT baseboard is missing.
+The SB-IOT baseboard is not detected and the default is device tree is
+selected.
+
+Add support for SB-IOT baseboard.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/cl-som-imx7.c | 2 ++
+ board/compulab/cl-som-imx7/common.h      | 1 +
+ board/compulab/cl-som-imx7/display.c     | 1 +
+ 3 files changed, 4 insertions(+)
+
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index 27c42abd8e..f5e12cc5c2 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -413,6 +413,7 @@ typedef struct {
+ 
+ static cl_som_imx7_base_board_param cl_som_imx7_base_board_param_db[] = {
+        {"SB-SOM", "imx7d-sbc-imx7.dtb"},
++       {"SB-IOT", "imx7d-sbc-iot-imx7.dtb"},
+        {"SBC-IOT", "imx7d-sbc-iot-imx7.dtb"},
+        {"IOTG", "imx7d-sbc-iot-imx7.dtb"},
+        {"other", "imx7d-cl-som-imx7.dtb"},
+@@ -505,6 +506,7 @@ static void cl_som_imx7_set_serial_env(void)
+ 					 CL_SOM_IMX7_SERIAL_BUF_BIN_SIZE);
+ 		break;
+ 	case CL_SOM_IMX7_SB_IOT:
++	case CL_SOM_IMX7_SBC_IOT:
+ 	case CL_SOM_IMX7_IOTG:
+ 		sb_som_am57x_layout.read(&sb_som_am57x_layout, "Serial Number",
+ 					 (uchar*) &serial_buf_bin,
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index 995a3c9f7b..f9663f9006 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -42,6 +42,7 @@ extern int cl_som_imx7_base_i2c_init;
+ typedef enum {
+        CL_SOM_IMX7_SB_SOM,
+        CL_SOM_IMX7_SB_IOT,
++       CL_SOM_IMX7_SBC_IOT,
+        CL_SOM_IMX7_IOTG,
+        CL_SOM_IMX7_OTHER,
+ } cl_som_imx7_base;
+diff --git a/board/compulab/cl-som-imx7/display.c b/board/compulab/cl-som-imx7/display.c
+index eb05eb8394..9e42502341 100644
+--- a/board/compulab/cl-som-imx7/display.c
++++ b/board/compulab/cl-som-imx7/display.c
+@@ -419,6 +419,7 @@ int enable_display(void)
+ 	if (stdout_env) /* stdout was set */
+ 		return 0;
+ 	if ((cl_som_imx7_base_id ==  CL_SOM_IMX7_SB_IOT) ||
++	    (cl_som_imx7_base_id ==  CL_SOM_IMX7_SBC_IOT) ||
+ 	    (cl_som_imx7_base_id ==  CL_SOM_IMX7_IOTG)) {
+ 		setenv("stdout", "serial,vga");
+ 		setenv("stderr", "serial,vga");
+-- 
+2.17.1
+

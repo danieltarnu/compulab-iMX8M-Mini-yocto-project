@@ -1,0 +1,45 @@
+From f2d2e5e0fd1a269bce98bd187314337ec31d53f8 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 17 Jan 2016 10:10:04 +0200
+Subject: [PATCH 27/38] ARM: i.MX6UL: enable flexcan1 for cl-som-imx6ul
+
+Enable flexcan1 for cl-som-imx6ul.
+1) Add iomux group for flexcan1.
+2) Add flexcan1 device node with status "okay".
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index da97864..6d80e21 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -274,6 +274,13 @@
+ 				MX6UL_PAD_GPIO1_IO01__GPIO1_IO01  0x80000000
+ 			>;
+ 		};
++
++		pinctrl_flexcan1: flexcan1grp{
++			fsl,pins = <
++				MX6UL_PAD_UART3_RTS_B__FLEXCAN1_RX	0x1b020
++				MX6UL_PAD_UART3_CTS_B__FLEXCAN1_TX	0x1b020
++			>;
++		};
+ 	};
+ };
+ 
+@@ -494,3 +501,9 @@
+ 		};
+ 	};
+ };
++
++&flexcan1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan1>;
++	status = "okay";
++};
+-- 
+1.9.1
+

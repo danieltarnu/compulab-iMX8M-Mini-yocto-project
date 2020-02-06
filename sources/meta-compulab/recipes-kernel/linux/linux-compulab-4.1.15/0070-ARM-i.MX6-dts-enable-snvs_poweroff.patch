@@ -1,0 +1,28 @@
+From 7e30ef87ced3526ffe7b68bcb4c48d5d53c3575c Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 20 Aug 2017 12:05:32 +0300
+Subject: [PATCH 70/72] ARM: i.MX6: dts: enable snvs_poweroff
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 9fc1146..06915b1 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -917,6 +917,10 @@
+ 	status = "okay";
+ };
+ 
++&snvs_poweroff {
++	status = "okay";
++};
++
+ #define SRC_PORT (1)
+ #define EXT_PORT (3)
+ &audmux {
+-- 
+1.9.1
+

@@ -1,0 +1,82 @@
+#!/bin/bash -xv
+
+. /usr/share/cl-ap/cl-ap.env
+
+do_mkconf() {
+if [ ! -f ${CLAP_CONF} ];then
+cat << eof > ${CLAP_CONF}
+SSID=compulabssid
+WPA_PASSPHRASE=compulabpassword
+AP_NET=172.16.43
+eof
+fi
+}
+
+do_reconf() {
+
+do_mkconf
+declare -a vars=($(cat ${CLAP_CONF}))
+
+d=""
+L="12 60 0 "
+for _v in ${vars[@]};do
+i=$(expr index $_v =)
+((i--)); p1="${_v:0:$i}"
+((i++)); p2="${_v:$i}"
+[ -z "${p2}" ] && p2=$p1
+((k++))
+L+="${p1}: $k 1 $p2 $k 16 40 0 "
+eval ${_v}
+done
+
+DIALOG="Access Point Settings"
+
+V=$(dialog --ok-label "Submit" \
+      --backtitle "${DIALOG}" \
+      --title "${DIALOG}" \
+      --form "Review & Edit Settings" \
+$L \
+--stdout)
+
+[ -z "${V}" ] && exit 0
+
+declare -a values=($V)
+k=0
+L=""
+for _v in ${vars[@]};do
+i=$(expr index $_v =)
+((i--)); p1="${_v:0:$i}="
+v1=${values[$k]}
+((k++))
+
+L+="${D}$p1$v1"
+
+D="
+"
+done
+
+cat << eof > ${CLAP_CONF}
+$L
+eof
+}
+
+$(ps -eo comm,pid | awk '(/hostapd|dnsmasq/)&&($0="eval "$1"="$2)' ORS=";")
+
+[[ ! -z ${hostapd} && ! -z ${dnsmasq} ]] && options="stop" || options="start"
+
+OPT=$(dialog --radiolist "Options:" 12 80 10 ${options} "" "OFF" "reconfig" "" "OFF" --stdout)
+
+[[ -z ${OPT} ]] && exit
+
+case "${OPT}" in
+reconfig)
+    do_reconf
+    ${WORK} ${OPT}
+    ;;
+start|stop)
+    ${WORK} ${OPT}
+    ;;
+*)
+    echo "Usage: $0 {start|stop|reconfig}"
+    exit 1
+esac

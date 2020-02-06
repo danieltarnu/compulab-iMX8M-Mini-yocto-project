@@ -1,0 +1,25 @@
+From 80a5038f7e8ca3d3ada96f0f374f29943d8a77ca Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 8 Jun 2017 11:39:22 +0300
+Subject: [PATCH 64/64] ARM: i.MX6: cl-som-imx6: defconfig: enable tvp5150
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index ab14cee..b14cbd7 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -282,6 +282,7 @@ CONFIG_MXC_CAMERA_OV5640=m
+ CONFIG_MXC_CAMERA_OV5642=m
+ CONFIG_MXC_CAMERA_OV5640_MIPI=m
+ CONFIG_MXC_TVIN_ADV7180=m
++CONFIG_MXC_TVP5150=m
+ CONFIG_MXC_IPU_DEVICE_QUEUE_SDC=y
+ CONFIG_VIDEO_MXC_IPU_OUTPUT=y
+ CONFIG_VIDEO_MXC_PXP_V4L2=y
+-- 
+1.9.1
+

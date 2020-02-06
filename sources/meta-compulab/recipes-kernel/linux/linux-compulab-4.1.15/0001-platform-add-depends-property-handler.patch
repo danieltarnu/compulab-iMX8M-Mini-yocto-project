@@ -1,0 +1,77 @@
+From 6651575b5a01d56c31c17a2aef1f9f76fa57b90a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 13 Jun 2016 13:36:53 +0300
+Subject: [PATCH] platform: add 'depends' property handler
+
+Add 'depends' property handler.
+The purpose is to create a kind of dependency between devices.
+The field contains the name of the device that the loaded
+driver depends on. The device driver reads this property
+and decides either continue or postpone the device probing.
+This is an optional property. The fact that the device node does
+not have such the property makes no changes in the device probing.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ drivers/base/platform.c | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 7403de9..89db6d7 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -23,6 +23,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/pm_domain.h>
+ #include <linux/idr.h>
++#include <linux/i2c.h>
+ #include <linux/acpi.h>
+ #include <linux/clk/clk-conf.h>
+ #include <linux/limits.h>
+@@ -502,12 +503,43 @@ err_alloc:
+ }
+ EXPORT_SYMBOL_GPL(platform_device_register_full);
+ 
++static int platform_drv_check_dep(struct device_node *of_node)
++{
++	struct device_node *np;
++	struct platform_device *pdev;
++	struct i2c_client *client;
++	const char *depends;
++	int ret;
++
++	depends = of_get_property(of_node, "depends", NULL);
++	if (!depends)
++		return 0;
++
++	np = of_find_node_by_path(depends);
++	if (!np)
++		return 1;
++
++	pdev=of_find_device_by_node(np);
++	if (!pdev) {
++		client = of_find_i2c_device_by_node(np);
++		ret = (!client || !client->dev.driver);
++	} else {
++		ret = (!pdev || !pdev->dev.driver);
++	}
++
++	of_node_put(np);
++	return ret;
++}
++
+ static int platform_drv_probe(struct device *_dev)
+ {
+ 	struct platform_driver *drv = to_platform_driver(_dev->driver);
+ 	struct platform_device *dev = to_platform_device(_dev);
+ 	int ret;
+ 
++	if (platform_drv_check_dep(dev->dev.of_node))
++		return -EPROBE_DEFER;
++
+ 	ret = of_clk_set_defaults(_dev->of_node, false);
+ 	if (ret < 0)
+ 		return ret;
+-- 
+1.9.1
+

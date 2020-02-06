@@ -1,0 +1,112 @@
+From efa95a3e5dcb56274143e8efdf4f094d7f351842 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 5 Apr 2017 14:46:50 +0300
+Subject: [PATCH 13/19] arm: mx6: define get_cpu_rev_ext
+
+Define get_cpu_rev_ext.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/cpu/armv7/mx6/soc.c              | 35 +++++++++++++++++++++++++++++++
+ arch/arm/imx-common/cpu.c                 |  4 ++++
+ arch/arm/include/asm/arch-imx/cpu.h       |  2 ++
+ arch/arm/include/asm/arch-mx6/sys_proto.h |  2 ++
+ 4 files changed, 43 insertions(+)
+
+diff --git a/arch/arm/cpu/armv7/mx6/soc.c b/arch/arm/cpu/armv7/mx6/soc.c
+index 29de624..96d24ca 100644
+--- a/arch/arm/cpu/armv7/mx6/soc.c
++++ b/arch/arm/cpu/armv7/mx6/soc.c
+@@ -85,6 +85,41 @@ u32 get_cpu_rev(void)
+ 	return (type << 12) | (reg + (0x10 * (major + 1)));
+ }
+ 
++u32 get_cpu_rev_ext(void)
++{
++	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
++	u32 reg = readl(&anatop->digprog_sololite);
++	u32 type = ((reg >> 16) & 0xff);
++	u32 major, cfg = 0;
++
++	if (type != MXC_CPU_MX6SL) {
++		reg = readl(&anatop->digprog);
++		struct scu_regs *scu = (struct scu_regs *)SCU_BASE_ADDR;
++		cfg = readl(&scu->config) & 3;
++		type = ((reg >> 16) & 0xff);
++		if (type == MXC_CPU_MX6DL) {
++			if (!cfg)
++				type = MXC_CPU_MX6SOLO;
++		}
++
++		if (type == MXC_CPU_MX6Q) {
++			if (cfg == 1)
++				type = MXC_CPU_MX6D;
++		}
++
++	}
++	major = ((reg >> 8) & 0xff);
++	if ((major >= 1) &&
++	    ((type == MXC_CPU_MX6Q) || (type == MXC_CPU_MX6D))) {
++		major--;
++		type = MXC_CPU_MX6QP;
++		if (cfg == 1)
++			type = MXC_CPU_MX6DP;
++	}
++	reg &= 0xff;		/* mx6 silicon revision */
++	return (type << 12) | (reg + (0x10 * (major + 1)));
++}
++
+ /*
+  * OCOTP_CFG3[17:16] (see Fusemap Description Table offset 0x440)
+  * defines a 2-bit SPEED_GRADING
+diff --git a/arch/arm/imx-common/cpu.c b/arch/arm/imx-common/cpu.c
+index 5e56cfe..096d22e 100644
+--- a/arch/arm/imx-common/cpu.c
++++ b/arch/arm/imx-common/cpu.c
+@@ -122,6 +122,10 @@ unsigned imx_ddr_size(void)
+ const char *get_imx_type(u32 imxtype)
+ {
+ 	switch (imxtype) {
++	case MXC_CPU_MX6QP:
++		return "6QP";	/* Quad-Plus version of the mx6 */
++	case MXC_CPU_MX6DP:
++		return "6DP";	/* Dual-Plus version of the mx6 */
+ 	case MXC_CPU_MX6Q:
+ 		return "6Q";	/* Quad-core version of the mx6 */
+ 	case MXC_CPU_MX6D:
+diff --git a/arch/arm/include/asm/arch-imx/cpu.h b/arch/arm/include/asm/arch-imx/cpu.h
+index 4715f4e..99e0e32 100644
+--- a/arch/arm/include/asm/arch-imx/cpu.h
++++ b/arch/arm/include/asm/arch-imx/cpu.h
+@@ -12,6 +12,8 @@
+ #define MXC_CPU_MX6Q		0x63
+ #define MXC_CPU_MX6D		0x64
+ #define MXC_CPU_MX6SOLO		0x65 /* dummy ID */
++#define MXC_CPU_MX6DP		0x68
++#define MXC_CPU_MX6QP		0x69
+ 
+ #define CS0_128					0
+ #define CS0_64M_CS1_64M				1
+diff --git a/arch/arm/include/asm/arch-mx6/sys_proto.h b/arch/arm/include/asm/arch-mx6/sys_proto.h
+index 28c77a4..2e397d6 100644
+--- a/arch/arm/include/asm/arch-mx6/sys_proto.h
++++ b/arch/arm/include/asm/arch-mx6/sys_proto.h
+@@ -16,6 +16,7 @@
+ 
+ u32 get_nr_cpus(void);
+ u32 get_cpu_rev(void);
++u32 get_cpu_rev_ext(void);
+ u32 get_cpu_speed_grade_hz(void);
+ u32 get_cpu_temp_grade(int *minc, int *maxc);
+ 
+@@ -25,6 +26,7 @@ u32 get_cpu_temp_grade(int *minc, int *maxc);
+ /* both macros return/take MXC_CPU_ constants */
+ #define get_cpu_type()	(cpu_type(get_cpu_rev()))
+ #define is_cpu_type(cpu) (get_cpu_type() == cpu)
++#define get_cpu_type_ext()	(cpu_type(get_cpu_rev_ext()))
+ 
+ const char *get_imx_type(u32 imxtype);
+ unsigned imx_ddr_size(void);
+-- 
+1.9.1
+

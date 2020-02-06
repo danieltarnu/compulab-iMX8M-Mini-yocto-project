@@ -1,0 +1,26 @@
+From 9fb89856fca5d85e9e430f9d265436da54346376 Mon Sep 17 00:00:00 2001
+From: Ilya Ledvich <ilya@compulab.co.il>
+Date: Wed, 10 Jan 2018 11:40:36 +0200
+Subject: [PATCH] HACK: fdt: avoid building the new python libfdt module
+
+Signed-off-by: Ilya Ledvich <ilya@compulab.co.il>
+---
+ tools/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/Makefile b/tools/Makefile
+index cb1683e..872a65f 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -230,7 +230,7 @@ always := $(hostprogs-y)
+ 
+ # Build a libfdt Python module if swig is available
+ # Use 'sudo apt-get install swig libpython-dev' to enable this
+-always += $(if $(shell which swig 2> /dev/null),_libfdt.so)
++#always += $(if $(shell which swig 2> /dev/null),_libfdt.so)
+ 
+ # Generated LCD/video logo
+ LOGO_H = $(objtree)/include/bmp_logo.h
+-- 
+1.9.1
+

@@ -1,0 +1,25 @@
+From b02f41413fd2b2186a8788e36794a7b4d4598ee4 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 12 Apr 2017 09:52:52 +0300
+Subject: [PATCH 56/58] ARM: i.MX6: cl-som-imx6: defconfig enable USB_ACM
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index 7c659d9..897a04f 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -328,6 +328,7 @@ CONFIG_USB_OTG=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_MXC=y
+ CONFIG_USB_EHCI_HCD_PLATFORM=y
++CONFIG_USB_ACM=m
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_CHIPIDEA=y
+ CONFIG_USB_CHIPIDEA_UDC=y
+-- 
+1.9.1
+

@@ -1,0 +1,39 @@
+From 5ea9b88f813af156e865c7fcd862e031b45becbb Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 20 Dec 2016 08:15:02 +0200
+Subject: [PATCH 01/19] arm: imx6: add SPL to u-boot.imx
+
+Add SPL to u-boot.imx.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ Makefile | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index b255262..8839a3c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -732,7 +732,7 @@ DO_STATIC_RELA =
+ endif
+ 
+ # Always append ALL so that arch config.mk's can add custom ones
+-ALL-y += u-boot.srec u-boot.bin System.map u-boot.cfg binary_size_check
++ALL-y += u-boot.srec u-boot.bin System.map u-boot.cfg binary_size_check u-boot.imx
+ 
+ ALL-$(CONFIG_ONENAND_U_BOOT) += u-boot-onenand.bin
+ ifeq ($(CONFIG_SPL_FSL_PBL),y)
+@@ -954,6 +954,10 @@ SPL: spl/u-boot-spl.bin FORCE
+ u-boot-with-spl.imx u-boot-with-nand-spl.imx: SPL u-boot.bin FORCE
+ 	$(Q)$(MAKE) $(build)=arch/arm/imx-common $@
+ 
++u-boot.imx: SPL u-boot.img FORCE
++	@dd if=SPL of=$@ bs=1K seek=0 conv=notrunc 2>/dev/null
++	@dd if=u-boot.img of=$@ bs=1K seek=63 conv=notrunc 2>/dev/null
++
+ MKIMAGEFLAGS_u-boot.ubl = -n $(UBL_CONFIG) -T ublimage -e $(CONFIG_SYS_TEXT_BASE)
+ 
+ u-boot.ubl: u-boot-with-spl.bin FORCE
+-- 
+1.9.1
+

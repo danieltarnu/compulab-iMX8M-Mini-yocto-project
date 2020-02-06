@@ -1,0 +1,37 @@
+From b0725b664cd17fcc2fa2f7c6cde2ceff5b4d2f06 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 29 Aug 2017 15:57:59 +0300
+Subject: Fix gcc6 build error in Vivante driver
+
+| gc_hal_kernel_platform_imx6q14.c: In function 'gckPLATFORM_AdjustParam':
+| gc_hal_kernel_platform_imx6q14.c:478:3: error: this 'if' clause does not guard... [-Werror=misleading-indentation]
+|    if(Args->physSize == 0)
+|    ^~
+| gc_hal_kernel_platform_imx6q14.c:481:5: note: ...this statement, but the latter is misleadingly indented as if it is guarded by the 'if'
+|      return gcvSTATUS_OK;
+|      ^~~~~~
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ .../linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mxc/gpu-viv/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c b/drivers/mxc/gpu-viv/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c
+index e436ada..c9ab8ab 100644
+--- a/drivers/mxc/gpu-viv/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c
++++ b/drivers/mxc/gpu-viv/hal/os/linux/kernel/platform/freescale/gc_hal_kernel_platform_imx6q14.c
+@@ -475,8 +475,9 @@ gckPLATFORM_AdjustParam(
+ 
+     Args->gpu3DMinClock = initgpu3DMinClock;
+ 
+-  if(Args->physSize == 0)
+-    Args->physSize = 0x80000000;
++    if(Args->physSize == 0) {
++        Args->physSize = 0x80000000;
++    }
+ 
+     return gcvSTATUS_OK;
+ }
+-- 
+2.7.4
+

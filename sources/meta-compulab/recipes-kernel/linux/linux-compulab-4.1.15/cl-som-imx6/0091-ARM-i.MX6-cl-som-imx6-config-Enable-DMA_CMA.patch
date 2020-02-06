@@ -1,0 +1,25 @@
+From 361a6f447a763a741d953340007805f07fae0c8c Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 7 Dec 2017 12:24:13 +0200
+Subject: [PATCH 91/93] ARM: i.MX6: cl-som-imx6: config: Enable DMA_CMA
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index 2ede74c..ece7024 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -152,6 +152,7 @@ CONFIG_MAC80211=y
+ CONFIG_DEVTMPFS=y
+ CONFIG_DEVTMPFS_MOUNT=y
+ # CONFIG_STANDALONE is not set
++CONFIG_DMA_CMA=y
+ CONFIG_IMX_WEIM=y
+ CONFIG_CONNECTOR=y
+ CONFIG_MTD=y
+-- 
+1.9.1
+

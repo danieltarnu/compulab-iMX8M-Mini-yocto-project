@@ -1,0 +1,27 @@
+From 6f1e63c0e3a41d2358e4b421d369644e421c725b Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 20 Aug 2017 12:06:23 +0300
+Subject: [PATCH 71/72] ARM: i.MX6: cl-som-imx6: Update defconfig for
+ snvs_poweroff
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index 847f29d..245e515 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -250,6 +250,8 @@ CONFIG_GPIO_SYSFS=y
+ CONFIG_GPIO_PCA953X=y
+ CONFIG_POWER_SUPPLY=y
+ CONFIG_SABRESD_MAX8903=y
++CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_SYSCON_POWEROFF=y
+ CONFIG_SENSORS_MAX17135=y
+ CONFIG_SENSORS_MAG3110=y
+ CONFIG_THERMAL=y
+-- 
+1.9.1
+

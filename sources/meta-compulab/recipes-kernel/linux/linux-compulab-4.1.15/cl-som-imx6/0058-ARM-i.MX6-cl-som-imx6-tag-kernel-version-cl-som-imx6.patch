@@ -1,0 +1,24 @@
+From 1b0550b2de6af64e9450412fbeff6c4c2ccee74f Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 29 Mar 2017 12:33:08 +0300
+Subject: [PATCH 58/58] ARM: i.MX6: cl-som-imx6: tag kernel version
+ -cl-som-imx6-1.0
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index 897a04f..ab14cee 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -1,4 +1,4 @@
+-CONFIG_LOCALVERSION="-cl-som-imx6"
++CONFIG_LOCALVERSION="-cl-som-imx6-1.0"
+ CONFIG_KERNEL_LZO=y
+ CONFIG_SYSVIPC=y
+ CONFIG_FHANDLE=y
+-- 
+1.9.1
+

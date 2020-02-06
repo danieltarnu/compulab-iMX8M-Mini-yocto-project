@@ -1,0 +1,26 @@
+From f7aacf84f7dcbf68161de354bcfe5ea3cf3b2b68 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 17 Apr 2016 15:13:42 +0300
+Subject: [PATCH 21/38] ARM: i.MX6UL: dts: set timing1 as default for lcdif
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 305bd0c..9fac193 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -478,7 +478,7 @@
+ 		bus-width = <24>;
+ 
+ 		display-timings {
+-			native-mode = <&timing0>;
++			native-mode = <&timing1>;
+ 			timing0: lcd {
+ 				clock-frequency = <29580000>;
+ 				hactive = <800>;
+-- 
+1.9.1
+

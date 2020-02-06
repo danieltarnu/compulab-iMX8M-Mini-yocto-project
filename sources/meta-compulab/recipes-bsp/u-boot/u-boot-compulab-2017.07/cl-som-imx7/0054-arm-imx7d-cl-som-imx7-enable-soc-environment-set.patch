@@ -1,0 +1,29 @@
+From c1049cc312a81d528ae6da012c837901fdc784af Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 13 Jun 2018 17:23:50 +0300
+Subject: [PATCH 54/57] arm: imx7d: cl-som-imx7: enable soc environment set
+
+Enable the feature of saving the SOC type in the environment variable
+soc.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ include/configs/cl-som-imx7.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 98f775d8a1..5763a668f5 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -148,6 +148,8 @@
+ 	"echo USB boot attempt ...; run usbbootscript; " \
+ 	"echo NAND boot attempt  ...; run nandboot"
+ 
++#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
++
+ #define CONFIG_SYS_MEMTEST_START	0x80000000
+ #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,28 @@
+From e12755c4a139fa50064b7657a6b09c0df1986117 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 29 Nov 2017 11:03:33 +0200
+Subject: [PATCH 37/57] arm: imx7d: cl-som-imx7: update extraversion
+
+Update extraversion with the new release version
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 5db9211339..5ee918023c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -5,7 +5,7 @@
+ VERSION = 2017
+ PATCHLEVEL = 07
+ SUBLEVEL =
+-EXTRAVERSION = -cl-som-imx7-1.0
++EXTRAVERSION = -cl-som-imx7-1.1
+ NAME =
+ 
+ # *DOCUMENTATION*
+-- 
+2.17.1
+

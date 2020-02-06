@@ -1,0 +1,79 @@
+From 7aae71aa61e017b47c2a54d07a7b26e377316945 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 28 Mar 2017 10:52:53 +0300
+Subject: [PATCH 55/58] igb: mac address from dtb; blank i211 to get handled
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ drivers/net/ethernet/intel/igb/e1000_hw.h |  1 +
+ drivers/net/ethernet/intel/igb/igb_main.c | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/drivers/net/ethernet/intel/igb/e1000_hw.h b/drivers/net/ethernet/intel/igb/e1000_hw.h
+index 2003b37..3986074 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_hw.h
++++ b/drivers/net/ethernet/intel/igb/e1000_hw.h
+@@ -58,6 +58,7 @@ struct e1000_hw;
+ #define E1000_DEV_ID_I350_FIBER			0x1522
+ #define E1000_DEV_ID_I350_SERDES		0x1523
+ #define E1000_DEV_ID_I350_SGMII			0x1524
++#define E1000_DEV_ID_I211_BLANK			0x1532
+ #define E1000_DEV_ID_I210_COPPER		0x1533
+ #define E1000_DEV_ID_I210_FIBER			0x1536
+ #define E1000_DEV_ID_I210_SERDES		0x1537
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index cf579f9..e935a6f 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -76,6 +76,7 @@ static const struct pci_device_id igb_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I354_BACKPLANE_1GBPS) },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I354_SGMII) },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I354_BACKPLANE_2_5GBPS) },
++	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I211_BLANK) },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I211_COPPER), board_82575 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I210_COPPER), board_82575 },
+ 	{ PCI_VDEVICE(INTEL, E1000_DEV_ID_I210_FIBER), board_82575 },
+@@ -2228,6 +2229,30 @@ static s32 igb_init_i2c(struct igb_adapter *adapter)
+ 	return status;
+ }
+ 
++
++/**
++ *  igb_read_mac_addr_dts - Read mac addres from the device tree
++ *  blob
++ *  @adapter: pointer to adapter structure
++ **/
++static void igb_read_mac_addr_dts(struct e1000_hw *hw)
++{
++	struct device_node *dn;
++	const uint8_t *mac;
++
++	dn = of_find_compatible_node(NULL, NULL, "intel,i211");
++
++	if (!dn)
++		return;
++
++	mac = of_get_property(dn, "local-mac-address", NULL);
++
++	if (mac)
++		memcpy(hw->mac.addr, mac, ETH_ALEN);
++
++	return;
++}
++
+ /**
+  *  igb_probe - Device Initialization Routine
+  *  @pdev: PCI device information struct
+@@ -2430,6 +2455,9 @@ static int igb_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (hw->mac.ops.read_mac_addr(hw))
+ 		dev_err(&pdev->dev, "NVM Read Error\n");
+ 
++	if (!is_valid_ether_addr(hw->mac.addr))
++		igb_read_mac_addr_dts(hw);
++
+ 	if (!is_valid_ether_addr(hw->mac.addr)) {
+ 		dev_info(&pdev->dev, "Random MAC Address\n");
+ 		random_ether_addr(hw->mac.addr);
+-- 
+1.9.1
+

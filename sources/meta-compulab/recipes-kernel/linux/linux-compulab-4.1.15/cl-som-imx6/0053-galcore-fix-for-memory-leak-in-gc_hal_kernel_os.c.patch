@@ -1,0 +1,32 @@
+From fcb647ad9e7d2b39bdbcd1bba44ba78bce18b1ad Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 21 Mar 2017 15:46:20 +0200
+Subject: [PATCH 53/58] galcore: fix for memory leak in gc_hal_kernel_os.c
+
+When the test (!((physical - Os->device->baseAddress) & 0x80000000)) returns
+true, the ref variable allocated line 4935 never get free'd and there is no
+more reference to it after that.
+
+Signed-off-by: aridet <aurelien.ridet@preciamolen.fr>
+---
+ drivers/mxc/gpu-viv/hal/os/linux/kernel/gc_hal_kernel_os.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/mxc/gpu-viv/hal/os/linux/kernel/gc_hal_kernel_os.c b/drivers/mxc/gpu-viv/hal/os/linux/kernel/gc_hal_kernel_os.c
+index 886acff..f9cddb3 100644
+--- a/drivers/mxc/gpu-viv/hal/os/linux/kernel/gc_hal_kernel_os.c
++++ b/drivers/mxc/gpu-viv/hal/os/linux/kernel/gc_hal_kernel_os.c
+@@ -5049,6 +5049,10 @@ OnError:
+                         if (!((physical - Os->device->baseAddress) & 0x80000000))
+                         {
+                             gctPHYS_ADDR_T gpuPhysical;
++
++			    kfree(ref);
++			    ref = gcvNULL;
++
+                             kfree(pages);
+                             pages = gcvNULL;
+ 
+-- 
+1.9.1
+

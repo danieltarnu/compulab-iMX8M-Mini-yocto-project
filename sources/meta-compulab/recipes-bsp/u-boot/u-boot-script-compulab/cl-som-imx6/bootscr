@@ -1,0 +1,114 @@
+setenv loadaddr 0x10800000
+setenv fdt_high 0xffffffff
+setenv fdt_addr 0x15000000
+setenv bootm_low 0x15000000
+setenv kernel_file zImage
+setenv vmalloc vmalloc=256M
+setenv cma cma=384M
+setenv dmfc dmfc=3
+setenv console ttymxc3,115200
+setenv env_addr 0x10500000
+setenv env_file boot.env
+setenv ext_env ext_env=empty
+
+setenv soc -wrong
+test ! -z "$cpu_type" && test $cpu_type = 'MX6QP' && setenv soc qp
+test ! -z "$cpu_type" && test $cpu_type = 'MX6Q' && setenv soc q
+test ! -z "$cpu_type" && test $cpu_type = 'MX6D' && setenv soc q
+
+setenv fdt_file imx6${soc}-sbc-imx6-hdmi.dtb
+
+setenv setup_ext 'setenv ext ${vmalloc} ${cma} ${dmfc} ${ext_env}'
+setenv setup_args 'setenv bootargs console=${console} root=${rootdev} rootfstype=ext4 rw rootwait ${ext}'
+setenv load_env 'load ${bootdev} ${bootdev_id} ${env_addr} ${env_file} && env import -t ${env_addr} ${filesize}'
+setenv check_mfg 'test ! -z "$mfg" && run "$mfg"'
+
+setenv setup_boot 'run load_env; \
+	run check_mfg; \
+	setenv bootlinux \"\
+	if load ${bootdev} ${bootdev_id} ${loadaddr} ${kernel_file}; \
+	then; \
+		if load ${bootdev} ${bootdev_id} ${fdt_addr} ${fdt_file}; \
+		then; \
+			run setup_ext; run setup_args; \
+			echo "Booting " ${bootdev}"["${bootdev_id}"]=>"${kernel_file}":"${fdt_file}; \
+			bootz ${loadaddr} - ${fdt_addr}; \
+		fi; \
+	fi;\"'
+
+setenv uboot_update '\
+setenv offset 0x400; setenv nload 0x12000000 ; setenv oload 0x12800000; \
+if load ${bootdev} ${bootdev_id}:2 ${nload} boot/u-boot.imx;
+then;\
+if sf probe; then\
+	if sf read ${oload} ${offset} ${filesize}; then\
+		if cmp.b ${nload} ${oload} ${filesize} ; then\
+			echo U-Boot versions match;\
+		else\
+			echo U-Boot upgrade started; \
+			sf erase 0 0x80000 ; sf write ${nload} ${offset} ${filesize};\
+			echo U-Boot updated finished; \
+		fi;\
+	else;\
+		echo Error reading boot loader from EEPROM;\
+	fi;\
+else;\
+	echo Error initializing EEPROM;\
+fi;\
+	setenv mfg; \
+fi;\'
+
+setenv sata0 '\
+setenv bootdev sata; \
+setenv bootdev_id 0; \
+setenv rootdev /dev/sda2; \
+if sata init && sata dev ${bootdev_id}; \
+then; \
+	run setup_boot; \
+	run bootlinux; \
+fi;\'
+
+setenv usb0 '\
+setenv bootdev usb; \
+setenv bootdev_id 0; \
+setenv rootdev /dev/sda2; \
+if usb start && usb dev ${bootdev_id};\
+then; \
+	sata init && sata dev ${bootdev_id} && setenv rootdev /dev/sdb2; \
+	run setup_boot; \
+	run bootlinux; \
+fi;\'
+
+setenv mmc2 '\
+setenv bootdev mmc; \
+setenv bootdev_id 2; \
+setenv rootdev /dev/mmcblk2p2; \
+if mmc dev ${bootdev_id} && mmc rescan; \
+then; \
+	run setup_boot; \
+	run bootlinux; \
+fi;\'
+
+setenv mmc3 '\
+setenv bootdev mmc; \
+setenv bootdev_id 3; \
+setenv rootdev /dev/mmcblk3p2; \
+if mmc dev ${bootdev_id} && mmc rescan; \
+then; \
+	run setup_boot; \
+	run bootlinux; \
+fi;\'
+
+echo "Try U-Boot discovered device first ...."
+
+test ! -z "${storagetype}" && test ! -z "${storagedev}" && run "${storagetype}${storagedev}"
+
+echo "Continue boot.scr discovery ...."
+
+# Try removable devices first
+run usb0
+run mmc2
+run mmc3
+run sata0
+
+echo "Invalid boot parameters: kernel ${kernel_file} fdt_file ${fdt_file} ..."

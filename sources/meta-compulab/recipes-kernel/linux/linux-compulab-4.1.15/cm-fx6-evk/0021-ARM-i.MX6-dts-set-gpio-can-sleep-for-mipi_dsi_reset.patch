@@ -1,0 +1,28 @@
+From 7cecc36b1217536c7b6dcc3658ce6a9268403eac Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 9 Aug 2016 13:26:09 +0300
+Subject: [PATCH 21/24] ARM: i.MX6: dts: set gpio-can-sleep for mipi_dsi_reset
+
+Set gpio-can-sleep for mipi_dsi_reset. This signal goes through
+the gpio-pca95x controller, that requires using can_sleep APIs.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+index 84934f6..22585fc 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+@@ -91,6 +91,7 @@
+ 		compatible = "gpio-reset";
+ 		reset-gpios = <&pca9555 11 GPIO_ACTIVE_LOW>;
+ 		reset-delay-us = <100>;
++		gpio-can-sleep;
+ 		#reset-cells = <0>;
+ 	};
+ 
+-- 
+1.9.1
+

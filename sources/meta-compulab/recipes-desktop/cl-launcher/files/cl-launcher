@@ -1,0 +1,15 @@
+#!/bin/bash
+
+package=$(basename $0)
+
+package() {
+cat << eom
+${package} package is not installed
+eom
+}
+
+CL_PACKAGE=package
+
+[[ -e /usr/local/bin/${package} ]] && CL_PACKAGE=/usr/local/bin/${package}
+
+${CL_PACKAGE}

@@ -1,0 +1,33 @@
+From 8d45d3c449b94fd3c3d7a68518382e2b87622adf Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 6 Apr 2017 09:52:31 +0300
+Subject: [PATCH 12/19] arm: mx6: cl-som-imx6: Select ENET MAC0 TX clock from
+ PLL
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 7949848..b0c2a11 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -566,6 +566,14 @@ int board_eth_init(bd_t *bis)
+ 	gpio_free(IMX_GPIO_NR(6, 29));
+ 	gpio_free(IMX_GPIO_NR(6, 24));
+ 
++	if (is_mx6dqp()) {
++		/*
++		 * select ENET MAC0 TX clock from PLL
++		 */
++		imx_iomux_set_gpr_register(5, 9, 1, 1);
++		enable_fec_anatop_clock(ENET_125MHZ);
++	}
++
+ 	enable_enet_clk(1);
+ 	return cpu_eth_init(bis);
+ }
+-- 
+1.9.1
+

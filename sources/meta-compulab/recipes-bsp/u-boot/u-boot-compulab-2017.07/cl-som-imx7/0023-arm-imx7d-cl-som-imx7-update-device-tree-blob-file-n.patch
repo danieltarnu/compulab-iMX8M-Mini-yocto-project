@@ -1,0 +1,181 @@
+From 8432eca09708ce8253c9468a5f258ac4d7f2ea3e Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Tue, 5 Sep 2017 14:02:16 +0300
+Subject: [PATCH 23/57] arm: imx7d: cl-som-imx7: update device tree blob file
+ name
+
+Update the environment variable fdtfile with the appropriate device tree
+blob name. The name is determined by the base board product name.
+The detected base board ID is stored in the global variable
+cl_som_imx7_base_id.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ arch/arm/cpu/armv7/mx7/Kconfig           |  2 +
+ board/compulab/cl-som-imx7/cl-som-imx7.c | 77 ++++++++++++++++++++++++
+ board/compulab/cl-som-imx7/common.h      |  9 +++
+ configs/cl-som-imx7_defconfig            |  2 +
+ include/configs/cl-som-imx7.h            |  1 -
+ 5 files changed, 90 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/cpu/armv7/mx7/Kconfig b/arch/arm/cpu/armv7/mx7/Kconfig
+index 365501d518..19e52b0491 100644
+--- a/arch/arm/cpu/armv7/mx7/Kconfig
++++ b/arch/arm/cpu/armv7/mx7/Kconfig
+@@ -24,6 +24,8 @@ config TARGET_CL_SOM_IMX7
+ 	select DM
+ 	select DM_THERMAL
+ 	select SUPPORT_SPL
++	select COMPULAB_COMMON
++	select SYS_I2C_EEPROM_BASE
+ 
+ config TARGET_MX7DSABRESD
+ 	bool "mx7dsabresd"
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index ec515b07ec..dd5de751bb 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -302,6 +302,79 @@ static void cl_som_imx7_spi_init(void)
+ static void cl_som_imx7_spi_init(void) {}
+ #endif /* CONFIG_SPI */
+ 
++#define CL_SOM_IMX7_PRODUCT_NAME_SIZE 16
++
++typedef struct {
++       char name[CL_SOM_IMX7_PRODUCT_NAME_SIZE];
++       char fdt_file[25];
++} cl_som_imx7_base_board_param;
++
++static cl_som_imx7_base_board_param cl_som_imx7_base_board_param_db[] = {
++       {"SB-SOM", "imx7d-sbc-imx7.dtb"},
++       {"SBC-IOT", "imx7d-sbc-iot-imx7.dtb"},
++       {"IOTG", "imx7d-sbc-iot-imx7.dtb"},
++       {"other", "imx7d-cl-som-imx7.dtb"},
++};
++
++/* CL-SOM-iMX7 base board ID */
++cl_som_imx7_base cl_som_imx7_base_id = CL_SOM_IMX7_OTHER;
++
++/*
++ * cl_som_imx7_get_baseboard_id() - determine baseboard ID.
++ * Baseboard ID determined by the base board's
++ * EEPROM filed "product name".
++ */
++static void cl_som_imx7_get_baseboard_id(void)
++{
++	int ret, i;
++	char prod_name_base[CL_SOM_IMX7_PRODUCT_NAME_SIZE];
++
++	if (!cl_som_imx7_base_i2c_init)
++		return;
++
++	ret = sb_som_am57x_layout.read(&sb_som_am57x_layout, "Product Name",
++				       (uchar*) prod_name_base,
++				       CL_SOM_IMX7_PRODUCT_NAME_SIZE);
++
++	if (ret) {
++		prod_name_base[0] = 0;
++		printf("Failed getting base board name\n");
++	}
++
++	for (i = 0; i < CL_SOM_IMX7_OTHER; i++) {
++		if (!strncmp(prod_name_base,
++			     cl_som_imx7_base_board_param_db[i].name,
++			     CL_SOM_IMX7_PRODUCT_NAME_SIZE)) {
++			cl_som_imx7_base_id = i;
++			break;
++		}
++	}
++}
++
++#define CL_SOM_IMX7_FDT_FILE_NAME "fdtfile"
++#define CL_SOM_IMX7_BOARD_ID_DEF CL_SOM_IMX7_OTHER
++
++/*
++ * cl_som_imx7_update_dtb_name() - update device tree blob file name.
++ * Device tree file name determined base board ID
++ */
++static void cl_som_imx7_update_dtb_name(void)
++{
++	char *fdt_file = getenv(CL_SOM_IMX7_FDT_FILE_NAME);
++
++	if (fdt_file) /* Device tree blob file name was set */
++		return;
++
++	if (cl_som_imx7_base_id < CL_SOM_IMX7_OTHER)
++		setenv(CL_SOM_IMX7_FDT_FILE_NAME,
++		       cl_som_imx7_base_board_param_db[cl_som_imx7_base_id].
++		       fdt_file);
++	else
++		setenv(CL_SOM_IMX7_FDT_FILE_NAME,
++		       cl_som_imx7_base_board_param_db
++		       [CL_SOM_IMX7_BOARD_ID_DEF].fdt_file);
++}
++
+ int board_early_init_f(void)
+ {
+ 	cl_som_imx7_uart1_pads_set();
+@@ -335,6 +408,8 @@ int board_init(void)
+        if (ret)
+                printf("EEPROM layout initialization failure\n");
+ 
++       cl_som_imx7_get_baseboard_id();
++
+ 	return 0;
+ }
+ 
+@@ -387,6 +462,8 @@ int board_late_init(void)
+ {
+ 	setenv("board_name", "CL-SOM-iMX7");
+ 	cl_som_imx7_setup_wdog();
++	cl_som_imx7_update_dtb_name();
++
+ 	return 0;
+ }
+ 
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index c028701b3e..a45ec07a92 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -36,4 +36,13 @@ PADS_SET_PROT(nand_enable_pads)
+ #ifdef CONFIG_SYS_I2C_MXC
+ extern int cl_som_imx7_base_i2c_init;
+ #endif /* CONFIG_SYS_I2C_MXC */
++
++/* CL-SOM-iMX7 base board ID */
++typedef enum {
++       CL_SOM_IMX7_SB_SOM,
++       CL_SOM_IMX7_SB_IOT,
++       CL_SOM_IMX7_IOTG,
++       CL_SOM_IMX7_OTHER,
++} cl_som_imx7_base;
++
+ #endif /* !CONFIG_SPL_BUILD */
+diff --git a/configs/cl-som-imx7_defconfig b/configs/cl-som-imx7_defconfig
+index 2a13438874..73be05842f 100644
+--- a/configs/cl-som-imx7_defconfig
++++ b/configs/cl-som-imx7_defconfig
+@@ -4,6 +4,8 @@ CONFIG_SPL_GPIO_SUPPORT=y
+ CONFIG_SPL_LIBCOMMON_SUPPORT=y
+ CONFIG_SPL_LIBGENERIC_SUPPORT=y
+ CONFIG_TARGET_CL_SOM_IMX7=y
++CONFIG_SYS_I2C_EEPROM_BASE_BUS=1
++CONFIG_SYS_I2C_EEPROM_BASE_ADDR=0x54
+ CONFIG_SPL_MMC_SUPPORT=y
+ CONFIG_SPL_SERIAL_SUPPORT=y
+ CONFIG_SPL_SPI_FLASH_SUPPORT=y
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 650c79a0d6..55bf8728de 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -88,7 +88,6 @@
+ 	"console=ttymxc0\0" \
+ 	"fdt_high=0xffffffff\0" \
+ 	"initrd_high=0xffffffff\0" \
+-	"fdtfile=imx7d-sbc-imx7.dtb\0" \
+ 	"fdtaddr=0x83000000\0" \
+ 	"mmcdev_def="__stringify(CONFIG_SYS_MMC_DEV)"\0" \
+ 	"usbdev_def="__stringify(CONFIG_SYS_USB_DEV)"\0" \
+-- 
+2.17.1
+

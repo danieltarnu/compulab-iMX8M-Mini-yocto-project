@@ -1,0 +1,37 @@
+From 682e21e16bf70139be4c3cab13e323b1229a1264 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Mon, 4 Sep 2017 16:22:21 +0300
+Subject: [PATCH 17/57] arm: imx7d: cl-som-imx7: add support for eeprom layout
+ comands
+
+Add support for EEPROM and EEPROM layout commands for CL-SOM-iMX7.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ include/configs/cl-som-imx7.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 195523261b..2ede00c19e 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -178,6 +178,16 @@
+ #define CONFIG_ENV_SPI_MODE		CONFIG_SF_DEFAULT_MODE
+ #define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
+ 
++/* EEPROM */
++#define CONFIG_CMD_EEPROM
++#define CONFIG_ENV_EEPROM_IS_ON_I2C
++#define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS      4
++#define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS  5
++#define CONFIG_SYS_EEPROM_SIZE                 256
++
++#define CONFIG_CMD_EEPROM_LAYOUT
++#define CONFIG_EEPROM_LAYOUT_HELP_STRING "v2, v3"
++
+ /* MMC Config*/
+ #define CONFIG_FSL_USDHC
+ #ifdef CONFIG_FSL_USDHC
+-- 
+2.17.1
+

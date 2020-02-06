@@ -1,0 +1,68 @@
+From 1c2555ebb633055dc8f5e703d99ca89d61634950 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 17 Dec 2015 11:00:31 +0200
+Subject: [PATCH 10/38] ARM: imx6ul: dvi: enable dvi output on cl-sb-som.
+
+Enable dvi output on cl-sb-som.
+1) Enable sil164 simple driver.
+2) Add dvi timings to device tree.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/cl-sb-som-imx6ul.dtsi |  2 +-
+ arch/arm/boot/dts/cl-som-imx6ul.dtsi    | 19 ++++++++++++++++++-
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/cl-sb-som-imx6ul.dtsi b/arch/arm/boot/dts/cl-sb-som-imx6ul.dtsi
+index 2a4f982..f52b4d1 100644
+--- a/arch/arm/boot/dts/cl-sb-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/cl-sb-som-imx6ul.dtsi
+@@ -38,7 +38,7 @@
+ 	};
+ 
+ 	dvicape {
+-		compatible = "sil164";
++		compatible = "sil164_simple";
+ 		reg = <0x39>;
+ 		powerdn-gpio = <&pca9555 13 0>;
+ 	};
+diff --git a/arch/arm/boot/dts/cl-som-imx6ul.dtsi b/arch/arm/boot/dts/cl-som-imx6ul.dtsi
+index f9cfac8..a52da93 100644
+--- a/arch/arm/boot/dts/cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/cl-som-imx6ul.dtsi
+@@ -439,7 +439,7 @@
+ 
+ 		display-timings {
+ 			native-mode = <&timing0>;
+-			timing0: timing0 {
++			timing0: lcd {
+ 				clock-frequency = <29580000>;
+ 				hactive = <800>;
+ 				vactive = <480>;
+@@ -455,6 +455,23 @@
+ 				de-active = <1>;
+ 				pixelclk-active = <0>;
+ 			};
++			timing1: dvi {
++				/* 1024x768p60 */
++				clock-frequency = <65000000>;
++				hactive = <1024>;
++				vactive = <768>;
++				hback-porch = <220>;
++				hfront-porch = <40>;
++				vback-porch = <21>;
++				vfront-porch = <7>;
++				hsync-len = <60>;
++				vsync-len = <10>;
++
++				hsync-active = <0>;
++				vsync-active = <0>;
++				de-active = <1>;
++				pixelclk-active = <0>;
++			};
+ 		};
+ 	};
+ };
+-- 
+1.9.1
+

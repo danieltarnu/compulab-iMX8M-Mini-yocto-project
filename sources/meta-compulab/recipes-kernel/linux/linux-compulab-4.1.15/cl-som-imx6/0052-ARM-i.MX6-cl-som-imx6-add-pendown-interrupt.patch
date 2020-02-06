@@ -1,0 +1,45 @@
+From 2005d5185c04b696fb4ebf19e8b4a0f2ea9857a1 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 7 Feb 2017 14:41:31 +0200
+Subject: [PATCH 52/58] ARM: i.MX6: cl-som-imx6: add pendown interrupt
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index e80219f..00c155f 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -523,7 +523,11 @@
+ 		pinctrl_tsc2046: tsc2046grp {
+ 			fsl,pins = <
+ 				 /* tsc2046 PENDOWN */
++#ifdef __SOM_iMX6__
++				MX6QDL_PAD_EIM_A17__GPIO2_IO21 0x80000000
++#else
+ 				MX6QDL_PAD_SD4_DAT7__GPIO2_IO15 0x80000000
++#endif
+ 			>;
+ 		};
+ 
+@@ -672,9 +676,15 @@
+ 		reg = <1>;	/* CS1 */
+ 		spi-max-frequency = <1500000>;
+ 
++#ifdef __SOM_iMX6__
++		interrupt-parent = <&gpio2>;
++		interrupts = <21 0>;
++		pendown-gpio = <&gpio2 21 0>;
++#else
+ 		interrupt-parent = <&gpio2>;
+ 		interrupts = <15 0>;
+ 		pendown-gpio = <&gpio2 15 0>;
++#endif
+ 
+ 		ti,x-min = /bits/ 16 <0x0>;
+ 		ti,x-max = /bits/ 16 <0x0fff>;
+-- 
+1.9.1
+

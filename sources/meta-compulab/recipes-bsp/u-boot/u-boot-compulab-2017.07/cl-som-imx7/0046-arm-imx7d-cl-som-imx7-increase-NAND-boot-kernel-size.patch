@@ -1,0 +1,38 @@
+From 7c695ea34f0d41ea2389fe940b26d6ac22abf40e Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Thu, 1 Mar 2018 11:02:51 +0200
+Subject: [PATCH 46/57] arm: imx7d: cl-som-imx7: increase NAND boot kernel size
+
+Part of the NAND process includes loading of the kernel image from NAND
+to the RAM. The kernel image load size is 0x600000.
+The kernel size, of the of the current kernel image, is greater than
+0x600000.
+Increase the kernel load size to 0x800000.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ include/configs/cl-som-imx7.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index f9362e922d..415944a852 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -79,12 +79,13 @@
+ 	"script=boot.scr\0" \
+ 	"loadscript=load ${storagetype} ${storagedev} ${loadaddr} ${script};\0" \
+ 	"loadkernel=load ${storagetype} ${storagedev} ${loadaddr} ${kernel};\0" \
+-	"loadkernel_nand=nand read ${loadaddr} 0 600000\0" \
++	"loadkernel_nand=nand read ${loadaddr} 0 ${kernel_size}\0" \
+ 	"loadfdt=load ${storagetype} ${storagedev} ${fdtaddr} ${fdtfile};\0" \
+ 	"loadfdt_nand=nand read ${fdtaddr} 980000 10000\0" \
+ 	"bootscript=echo Running bootscript from ${storagetype} ...; source ${loadaddr};\0" \
+ 	"storagebootcmd=echo Booting from ${storagetype} ...; run ${storagetype}args; run doboot;\0" \
+ 	"kernel=zImage\0" \
++	"kernel_size=800000\0" \
+ 	"console=ttymxc0\0" \
+ 	"fdt_high=0xffffffff\0" \
+ 	"initrd_high=0xffffffff\0" \
+-- 
+2.17.1
+

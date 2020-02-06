@@ -1,0 +1,85 @@
+= Setting up Yocto SDK with Qt5 support =
+
+# Overview
+
+The following document provides step-by-step instructions for setting up Yocto SDK with QT5 support for CompuLab boards.
+
+## Supported CompuLab Machines
+
+* `cl-som-imx8`
+* `ucm-imx8m-mini`
+
+## SDK setup options
+
+This document offers two SDK setup options. Choose one:
+
+* <<README.adoc#using-pre-built-sdk-with-qt5-support>>
+* <<README.adoc#building-sdk-with-qt5-support>> (for developers)
+
+# Using pre-built SDK with Qt5 support
+
+* Download the https://drive.google.com/open?id=14nEqaVNputvIwf5rw9Hv_kAxjfaiFbpX[SDK with Qt5 support image]
+* Find a location with at least 12GB of available space
+* Set the `PATH_TO_SDK` environment variable to the location that has enough free space:
+[source,console]
+export PATH_TO_SDK=/path/to/sdk
+
+* Deploy the SDK tarball:
+[source,console]
+sudo tar -C ${PATH_TO_SDK} -xf /path/to/qt5-build-env.tar.bz2
+
+* If ${PATH_TO_SDK} is not equal to `/`, remount the deployed SDK to the default installation path:
+[source,console]
+sudo mkdir -p /opt/fsl-imx-xwayland/4.14-sumo
+sudo mount -B ${PATH_TO_SDK}/opt/fsl-imx-xwayland/4.14-sumo /opt/fsl-imx-xwayland/4.14-sumo
+
+* Continue with: <<README.adoc#make-use-of-the-build-environment>>
+
+# Building SDK with Qt5 support
+## Prepare NXP BSP
+[source,console]
+repo init -u git://source.codeaurora.org/external/imx/imx-manifest.git -b imx-linux-sumo -m imx-4.14.98-2.0.0_ga.xml
+repo sync
+
+## Download CompuLab meta layer and set-up the build environment
+* For `cl-som-imx8`
+
+ COMPULAB_MACHINE=cl-som-imx8
+
+ git clone -b master https://github.com/compulab-yokneam/meta-bsp-imx8mq.git sources/meta-bsp-imx8mq/
+
+ DEVENV=Yes MACHINE=${COMPULAB_MACHINE} source sources/meta-bsp-imx8mq/tools/setup-imx8mq-env -b build-xwayland
+
+* For `ucm-imx8m-mini`
+
+ COMPULAB_MACHINE=ucm-imx8m-mini
+
+ git clone -b master https://github.com/compulab-yokneam/meta-bsp-imx8mq.git sources/meta-bsp-imx8mm/
+
+ DEVENV=Yes MACHINE=${COMPULAB_MACHINE} source sources/meta-bsp-imx8mm/tools/setup-imx8mm-env -b build-xwayland
+
+## Build the SDK
+[source,console]
+bitbake -c populate_sdk compulab-qt5-build-env
+
+## Install the SDK
+* As soon as the `bitbake` process is complete, issue the following script from the command line as root user:
+[source,console]
+sudo ./tmp/deploy/sdk/fsl-imx-xwayland-glibc-x86_64-compulab-qt5-build-env-aarch64-toolchain-4.14-sumo.sh
+
+* Set the installation path or accept the default:
+[source,console]
+MX Release Distro SDK installer version 4.14-sumo
+Enter target directory for SDK (default: /opt/fsl-imx-xwayland/4.14-sumo):
+You are about to install the SDK to "/opt/fsl-imx-xwayland/4.14-sumo". Proceed[Y/n]? Y
+
+* Wait for the `done` message:
+[source,console]
+Extracting SDK........................................................................................................................................................................................................................................................................................................................................................................................................................................................................done
+Setting it up...done
+SDK has been successfully set up and is ready to be used.
+
+# Make use of the build environment
+Each time you wish to use the SDK in a new shell session, source the environment setup script e.g.
+[source,console]
+. /opt/fsl-imx-xwayland/4.14-sumo/environment-setup-aarch64-poky-linux

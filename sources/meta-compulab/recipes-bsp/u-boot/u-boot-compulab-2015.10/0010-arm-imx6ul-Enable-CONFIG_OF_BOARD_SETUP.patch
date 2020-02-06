@@ -1,0 +1,69 @@
+From 277a7d765efcd47370c340f52401d12a0f9afa86 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 9 Aug 2017 11:23:16 +0300
+Subject: [PATCH 10/10] arm: imx6ul: Enable CONFIG_OF_BOARD_SETUP
+
+1) Enable CONFIG_OF_BOARD_SETUP
+2) Tune up the fdt with respect to the discovered hw.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cl_som_imx6ul/cl_som_imx6ul.c | 24 ++++++++++++++++++++++++
+ include/configs/cl_som_imx6ul.h              |  1 +
+ 2 files changed, 25 insertions(+)
+
+diff --git a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+index c574ad1..d294273 100644
+--- a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
++++ b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+@@ -26,6 +26,7 @@
+ #include <usb/ehci-fsl.h>
+ #include "../common/eeprom.h"
+ #include "../common/common.h"
++#include <fdt_support.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -754,4 +755,27 @@ void spl_board_init(void)
+ 		puts("Unknown boot device\n");
+ 
+ }
++#else
++#ifdef CONFIG_OF_BOARD_SETUP
++int ft_board_setup(void *blob, bd_t *bd)
++{
++	const char *mmc1 = "/soc/aips-bus@02100000/usdhc@02194000";
++	const char *nand = "/soc/gpmi-nand@01806000";
++
++	if (nand_enabled) {
++		/* nand enable */
++		fdt_status_okay_by_alias(blob, nand);
++		/* emmc disable */
++		fdt_status_disabled_by_alias(blob, mmc1);
++	} else {
++		/* emmc enable */
++		fdt_status_okay_by_alias(blob, mmc1);
++		/* nand disable */
++		fdt_status_disabled_by_alias(blob, nand);
++	}
++
++	return 0;
++}
++#endif
++
+ #endif
+diff --git a/include/configs/cl_som_imx6ul.h b/include/configs/cl_som_imx6ul.h
+index a30316c..f41dae1 100644
+--- a/include/configs/cl_som_imx6ul.h
++++ b/include/configs/cl_som_imx6ul.h
+@@ -16,6 +16,7 @@
+ 
+ #define is_cl_som_imx6ul()	CONFIG_IS_ENABLED(TARGET_CL_SOM_IMX6UL)
+ 
++#define CONFIG_OF_BOARD_SETUP
+ #define CONFIG_MISC_INIT_R
+ 
+ /* SPL options */
+-- 
+1.9.1
+

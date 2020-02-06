@@ -1,0 +1,25 @@
+From 308bd0bc4616e03537ab1475183b9d69555455bf Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 18 Jun 2017 09:56:31 +0300
+Subject: ARM: i.MX6: dts: disable tvp5150 by default
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+index 0ec438d..92565a9 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+@@ -84,6 +84,7 @@
+ 				csi_id = <0>;
+ 				mclk = <27000000>;
+ 				mclk_source = <0>;
++				status = "disabled";
+ 			};
+ 		};
+ 
+-- 
+1.9.1
+

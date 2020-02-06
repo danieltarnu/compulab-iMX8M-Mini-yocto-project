@@ -1,0 +1,119 @@
+From 354867eb6801d7991fcfac250b3f8a7840699a07 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 15:58:24 +0200
+Subject: [PATCH 41/58] ARM: i.MX6: cl-som-imx6: enable wifi murata
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi  | 52 +++++++++++++++++++++++++++++++++-
+ arch/arm/configs/cl_som_imx6_defconfig |  2 ++
+ 2 files changed, 53 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index f65cfd8..d1d778e 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -73,8 +73,27 @@
+ 			gpio = <&gpio6 16 0>;
+ 			startup-delay-us = <10000>;
+ 		};
+-#endif
++#else
++		/* regulator1 for wifi/bt */
++		wlan_pwren_dn: regulator@99 {
++			compatible = "regulator-fixed";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-name = "wlan_pwren_dn";
++			gpio = <&gpio3 1 0>;
++			enable-active-high;
++		};
+ 
++		wlreg_on: fixedregulator@100 {
++			compatible = "regulator-fixed";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-name = "wlreg_on";
++			gpio = <&gpio6 16 0>;
++			startup-delay-us = <100>;
++			enable-active-high;
++		};
++#endif
+ 		tsc2046reg: tsc2046-reg {
+ 			compatible = "regulator-fixed";
+ 			regulator-name = "tsc2046-reg";
+@@ -84,6 +103,14 @@
+ 
+ 	};
+ 
++#ifdef __SOM_iMX6__
++	/* Murata -- define hook for BCMDHD driver.   */
++	bcmdhd_wlan_0: bcmdhd_wlan@0 {
++		compatible = "android,bcmdhd_wlan";
++		wlreg_on-supply = <&wlreg_on>;
++	};
++#endif
++
+ 	pu_dummy: pudummy_reg {
+ 		compatible = "fsl,imx6-dummy-pureg"; /* only used in ldo-bypass */
+ 	};
+@@ -425,6 +452,7 @@
+ 			>;
+ 		};
+ 
++#ifndef __SOM_iMX6__
+ 		/* pins for wifi/bt */
+ 		pinctrl_mrvl1: mrvl1grp {
+ 			fsl,pins = <
+@@ -434,6 +462,16 @@
+ 			>;
+ 		};
+ 
++#else
++		/* pins for wifi/bt */
++		pinctrl_murata: murata1grp {
++			fsl,pins = <
++				MX6QDL_PAD_NANDF_CS3__GPIO6_IO16 0x80000000 /* WL_REG_ON_3V3 */
++				MX6QDL_PAD_NANDF_CS1__GPIO6_IO14 0x80000000 /* WL_HOST_WAKE */
++				MX6QDL_PAD_EIM_DA1__GPIO3_IO01 0x80000000 /* WLAN_PWREN_PD */
++			>;
++		};
++#endif
+ 		/* pins for tsc2046 pendown */
+ 		pinctrl_tsc2046: tsc2046grp {
+ 			fsl,pins = <
+@@ -718,6 +756,18 @@
+ 	vmmc_aux-supply = <&awnh387_wifi_nreset>;
+ 	status = "okay";
+ };
++#else
++&usdhc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc1 &pinctrl_murata>;
++	bus-width = <4>;
++	non-removable;
++	wifi-host;
++	cd-post;
++	pm-ignore-notify;
++	vmmc-supply = <&wlan_pwren_dn>;
++	status = "okay";
++};
+ #endif
+ 
+ &clks {
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index 72f0224..f033d8e 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -201,6 +201,8 @@ CONFIG_SMC911X=y
+ CONFIG_SMSC911X=y
+ # CONFIG_NET_VENDOR_STMICRO is not set
+ CONFIG_ATH_CARDS=y
++CONFIG_BCMDHD=m
++CONFIG_BCMDHD_SDIO=y
+ CONFIG_MWIFIEX=m
+ CONFIG_MWIFIEX_SDIO=m
+ # CONFIG_INPUT_MOUSEDEV_PSAUX is not set
+-- 
+1.9.1
+

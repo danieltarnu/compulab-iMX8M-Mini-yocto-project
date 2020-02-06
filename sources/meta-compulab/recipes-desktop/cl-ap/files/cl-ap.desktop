@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=CompuLab Access Point
+Comment=CompuLab AP
+Exec=/usr/local/bin/cl-ap
+Icon=/usr/share/applications/cl-ap.png
+Terminal=true
+Type=Application
+Categories=GTK;System;CompuLab Access Point;

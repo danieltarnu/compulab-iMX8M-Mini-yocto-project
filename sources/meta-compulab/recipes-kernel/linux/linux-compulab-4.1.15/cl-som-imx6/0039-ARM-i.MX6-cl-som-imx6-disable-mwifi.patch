@@ -1,0 +1,49 @@
+From c89fa370488771bfc929bae493c84029818ec1d0 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 15:47:15 +0200
+Subject: [PATCH 39/58] ARM: i.MX6: cl-som-imx6: disable mwifi
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index ece5c3f..1586e85 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -53,6 +53,7 @@
+ 			enable-active-high;
+ 		};
+ 
++#ifndef __SOM_iMX6__
+ 		/* regulator1 for wifi/bt */
+ 		awnh387_npoweron: regulator-awnh387-npoweron {
+ 			compatible = "regulator-fixed";
+@@ -72,6 +73,7 @@
+ 			gpio = <&gpio6 16 0>;
+ 			startup-delay-us = <10000>;
+ 		};
++#endif
+ 
+ 		tsc2046reg: tsc2046-reg {
+ 			compatible = "regulator-fixed";
+@@ -698,6 +700,7 @@
+ 	status = "okay";
+ };
+ 
++#ifndef __SOM_iMX6__
+ /* wifi/bt */
+ &usdhc1 {
+ 	pinctrl-names = "default";
+@@ -707,6 +710,7 @@
+ 	vmmc_aux-supply = <&awnh387_wifi_nreset>;
+ 	status = "okay";
+ };
++#endif
+ 
+ &clks {
+ 	assigned-clocks = <&clks IMX6QDL_CLK_PLL4_AUDIO_DIV>;
+-- 
+1.9.1
+

@@ -1,0 +1,202 @@
+From 7eff1d050919ae9ea0799f2cb9bf2079af1cb1a4 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Tue, 19 Sep 2017 10:56:32 +0300
+Subject: [PATCH 21/57] compulab: eeprom: layout: add layout setup function
+
+The setup function reads the layout buffer content from the EEPROM and
+call to the basic function eeprom_layout_setup().
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-am57x/cl-som-am57x.c |  2 ++
+ board/compulab/cl-som-am57x/eth.c          |  1 +
+ board/compulab/cl-som-imx7/cl-som-imx7.c   |  1 +
+ board/compulab/cm_fx6/cm_fx6.c             |  1 +
+ board/compulab/cm_t335/cm_t335.c           |  1 +
+ board/compulab/cm_t35/cm_t35.c             |  1 +
+ board/compulab/cm_t3517/cm_t3517.c         |  1 +
+ board/compulab/cm_t54/cm_t54.c             |  1 +
+ board/compulab/common/common.c             |  2 +-
+ board/compulab/common/eeprom.c             | 36 ++++++++++++++++++++++
+ board/compulab/common/eeprom.h             |  5 +++
+ 11 files changed, 51 insertions(+), 1 deletion(-)
+
+diff --git a/board/compulab/cl-som-am57x/cl-som-am57x.c b/board/compulab/cl-som-am57x/cl-som-am57x.c
+index 389eebb589..a45e5ab4c5 100644
+--- a/board/compulab/cl-som-am57x/cl-som-am57x.c
++++ b/board/compulab/cl-som-am57x/cl-som-am57x.c
+@@ -11,9 +11,11 @@
+ #include <common.h>
+ #include <palmas.h>
+ #include <usb.h>
++#include <eeprom_layout.h>
+ #include <asm/gpio.h>
+ #include <asm/arch/mmc_host_def.h>
+ #include <asm/arch/sys_proto.h>
++
+ #include "../common/common.h"
+ #include "../common/eeprom.h"
+ 
+diff --git a/board/compulab/cl-som-am57x/eth.c b/board/compulab/cl-som-am57x/eth.c
+index 0c4bf91c13..9e3edfa9dc 100644
+--- a/board/compulab/cl-som-am57x/eth.c
++++ b/board/compulab/cl-som-am57x/eth.c
+@@ -11,6 +11,7 @@
+ #include <common.h>
+ #include <cpsw.h>
+ #include <miiphy.h>
++#include <eeprom_layout.h>
+ #include <asm/gpio.h>
+ #include <asm/arch/sys_proto.h>
+ #include "../common/eeprom.h"
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index 28b706a961..7ca4c4d5a3 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -20,6 +20,7 @@
+ #include <asm/arch-mx7/mx7-pins.h>
+ #include <asm/arch-mx7/sys_proto.h>
+ #include <asm/arch-mx7/clock.h>
++#include <eeprom_layout.h>
+ #include "../common/eeprom.h"
+ #include "common.h"
+ 
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 80b5dc9026..43a2b43883 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -19,6 +19,7 @@
+ #include <fdt_support.h>
+ #include <sata.h>
+ #include <splash.h>
++#include <eeprom_layout.h>
+ #include <asm/arch/crm_regs.h>
+ #include <asm/arch/sys_proto.h>
+ #include <asm/arch/iomux.h>
+diff --git a/board/compulab/cm_t335/cm_t335.c b/board/compulab/cm_t335/cm_t335.c
+index c4506b910e..05588f7ef9 100644
+--- a/board/compulab/cm_t335/cm_t335.c
++++ b/board/compulab/cm_t335/cm_t335.c
+@@ -12,6 +12,7 @@
+ #include <errno.h>
+ #include <miiphy.h>
+ #include <cpsw.h>
++#include <eeprom_layout.h>
+ 
+ #include <asm/arch/sys_proto.h>
+ #include <asm/arch/hardware_am33xx.h>
+diff --git a/board/compulab/cm_t35/cm_t35.c b/board/compulab/cm_t35/cm_t35.c
+index f1691257e7..1a474e4a3f 100644
+--- a/board/compulab/cm_t35/cm_t35.c
++++ b/board/compulab/cm_t35/cm_t35.c
+@@ -21,6 +21,7 @@
+ #include <mmc.h>
+ #include <splash.h>
+ #include <twl4030.h>
++#include <eeprom_layout.h>
+ #include <linux/compiler.h>
+ 
+ #include <asm/io.h>
+diff --git a/board/compulab/cm_t3517/cm_t3517.c b/board/compulab/cm_t3517/cm_t3517.c
+index 38eb641bc4..042e6fc9b2 100644
+--- a/board/compulab/cm_t3517/cm_t3517.c
++++ b/board/compulab/cm_t3517/cm_t3517.c
+@@ -12,6 +12,7 @@
+ #include <netdev.h>
+ #include <usb.h>
+ #include <mmc.h>
++#include <eeprom_layout.h>
+ #include <linux/compiler.h>
+ #include <linux/usb/musb.h>
+ 
+diff --git a/board/compulab/cm_t54/cm_t54.c b/board/compulab/cm_t54/cm_t54.c
+index 6437718415..40a25acd39 100644
+--- a/board/compulab/cm_t54/cm_t54.c
++++ b/board/compulab/cm_t54/cm_t54.c
+@@ -14,6 +14,7 @@
+ #include <mmc.h>
+ #include <palmas.h>
+ #include <spl.h>
++#include <eeprom_layout.h>
+ 
+ #include <asm/gpio.h>
+ #include <asm/arch/sys_proto.h>
+diff --git a/board/compulab/common/common.c b/board/compulab/common/common.c
+index cfbf4cc6ed..9a5b2bd40f 100644
+--- a/board/compulab/common/common.c
++++ b/board/compulab/common/common.c
+@@ -10,7 +10,7 @@
+ #include <asm/bootm.h>
+ #include <asm/gpio.h>
+ #include <asm/setup.h>
+-
++#include <eeprom_layout.h>
+ #include "common.h"
+ #include "eeprom.h"
+ 
+diff --git a/board/compulab/common/eeprom.c b/board/compulab/common/eeprom.c
+index 3b04c554f1..b98f5a9e64 100644
+--- a/board/compulab/common/eeprom.c
++++ b/board/compulab/common/eeprom.c
+@@ -187,6 +187,42 @@ int cl_eeprom_get_product_name(uchar *buf, uint eeprom_bus)
+ }
+ 
+ #ifdef CONFIG_CMD_EEPROM_LAYOUT
++
++/*
++ * Routine: cl_eeprom_layout_setup
++ * Description:
++ * - Read EEPROM content.
++ * - Setup layout struct with the layout data and metadata.
++ *
++ * @layout:    A pointer to an existing struct layout.
++ * @eeprom_buf:        A buffer initialized with the eeprom data.
++ * @layout version: The version number of the layout.
++ * @eeprom_bus: EEPROM I2C bus ID.
++ * @eeprom_addr: EEPROM I2C address.
++ *
++ * @return: 0 on success, < 0 on failure
++ */
++int cl_eeprom_layout_setup(struct eeprom_layout *layout, uchar *eeprom_buf,
++                           int layout_version, uint eeprom_bus,
++			   uint8_t eeprom_addr)
++{
++	int ret;
++
++	ret = i2c_set_bus_num(eeprom_bus);
++	if (ret < 0)
++		return ret;
++
++	ret = i2c_read(eeprom_addr, 0, CONFIG_SYS_I2C_EEPROM_ADDR_LEN,
++		       eeprom_buf, CONFIG_SYS_EEPROM_SIZE);
++	if (ret < 0)
++		return ret;
++
++	eeprom_layout_setup(layout, eeprom_buf, CONFIG_SYS_EEPROM_SIZE,
++			    layout_version);
++
++	return 0;
++}
++
+ /**
+  * eeprom_field_print_bin_ver() - print a "version field" which contains binary
+  *				  data
+diff --git a/board/compulab/common/eeprom.h b/board/compulab/common/eeprom.h
+index c0b4739ea2..79f1a5d327 100644
+--- a/board/compulab/common/eeprom.h
++++ b/board/compulab/common/eeprom.h
+@@ -12,6 +12,11 @@
+ #include <errno.h>
+ 
+ #ifdef CONFIG_SYS_I2C
++#ifdef CONFIG_CMD_EEPROM_LAYOUT
++int cl_eeprom_layout_setup(struct eeprom_layout *layout, uchar *eeprom_buf,
++			   int layout_version, uint eeprom_bus,
++			   uint8_t eeprom_addr);
++#endif /* CONFIG_CMD_EEPROM_LAYOUT */
+ int cl_eeprom_read_mac_addr(uchar *buf, uint eeprom_bus);
+ u32 cl_eeprom_get_board_rev(uint eeprom_bus);
+ int cl_eeprom_get_product_name(uchar *buf, uint eeprom_bus);
+-- 
+2.17.1
+

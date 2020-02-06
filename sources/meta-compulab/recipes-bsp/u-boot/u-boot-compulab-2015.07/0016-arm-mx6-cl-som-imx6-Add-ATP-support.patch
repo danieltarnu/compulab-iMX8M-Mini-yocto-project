@@ -1,0 +1,100 @@
+From 7feae69bd3cba6e2c0e5c67a3d7cdb033da87b60 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 3 Apr 2017 11:04:52 +0300
+Subject: [PATCH 16/19] arm: mx6: cl-som-imx6: Add ATP support
+
+1) Add an ATP config option.
+2) Use default environment for the 1-st atp boot.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+
+Conflicts:
+	Makefile
+---
+ Makefile                           | 3 +++
+ board/compulab/cl_som_imx6/Kconfig | 2 ++
+ board/compulab/cm_fx6/cm_fx6.c     | 3 +++
+ common/env_common.c                | 5 +++++
+ include/configs/cl_som_imx6.h      | 6 +++++-
+ 5 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 8839a3c..6bd715f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -957,6 +957,9 @@ u-boot-with-spl.imx u-boot-with-nand-spl.imx: SPL u-boot.bin FORCE
+ u-boot.imx: SPL u-boot.img FORCE
+ 	@dd if=SPL of=$@ bs=1K seek=0 conv=notrunc 2>/dev/null
+ 	@dd if=u-boot.img of=$@ bs=1K seek=63 conv=notrunc 2>/dev/null
++ifeq ($(CONFIG_ATP_ENV),y)
++	@cp $@ u-boot-atp.imx
++endif
+ 
+ MKIMAGEFLAGS_u-boot.ubl = -n $(UBL_CONFIG) -T ublimage -e $(CONFIG_SYS_TEXT_BASE)
+ 
+diff --git a/board/compulab/cl_som_imx6/Kconfig b/board/compulab/cl_som_imx6/Kconfig
+index 8d94a49..71e04be 100644
+--- a/board/compulab/cl_som_imx6/Kconfig
++++ b/board/compulab/cl_som_imx6/Kconfig
+@@ -12,4 +12,6 @@ config SYS_SOC
+ config SYS_CONFIG_NAME
+ 	default "cl_som_imx6"
+ 
++config ATP_ENV
++	bool "Set ATP Environment"
+ endif
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 9161d5a..13d08b7 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -828,6 +828,9 @@ int board_late_init(void)
+ {
+ 	cm_fx6_cpu_type();
+ 
++#ifdef CONFIG_ATP_ENV
++	setenv("atp" , "yes");
++#endif
+ 	return 0;
+ }
+ 
+diff --git a/common/env_common.c b/common/env_common.c
+index af59c72..c053549 100644
+--- a/common/env_common.c
++++ b/common/env_common.c
+@@ -255,6 +255,11 @@ void env_relocate(void)
+ 	env_reloc();
+ 	env_htab.change_ok += gd->reloc_off;
+ #endif
++
++#if defined(CONFIG_ATP_ENV)
++	set_default_env("ATP Environment\n");
++	return;
++#endif
+ 	if (gd->env_valid == 0) {
+ #if defined(CONFIG_ENV_IS_NOWHERE) || defined(CONFIG_SPL_BUILD)
+ 		/* Environment not changable */
+diff --git a/include/configs/cl_som_imx6.h b/include/configs/cl_som_imx6.h
+index 16aa6b8..61d0b78 100644
+--- a/include/configs/cl_som_imx6.h
++++ b/include/configs/cl_som_imx6.h
+@@ -14,7 +14,6 @@
+ 
+ #define CONFIG_CMD_MII
+ 
+-
+ #define CONFIG_PCA953X
+ #define CONFIG_CMD_PCA953X
+ #define CONFIG_CMD_PCA953X_INFO
+@@ -23,4 +22,9 @@
+ 
+ #define CONFIG_BOARD_LATE_INIT
+ 
++#ifdef CONFIG_ATP_ENV
++#undef CONFIG_BOARD_NAME
++#define CONFIG_BOARD_NAME	"SOM-iMX6-ATP"
++#endif
++
+ #endif	/* __CONFIG_CL_SOM_IMX6_H */
+-- 
+1.9.1
+

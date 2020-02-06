@@ -1,0 +1,30 @@
+From 15093ac4d96bab7e99c2ba95e98233a1b0c80452 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Thu, 14 Dec 2017 09:40:33 +0200
+Subject: [PATCH 40/57] arm: imx7d: cl-som-imx7: enable environment
+ import/export
+
+Environment import/export commands are disabled.
+Enable the environment import/export commands.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ configs/cl-som-imx7_defconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/configs/cl-som-imx7_defconfig b/configs/cl-som-imx7_defconfig
+index a6eb2cf9a3..1ce6e0fff9 100644
+--- a/configs/cl-som-imx7_defconfig
++++ b/configs/cl-som-imx7_defconfig
+@@ -30,8 +30,6 @@ CONFIG_CMD_BOOTZ=y
+ # CONFIG_CMD_IMI is not set
+ # CONFIG_CMD_IMLS is not set
+ # CONFIG_CMD_XIMG is not set
+-# CONFIG_CMD_EXPORTENV is not set
+-# CONFIG_CMD_IMPORTENV is not set
+ CONFIG_CMD_GREPENV=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_SF=y
+-- 
+2.17.1
+

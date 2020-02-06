@@ -1,0 +1,84 @@
+From 57200278d2ce544e60f6471cf818444af9fdead4 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Thu, 14 Dec 2017 09:12:09 +0200
+Subject: [PATCH 39/57] arm: imx7d: cl-som-imx7: move stdout/err initalization
+
+The initialization of the environment variables stdout and stderr is
+done in the function board_video_skip, based on the un-initialized value
+of cl_som_imx7_base_id.
+
+Move the initialization the function enable_display, which runs after
+the initialization of cl_som_imx7_base_id.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/display.c | 32 +++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
+
+diff --git a/board/compulab/cl-som-imx7/display.c b/board/compulab/cl-som-imx7/display.c
+index 9377fd1a5e..eb05eb8394 100644
+--- a/board/compulab/cl-som-imx7/display.c
++++ b/board/compulab/cl-som-imx7/display.c
+@@ -397,6 +397,7 @@ static display_type env_parse_displaytype(char *disp_type)
+ int enable_display(void)
+ {
+ 	int ret = 0;
++	char *stdout_env = getenv("stdout");
+ 
+ 	switch (disp_type) {
+ 	case DISP_DVI:
+@@ -411,6 +412,22 @@ int enable_display(void)
+ 		break;
+ 	}
+ 
++	/*
++	 * Update stdout and enderr environment parameters according to the
++	 * baseboard type
++	 */
++	if (stdout_env) /* stdout was set */
++		return 0;
++	if ((cl_som_imx7_base_id ==  CL_SOM_IMX7_SB_IOT) ||
++	    (cl_som_imx7_base_id ==  CL_SOM_IMX7_IOTG)) {
++		setenv("stdout", "serial,vga");
++		setenv("stderr", "serial,vga");
++	}
++	else {
++		setenv("stdout", "serial");
++		setenv("stderr", "serial");
++	}
++
+ 	return ret;
+ }
+ 
+@@ -423,7 +440,6 @@ int board_video_skip(void)
+ {
+ 	int ret;
+ 	char *displaytype = getenv("displaytype");
+-	char *stdout_env = getenv("stdout");
+ 
+ 	cl_som_imx7_lcd_pads_set();
+ 	if (cl_som_imx7_base_id == CL_SOM_IMX7_SB_SOM)
+@@ -435,20 +451,6 @@ int board_video_skip(void)
+ 		return ret;
+ 	}
+ 
+-	/* Update stdout and enderr environment parameters according to the
+-	   baseboard type */
+-	if (stdout_env) /* stdout was set */
+-		return 0;
+-	if ((cl_som_imx7_base_id ==  CL_SOM_IMX7_SB_IOT) ||
+-	    (cl_som_imx7_base_id ==  CL_SOM_IMX7_IOTG)) {
+-		setenv("stdout", "serial,vga");
+-		setenv("stderr", "serial,vga");
+-	}
+-	else {
+-		setenv("stdout", "serial");
+-		setenv("stderr", "serial");
+-	}
+-
+ 	return 0;
+ }
+ 
+-- 
+2.17.1
+

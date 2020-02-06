@@ -1,0 +1,234 @@
+From ddc90835c7e10be5b591512e08044dbde0d450c3 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Sun, 10 Sep 2017 13:43:52 +0300
+Subject: [PATCH 04/57] net: fec_mxc: add MDIO bus selection to FEC
+ initialization
+
+Only MDIO bus x can be used for FEC x.
+Add new parameter to the function fecmxc_initialize_multi() for MDIO bus
+selection.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/aries/m28evk/m28evk.c                       | 6 ++++--
+ board/freescale/mx28evk/mx28evk.c                 | 6 ++++--
+ board/freescale/mx6sxsabreauto/mx6sxsabreauto.c   | 2 +-
+ board/freescale/mx6ul_14x14_evk/mx6ul_14x14_evk.c | 3 ++-
+ board/freescale/mx7dsabresd/mx7dsabresd.c         | 2 +-
+ board/ppcag/bg0900/bg0900.c                       | 3 ++-
+ board/samtec/vining_2000/vining_2000.c            | 2 +-
+ board/schulercontrol/sc_sps_1/sc_sps_1.c          | 6 ++++--
+ board/technexion/pico-imx7d/pico-imx7d.c          | 2 +-
+ board/toradex/colibri_imx7/colibri_imx7.c         | 2 +-
+ drivers/net/fec_mxc.c                             | 7 ++++---
+ include/netdev.h                                  | 3 ++-
+ 12 files changed, 27 insertions(+), 17 deletions(-)
+
+diff --git a/board/aries/m28evk/m28evk.c b/board/aries/m28evk/m28evk.c
+index c990ea9fec..cb61e89277 100644
+--- a/board/aries/m28evk/m28evk.c
++++ b/board/aries/m28evk/m28evk.c
+@@ -131,13 +131,15 @@ int board_eth_init(bd_t *bis)
+ 	udelay(10000);
+ #endif
+ 
+-	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE);
++	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE,
++				      MXS_ENET0_BASE);
+ 	if (ret) {
+ 		printf("FEC MXS: Unable to init FEC0\n");
+ 		return ret;
+ 	}
+ 
+-	ret = fecmxc_initialize_multi(bis, 1, 3, MXS_ENET1_BASE);
++	ret = fecmxc_initialize_multi(bis, 1, 3, MXS_ENET1_BASE,
++				      MXS_ENET1_BASE);
+ 	if (ret) {
+ 		printf("FEC MXS: Unable to init FEC1\n");
+ 		return ret;
+diff --git a/board/freescale/mx28evk/mx28evk.c b/board/freescale/mx28evk/mx28evk.c
+index 5005fe23dd..577acfcdc2 100644
+--- a/board/freescale/mx28evk/mx28evk.c
++++ b/board/freescale/mx28evk/mx28evk.c
+@@ -118,13 +118,15 @@ int board_eth_init(bd_t *bis)
+ 	udelay(200);
+ 	gpio_set_value(MX28_PAD_ENET0_RX_CLK__GPIO_4_13, 1);
+ 
+-	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE);
++	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE,
++				      MXS_ENET0_BASE);
+ 	if (ret) {
+ 		puts("FEC MXS: Unable to init FEC0\n");
+ 		return ret;
+ 	}
+ 
+-	ret = fecmxc_initialize_multi(bis, 1, 3, MXS_ENET1_BASE);
++	ret = fecmxc_initialize_multi(bis, 1, 3, MXS_ENET1_BASE,
++				      MXS_ENET1_BASE);
+ 	if (ret) {
+ 		puts("FEC MXS: Unable to init FEC1\n");
+ 		return ret;
+diff --git a/board/freescale/mx6sxsabreauto/mx6sxsabreauto.c b/board/freescale/mx6sxsabreauto/mx6sxsabreauto.c
+index e7ab81091d..1c6cb3becf 100644
+--- a/board/freescale/mx6sxsabreauto/mx6sxsabreauto.c
++++ b/board/freescale/mx6sxsabreauto/mx6sxsabreauto.c
+@@ -101,7 +101,7 @@ int board_eth_init(bd_t *bis)
+ 	setup_fec();
+ 
+ 	ret = fecmxc_initialize_multi(bis, 1,
+-		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
++		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE, IMX_FEC_BASE);
+ 	if (ret)
+ 		printf("FEC%d MXC: %s:failed\n", 1, __func__);
+ 
+diff --git a/board/freescale/mx6ul_14x14_evk/mx6ul_14x14_evk.c b/board/freescale/mx6ul_14x14_evk/mx6ul_14x14_evk.c
+index a5746fe086..ce1eb70ce4 100644
+--- a/board/freescale/mx6ul_14x14_evk/mx6ul_14x14_evk.c
++++ b/board/freescale/mx6ul_14x14_evk/mx6ul_14x14_evk.c
+@@ -518,7 +518,8 @@ int board_eth_init(bd_t *bis)
+ 	setup_iomux_fec(CONFIG_FEC_ENET_DEV);
+ 
+ 	return fecmxc_initialize_multi(bis, CONFIG_FEC_ENET_DEV,
+-				       CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
++				       CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE,
++				       IMX_FEC_BASE);
+ }
+ 
+ static int setup_fec(int fec_id)
+diff --git a/board/freescale/mx7dsabresd/mx7dsabresd.c b/board/freescale/mx7dsabresd/mx7dsabresd.c
+index ecea5a529a..304cc5dfbe 100644
+--- a/board/freescale/mx7dsabresd/mx7dsabresd.c
++++ b/board/freescale/mx7dsabresd/mx7dsabresd.c
+@@ -243,7 +243,7 @@ int board_eth_init(bd_t *bis)
+ 	setup_iomux_fec();
+ 
+ 	ret = fecmxc_initialize_multi(bis, 0,
+-		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
++		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE, IMX_FEC_BASE);
+ 	if (ret)
+ 		printf("FEC1 MXC: %s:failed\n", __func__);
+ 
+diff --git a/board/ppcag/bg0900/bg0900.c b/board/ppcag/bg0900/bg0900.c
+index 06612fa34d..305fa5e7c3 100644
+--- a/board/ppcag/bg0900/bg0900.c
++++ b/board/ppcag/bg0900/bg0900.c
+@@ -68,7 +68,8 @@ int board_eth_init(bd_t *bis)
+ 	udelay(200);
+ 	gpio_set_value(MX28_PAD_ENET0_RX_CLK__GPIO_4_13, 1);
+ 
+-	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE);
++	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE,
++				      MXS_ENET0_BASE);
+ 	if (ret) {
+ 		puts("FEC MXS: Unable to init FEC0\n");
+ 		return ret;
+diff --git a/board/samtec/vining_2000/vining_2000.c b/board/samtec/vining_2000/vining_2000.c
+index c92f37c9bb..cfc9c9a021 100644
+--- a/board/samtec/vining_2000/vining_2000.c
++++ b/board/samtec/vining_2000/vining_2000.c
+@@ -158,7 +158,7 @@ int board_eth_init(bd_t *bis)
+ 	mdelay(1);
+ 
+ 	ret = fecmxc_initialize_multi(bis, 0, CONFIG_FEC_MXC_PHYADDR,
+-					IMX_FEC_BASE);
++				      IMX_FEC_BASE, IMX_FEC_BASE);
+ 	if (ret)
+ 		goto eth_fail;
+ 
+diff --git a/board/schulercontrol/sc_sps_1/sc_sps_1.c b/board/schulercontrol/sc_sps_1/sc_sps_1.c
+index 7f0b591b63..ba9735df1b 100644
+--- a/board/schulercontrol/sc_sps_1/sc_sps_1.c
++++ b/board/schulercontrol/sc_sps_1/sc_sps_1.c
+@@ -79,13 +79,15 @@ int board_eth_init(bd_t *bis)
+ 		CLKCTRL_ENET_TIME_SEL_MASK,
+ 		CLKCTRL_ENET_TIME_SEL_RMII_CLK | CLKCTRL_ENET_CLK_OUT_EN);
+ 
+-	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE);
++	ret = fecmxc_initialize_multi(bis, 0, 0, MXS_ENET0_BASE,
++				      MXS_ENET0_BASE);
+ 	if (ret) {
+ 		printf("FEC MXS: Unable to init FEC0\n");
+ 		return ret;
+ 	}
+ 
+-	ret = fecmxc_initialize_multi(bis, 1, 1, MXS_ENET1_BASE);
++	ret = fecmxc_initialize_multi(bis, 1, 1, MXS_ENET1_BASE,
++				      MXS_ENET1_BASE);
+ 	if (ret) {
+ 		printf("FEC MXS: Unable to init FEC1\n");
+ 		return ret;
+diff --git a/board/technexion/pico-imx7d/pico-imx7d.c b/board/technexion/pico-imx7d/pico-imx7d.c
+index 799751d699..42a3d4ac40 100644
+--- a/board/technexion/pico-imx7d/pico-imx7d.c
++++ b/board/technexion/pico-imx7d/pico-imx7d.c
+@@ -169,7 +169,7 @@ int board_eth_init(bd_t *bis)
+ 	setup_iomux_fec();
+ 
+ 	return fecmxc_initialize_multi(bis, 0,
+-		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
++		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE, IMX_FEC_BASE);
+ }
+ 
+ static int setup_fec(void)
+diff --git a/board/toradex/colibri_imx7/colibri_imx7.c b/board/toradex/colibri_imx7/colibri_imx7.c
+index e54afa1952..4f837d77e6 100644
+--- a/board/toradex/colibri_imx7/colibri_imx7.c
++++ b/board/toradex/colibri_imx7/colibri_imx7.c
+@@ -253,7 +253,7 @@ int board_eth_init(bd_t *bis)
+ 	setup_iomux_fec();
+ 
+ 	ret = fecmxc_initialize_multi(bis, 0,
+-		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE);
++		CONFIG_FEC_MXC_PHYADDR, IMX_FEC_BASE, IMX_FEC_BASE);
+ 	if (ret)
+ 		printf("FEC1 MXC: %s:failed\n", __func__);
+ 
+diff --git a/drivers/net/fec_mxc.c b/drivers/net/fec_mxc.c
+index 6840908fb2..d0203781fb 100644
+--- a/drivers/net/fec_mxc.c
++++ b/drivers/net/fec_mxc.c
+@@ -1110,7 +1110,8 @@ err1:
+ 	return ret;
+ }
+ 
+-int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uint32_t addr)
++int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id,
++			    uint32_t addr, uint32_t addr_mii)
+ {
+ 	uint32_t base_mii;
+ 	struct mii_dev *bus = NULL;
+@@ -1126,7 +1127,7 @@ int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uint32_t addr)
+ 	 */
+ 	base_mii = MXS_ENET0_BASE;
+ #else
+-	base_mii = addr;
++	base_mii = addr_mii;
+ #endif
+ 	debug("eth_init: fec_probe(bd, %i, %i) @ %08x\n", dev_id, phy_id, addr);
+ 	bus = fec_get_miibus(base_mii, dev_id);
+@@ -1157,7 +1158,7 @@ int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uint32_t addr)
+ int fecmxc_initialize(bd_t *bd)
+ {
+ 	return fecmxc_initialize_multi(bd, -1, CONFIG_FEC_MXC_PHYADDR,
+-			IMX_FEC_BASE);
++				       IMX_FEC_BASE, IMX_FEC_BASE);
+ }
+ #endif
+ 
+diff --git a/include/netdev.h b/include/netdev.h
+index c06b90886b..5aa98ac725 100644
+--- a/include/netdev.h
++++ b/include/netdev.h
+@@ -46,7 +46,8 @@ int eth_3com_initialize (bd_t * bis);
+ int ethoc_initialize(u8 dev_num, int base_addr);
+ int fec_initialize (bd_t *bis);
+ int fecmxc_initialize(bd_t *bis);
+-int fecmxc_initialize_multi(bd_t *bis, int dev_id, int phy_id, uint32_t addr);
++int fecmxc_initialize_multi(bd_t *bis, int dev_id, int phy_id,
++			    uint32_t addr, uint32_t addr_mii);
+ int ftgmac100_initialize(bd_t *bits);
+ int ftmac100_initialize(bd_t *bits);
+ int ftmac110_initialize(bd_t *bits);
+-- 
+2.17.1
+

@@ -1,0 +1,43 @@
+From 661a925938706dfde868bea6cbb1d39ecce8bd71 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Tue, 6 Mar 2018 14:35:51 +0200
+Subject: [PATCH 47/57] arm: imx7d: cl-som-imx7: update baseboard EEPROM access
+ protection
+
+During the initialization of the layout structure the function pointers
+are updated.
+A data abort is caused by an attempt to use uninitialized layout
+structure.
+Add a verification that the baseboard EEPROM layout structure is
+initialized before accessing the baseboard EEPROM.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/cl-som-imx7.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index f5e12cc5c2..61aaecc97a 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -432,7 +432,7 @@ static void cl_som_imx7_get_baseboard_id(void)
+ 	int ret, i;
+ 	char prod_name_base[CL_SOM_IMX7_PRODUCT_NAME_SIZE];
+ 
+-	if (!cl_som_imx7_base_i2c_init)
++	if (sb_som_am57x_layout.data != sb_som_am57x_eeprom_buf)
+ 		return;
+ 
+ 	ret = sb_som_am57x_layout.read(&sb_som_am57x_layout, "Product Name",
+@@ -508,6 +508,8 @@ static void cl_som_imx7_set_serial_env(void)
+ 	case CL_SOM_IMX7_SB_IOT:
+ 	case CL_SOM_IMX7_SBC_IOT:
+ 	case CL_SOM_IMX7_IOTG:
++		if (sb_som_am57x_layout.data != sb_som_am57x_eeprom_buf)
++			break;
+ 		sb_som_am57x_layout.read(&sb_som_am57x_layout, "Serial Number",
+ 					 (uchar*) &serial_buf_bin,
+ 					 CL_SOM_IMX7_SERIAL_BUF_BIN_SIZE);
+-- 
+2.17.1
+

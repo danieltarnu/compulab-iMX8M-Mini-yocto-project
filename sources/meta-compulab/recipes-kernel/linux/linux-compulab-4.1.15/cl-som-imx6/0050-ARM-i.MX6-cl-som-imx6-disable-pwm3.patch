@@ -1,0 +1,50 @@
+From 8ae266967f0261f7c681d5a0e7aeaa59517ea755 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 7 Feb 2017 12:46:25 +0200
+Subject: [PATCH 50/58] ARM: i.MX6: cl-som-imx6: disable pwm3
+
+Disable pwm3 in order to solve a pin sharing conflict
+with emmc
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+index e98e819..3021d47 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6.dtsi
+@@ -15,12 +15,15 @@
+ #include <dt-bindings/input/input.h>
+ 
+ / {
++
++#ifndef __SOM_iMX6__
+ 	backlight {
+ 		compatible = "pwm-backlight";
+ 		pwms = <&pwm3 0 5000000>;
+ 		brightness-levels = <0 4 8 16 32 64 128 255>;
+ 		default-brightness-level = <7>;
+ 	};
++#endif
+ 
+ 	i2cmux {
+ 		compatible = "i2c-mux-gpio";
+@@ -152,11 +155,13 @@
+ 	status = "okay";
+ };
+ 
++#ifndef __SOM_iMX6__
+ &pwm3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_pwm3_1>;
+ 	status = "okay";
+ };
++#endif
+ 
+ &ldb {
+ 	status = "okay";
+-- 
+1.9.1
+

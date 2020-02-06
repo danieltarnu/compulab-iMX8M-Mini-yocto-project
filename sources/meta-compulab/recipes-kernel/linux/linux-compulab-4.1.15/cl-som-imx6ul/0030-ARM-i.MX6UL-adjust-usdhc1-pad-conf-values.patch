@@ -1,0 +1,38 @@
+From 5bf74ff08924e58814584ecc893c5d0151536374 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 1 Mar 2016 13:38:20 +0200
+Subject: [PATCH 30/38] ARM: i.MX6UL: adjust usdhc1 pad conf values
+
+Adjust usdhc1 pad conf values.
+Solves SD/MMC class 2 card io errors.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 159ce90..f997e73 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -139,12 +139,12 @@
+ 
+ 		pinctrl_usdhc1: usdhc1grp {
+ 			fsl,pins = <
+-				MX6UL_PAD_SD1_CMD__USDHC1_CMD     0x17059
++				MX6UL_PAD_SD1_CMD__USDHC1_CMD     0x100F9
+ 				MX6UL_PAD_SD1_CLK__USDHC1_CLK     0x17059
+-				MX6UL_PAD_SD1_DATA0__USDHC1_DATA0 0x17059
+-				MX6UL_PAD_SD1_DATA1__USDHC1_DATA1 0x17059
+-				MX6UL_PAD_SD1_DATA2__USDHC1_DATA2 0x17059
+-				MX6UL_PAD_SD1_DATA3__USDHC1_DATA3 0x17059
++				MX6UL_PAD_SD1_DATA0__USDHC1_DATA0 0x100F9
++				MX6UL_PAD_SD1_DATA1__USDHC1_DATA1 0x100F9
++				MX6UL_PAD_SD1_DATA2__USDHC1_DATA2 0x100F9
++				MX6UL_PAD_SD1_DATA3__USDHC1_DATA3 0x100F9
+ 				MX6UL_PAD_UART1_RTS_B__GPIO1_IO19 0x17059
+ 				MX6UL_PAD_UART1_CTS_B__GPIO1_IO18 0x17059
+ 			>;
+-- 
+1.9.1
+

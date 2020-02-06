@@ -1,0 +1,25 @@
+From df9e5605b95b17e280a72bedda5d7853b2fe426d Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 8 Jun 2017 11:37:19 +0300
+Subject: [PATCH 62/64] ARM: i.MX6: cm-fx6: defconfig: enable tvp5150
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cm_fx6_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/cm_fx6_defconfig b/arch/arm/configs/cm_fx6_defconfig
+index efd94a3..1303416 100644
+--- a/arch/arm/configs/cm_fx6_defconfig
++++ b/arch/arm/configs/cm_fx6_defconfig
+@@ -276,6 +276,7 @@ CONFIG_MXC_CAMERA_OV5640=m
+ CONFIG_MXC_CAMERA_OV5642=m
+ CONFIG_MXC_CAMERA_OV5640_MIPI=m
+ CONFIG_MXC_TVIN_ADV7180=m
++CONFIG_MXC_TVP5150=m
+ CONFIG_MXC_IPU_DEVICE_QUEUE_SDC=y
+ CONFIG_VIDEO_MXC_IPU_OUTPUT=y
+ CONFIG_VIDEO_MXC_PXP_V4L2=y
+-- 
+1.9.1
+

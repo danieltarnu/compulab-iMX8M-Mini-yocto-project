@@ -1,0 +1,147 @@
+From af17f91abc5f4291d8970524c7fa723bc97702f1 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 29 Dec 2016 16:30:52 +0200
+Subject: [PATCH 03/19] arm: mx6: cl_som_mx6: Fix fec phy connecttivity issue
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 67 ++++++++++++++++++++++++++++++++----------
+ include/configs/cl_som_imx6.h  |  1 +
+ 2 files changed, 52 insertions(+), 16 deletions(-)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 1569460..e28baea 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -393,6 +393,9 @@ static int cm_fx6_setup_usb_host(void) { return 0; }
+ #endif
+ 
+ #ifdef CONFIG_FEC_MXC
++#define ENET_PAD_CTRL_22K	(PAD_CTL_PUS_22K_UP | PAD_CTL_SPEED_MED | \
++				 PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
++
+ #define ENET_PAD_CTRL		(PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
+ 				 PAD_CTL_DSE_40ohm | PAD_CTL_HYS)
+ 
+@@ -426,6 +429,12 @@ static int mx6_rgmii_rework(struct phy_device *phydev)
+ 	val |= 0x0100;
+ 	phy_write(phydev, MDIO_DEVAD_NONE, 0x1e, val);
+ 
++	/* introduce rx clock delay */
++	phy_write(phydev, MDIO_DEVAD_NONE, 0x1d, 0x0);
++	val = phy_read(phydev, MDIO_DEVAD_NONE, 0x1e);
++	val |= 0x08000;
++	phy_write(phydev, MDIO_DEVAD_NONE, 0x1e, val);
++
+ 	return 0;
+ }
+ 
+@@ -440,18 +449,26 @@ int board_phy_config(struct phy_device *phydev)
+ }
+ 
+ static iomux_v3_cfg_t const enet_pads[] = {
+-	IOMUX_PADS(PAD_ENET_MDIO__ENET_MDIO | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++	IOMUX_PADS(PAD_ENET_REF_CLK__ENET_TX_CLK  |
++						MUX_PAD_CTRL(ENET_PAD_CTRL)),
++	IOMUX_PADS(PAD_ENET_MDIO__ENET_MDIO | MUX_PAD_CTRL(ENET_PAD_CTRL_22K)),
+ 	IOMUX_PADS(PAD_ENET_MDC__ENET_MDC   | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++
++	IOMUX_PADS(PAD_RGMII_TX_CTL__RGMII_TX_CTL |
++						MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_TXC__RGMII_TXC | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_TD0__RGMII_TD0 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_TD1__RGMII_TD1 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_TD2__RGMII_TD2 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_TD3__RGMII_TD3 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+-	IOMUX_PADS(PAD_RGMII_RXC__RGMII_RXC | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+-	IOMUX_PADS(PAD_RGMII_RD0__RGMII_RD0 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+-	IOMUX_PADS(PAD_RGMII_RD1__RGMII_RD1 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+-	IOMUX_PADS(PAD_RGMII_RD2__RGMII_RD2 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+-	IOMUX_PADS(PAD_RGMII_RD3__RGMII_RD3 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++
++	IOMUX_PADS(PAD_RGMII_RXC__GPIO6_IO30	| MUX_PAD_CTRL(NO_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD0__GPIO6_IO25	| MUX_PAD_CTRL(NO_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD1__GPIO6_IO27	| MUX_PAD_CTRL(NO_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD2__GPIO6_IO28	| MUX_PAD_CTRL(NO_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD3__GPIO6_IO29	| MUX_PAD_CTRL(NO_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RX_CTL__GPIO6_IO24	| MUX_PAD_CTRL(NO_PAD_CTRL)),
++
+ 	IOMUX_PADS(PAD_GPIO_0__CCM_CLKO1    | MUX_PAD_CTRL(NO_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_GPIO_3__CCM_CLKO2    | MUX_PAD_CTRL(NO_PAD_CTRL)),
+ #ifdef CL_SOM_IMX6
+@@ -459,10 +476,14 @@ static iomux_v3_cfg_t const enet_pads[] = {
+ #else
+ 	IOMUX_PADS(PAD_SD4_DAT0__GPIO2_IO08 | MUX_PAD_CTRL(0x84)),
+ #endif
+-	IOMUX_PADS(PAD_ENET_REF_CLK__ENET_TX_CLK  |
+-						MUX_PAD_CTRL(ENET_PAD_CTRL)),
+-	IOMUX_PADS(PAD_RGMII_TX_CTL__RGMII_TX_CTL |
+-						MUX_PAD_CTRL(ENET_PAD_CTRL)),
++};
++
++static iomux_v3_cfg_t const enet_pads_up[] = {
++	IOMUX_PADS(PAD_RGMII_RXC__RGMII_RXC | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD0__RGMII_RD0 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD1__RGMII_RD1 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD2__RGMII_RD2 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
++	IOMUX_PADS(PAD_RGMII_RD3__RGMII_RD3 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_RX_CTL__RGMII_RX_CTL |
+ 						MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ };
+@@ -490,8 +511,6 @@ static int handle_mac_address(char *env_var, uint eeprom_bus)
+ #define NO_MAC_ADDR		"No MAC address found for %s\n"
+ int board_eth_init(bd_t *bis)
+ {
+-	int err;
+-
+ 	if (handle_mac_address("ethaddr", CONFIG_SYS_I2C_EEPROM_BUS))
+ 		printf(NO_MAC_ADDR, "primary NIC");
+ 
+@@ -499,13 +518,29 @@ int board_eth_init(bd_t *bis)
+ 		printf(NO_MAC_ADDR, "secondary NIC");
+ 
+ 	SETUP_IOMUX_PADS(enet_pads);
++
++	gpio_request(IMX_GPIO_NR(6, 30),"6_30");
++	gpio_request(IMX_GPIO_NR(6, 25),"6_25");
++	gpio_request(IMX_GPIO_NR(6, 27),"6_27");
++	gpio_request(IMX_GPIO_NR(6, 28),"6_28");
++	gpio_request(IMX_GPIO_NR(6, 29),"6_29");
++	gpio_request(IMX_GPIO_NR(6, 24),"6_24");
++	gpio_request(PHY_ENET_NRST, "enet_nrst");
++
++	gpio_direction_output(IMX_GPIO_NR(6, 30), 0);
++	gpio_direction_output(IMX_GPIO_NR(6, 25), 0);
++	gpio_direction_output(IMX_GPIO_NR(6, 27), 0);
++	gpio_direction_output(IMX_GPIO_NR(6, 28), 0);
++	gpio_direction_output(IMX_GPIO_NR(6, 29), 0);
++	gpio_direction_output(IMX_GPIO_NR(6, 24), 0);
++
+ 	/* phy reset */
+-	err = gpio_request(PHY_ENET_NRST, "enet_nrst");
+-	if (err)
+-		printf("Etnernet NRST gpio request failed: %d\n", err);
+ 	gpio_direction_output(PHY_ENET_NRST, 0);
+-	udelay(500);
++	udelay(1000);
+ 	gpio_set_value(PHY_ENET_NRST, 1);
++	udelay(1000);
++	SETUP_IOMUX_PADS(enet_pads_up);
++
+ 	enable_enet_clk(1);
+ 	return cpu_eth_init(bis);
+ }
+diff --git a/include/configs/cl_som_imx6.h b/include/configs/cl_som_imx6.h
+index b3fb128..cf0f06a 100644
+--- a/include/configs/cl_som_imx6.h
++++ b/include/configs/cl_som_imx6.h
+@@ -12,5 +12,6 @@
+ #include "cm_fx6.h"
+ 
+ #define CL_SOM_IMX6
++#define CONFIG_CMD_MII
+ 
+ #endif	/* __CONFIG_CL_SOM_IMX6_H */
+-- 
+1.9.1
+

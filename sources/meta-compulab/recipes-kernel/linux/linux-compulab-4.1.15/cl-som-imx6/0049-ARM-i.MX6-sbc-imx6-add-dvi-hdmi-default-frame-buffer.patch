@@ -1,0 +1,131 @@
+From 9f7fc153c997a1eb7a431724e07e54d526b8dcfc Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 6 Feb 2017 07:26:40 +0200
+Subject: [PATCH 49/58] ARM: i.MX6: sbc-imx6: add dvi/hdmi default frame buffer
+ mapping
+
+Add dvi/hdmi default frame buffer mapping.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6q-sbc-imx6-dvi.dts   | 18 ++++++++++++++++++
+ arch/arm/boot/dts/imx6q-sbc-imx6-hdmi.dts  | 24 ++++++++++++++++++++++++
+ arch/arm/boot/dts/imx6qp-sbc-imx6-dvi.dts  | 18 ++++++++++++++++++
+ arch/arm/boot/dts/imx6qp-sbc-imx6-hdmi.dts | 24 ++++++++++++++++++++++++
+ 4 files changed, 84 insertions(+)
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-imx6-dvi.dts
+ create mode 100644 arch/arm/boot/dts/imx6q-sbc-imx6-hdmi.dts
+ create mode 100644 arch/arm/boot/dts/imx6qp-sbc-imx6-dvi.dts
+ create mode 100644 arch/arm/boot/dts/imx6qp-sbc-imx6-hdmi.dts
+
+diff --git a/arch/arm/boot/dts/imx6q-sbc-imx6-dvi.dts b/arch/arm/boot/dts/imx6q-sbc-imx6-dvi.dts
+new file mode 100644
+index 0000000..60cd133
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-imx6-dvi.dts
+@@ -0,0 +1,18 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-imx6.dts"
++
++&mxcfb1 {
++	mode_str ="1920x1080M@50";
++};
+diff --git a/arch/arm/boot/dts/imx6q-sbc-imx6-hdmi.dts b/arch/arm/boot/dts/imx6q-sbc-imx6-hdmi.dts
+new file mode 100644
+index 0000000..4dd91fe
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6q-sbc-imx6-hdmi.dts
+@@ -0,0 +1,24 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6q-sbc-imx6.dts"
++
++&mxcfb1 {
++	mode_str ="1920x1080M@50";
++	disp_dev = "hdmi";
++};
++
++&mxcfb2 {
++	mode_str ="KD050C-WVGA";
++	disp_dev = "lcd";
++};
+diff --git a/arch/arm/boot/dts/imx6qp-sbc-imx6-dvi.dts b/arch/arm/boot/dts/imx6qp-sbc-imx6-dvi.dts
+new file mode 100644
+index 0000000..26086d7
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6qp-sbc-imx6-dvi.dts
+@@ -0,0 +1,18 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6qp-sbc-imx6.dts"
++
++&mxcfb1 {
++	mode_str ="1920x1080M@50";
++};
+diff --git a/arch/arm/boot/dts/imx6qp-sbc-imx6-hdmi.dts b/arch/arm/boot/dts/imx6qp-sbc-imx6-hdmi.dts
+new file mode 100644
+index 0000000..faaad4a
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6qp-sbc-imx6-hdmi.dts
+@@ -0,0 +1,24 @@
++/*
++* Copyright 2016 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6qp-sbc-imx6.dts"
++
++&mxcfb1 {
++	mode_str ="1920x1080M@50";
++	disp_dev = "hdmi";
++};
++
++&mxcfb2 {
++	mode_str ="KD050C-WVGA";
++	disp_dev = "lcd";
++};
+-- 
+1.9.1
+

@@ -1,0 +1,33 @@
+From 23fd9f79a2b15b0213ab37db26a9e55509097aa9 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Mon, 12 Mar 2018 09:34:54 +0200
+Subject: [PATCH 49/57] arm: imx7d: cl-som-imx7: enable USB to Ethernet adapter
+
+Ethernet connectivity for modules without Ethernet PHY is missing.
+Enable support for USB to Ethernet adapter.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ include/configs/cl-som-imx7.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 415944a852..98f775d8a1 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -213,6 +213,12 @@
+ #define CONFIG_USB_KEYBOARD
+ #define CONFIG_SYS_USB_EVENT_POLL_VIA_CONTROL_EP
+ #define CONFIG_SYS_STDIO_DEREGISTER
++/* USB Networking options */
++#define CONFIG_USB_HOST_ETHER
++#define CONFIG_USB_ETHER_SMSC95XX
++#define CONFIG_USB_ETHER_RNDIS
++#define CONFIG_USB_ETHER_ASIX
++#define CONFIG_USB_ETHER_MCS7830
+ 
+ /* Uncomment to enable iMX thermal driver support */
+ /*#define CONFIG_IMX_THERMAL*/
+-- 
+2.17.1
+

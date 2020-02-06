@@ -1,0 +1,38 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:		fb-unblank
+# Required-Start:	$syslog
+# Required-Stop:	$syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:	
+# Short-Description:	CompuLab fb0-unblank
+### END INIT INFO
+
+fb_list=0
+FB_LIST_FILE=/etc/fb-list
+[[ -f ${FB_LIST_FILE} ]] && fb_list=$(cat ${FB_LIST_FILE})
+
+unblank()
+{
+for FB in $fb_list;do
+FB_U_PATH=/sys/class/graphics/fb${FB}/blank
+[[ -f ${FB_U_PATH} ]] && echo 0 > ${FB_U_PATH}
+done
+}
+
+case "$1" in
+start)
+	unblank
+	;;
+stop)
+	;;
+status)
+	;;
+
+*)
+	echo "Usage: $0 {start|stop|status}"
+	exit 1
+esac
+
+exit 0

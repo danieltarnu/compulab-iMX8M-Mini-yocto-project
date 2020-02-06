@@ -1,0 +1,44 @@
+From fcf1770680e1cf334d4be27cc2194be9444b079d Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 27 Mar 2017 11:34:49 +0300
+Subject: [PATCH 09/19] arm: mx6: cl-som-imx6: add emmc to boot device list
+
+Add an emmc option to the boot device list for the default boocmd.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ include/configs/cm_fx6.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/include/configs/cm_fx6.h b/include/configs/cm_fx6.h
+index f61d1aa..f76355e 100644
+--- a/include/configs/cm_fx6.h
++++ b/include/configs/cm_fx6.h
+@@ -144,12 +144,24 @@
+ 		"run setboottypez;" \
+ 		"run trybootk;\0"
+ 
++#ifdef CL_SOM_IMX6
++#define EMMC "setenv storagedev 3;"\
++	"mmc dev ${storagedev};" \
++	"run trybootsmz;"
++#else
++#define EMMC
++#endif
++
+ #define CONFIG_BOOTCOMMAND \
+ 	"run setupmmcboot;" \
+ 	"mmc dev ${storagedev};" \
+ 	"if mmc rescan; then " \
+ 		"run trybootsmz;" \
+ 	"fi;" \
++	EMMC\
++	"setenv storagedev 3;"\
++	"mmc dev ${storagedev};" \
++	"run trybootsmz;" \
+ 	"run setupusbboot;" \
+ 	"if usb start; then "\
+ 		"if run loadscript; then " \
+-- 
+1.9.1
+

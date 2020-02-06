@@ -1,0 +1,75 @@
+From 133a3c5e1adf0b30f453de1aba42359ba017b8b7 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 3 Apr 2017 16:33:57 +0300
+Subject: [PATCH 14/19] arm: mx6: cl-som-imx6: Add cpu_type environment
+ variable
+
+1) Add cpu_type environmet variable in order to evaluate it
+in the system boot.scr
+2) Enable CONFIG_BOARD_LATE_INIT. Calculate cpu_type in th board_late_init().
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 27 +++++++++++++++++++++++++++
+ include/configs/cl_som_imx6.h  |  2 ++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index b0c2a11..9161d5a 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -763,6 +763,26 @@ int ft_board_setup(void *blob, bd_t *bd)
+ }
+ #endif
+ 
++#define CPU_TYPE "cpu_type"
++static int cm_fx6_cpu_type(void)
++{
++	switch (get_cpu_type_ext()) {
++		case MXC_CPU_MX6SOLO:
++			return setenv(CPU_TYPE, "MX6SOLO");
++		case MXC_CPU_MX6D:
++			return setenv(CPU_TYPE, "MX6D");
++		case MXC_CPU_MX6Q:
++			return setenv(CPU_TYPE, "MX6Q");
++		case MXC_CPU_MX6DP:
++			return setenv(CPU_TYPE, "MX6DP");
++		case MXC_CPU_MX6QP:
++			return setenv(CPU_TYPE, "MX6QP");
++		default:
++			return setenv(CPU_TYPE, "unknown");
++	}
++	return -1;
++}
++
+ int board_init(void)
+ {
+ 	int ret;
+@@ -804,6 +824,13 @@ int board_init(void)
+ 	return 0;
+ }
+ 
++int board_late_init(void)
++{
++	cm_fx6_cpu_type();
++
++	return 0;
++}
++
+ int checkboard(void)
+ {
+ 	puts("Board: "CONFIG_BOARD_NAME"\n");
+diff --git a/include/configs/cl_som_imx6.h b/include/configs/cl_som_imx6.h
+index 3eda633..7a05f53 100644
+--- a/include/configs/cl_som_imx6.h
++++ b/include/configs/cl_som_imx6.h
+@@ -14,4 +14,6 @@
+ 
+ #define CONFIG_CMD_MII
+ 
++#define CONFIG_BOARD_LATE_INIT
++
+ #endif	/* __CONFIG_CL_SOM_IMX6_H */
+-- 
+1.9.1
+

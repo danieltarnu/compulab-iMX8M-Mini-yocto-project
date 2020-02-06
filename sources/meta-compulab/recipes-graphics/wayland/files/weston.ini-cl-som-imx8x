@@ -1,0 +1,5 @@
+
+[output]
+name=DSI-1
+#mode=off
+transform=270

@@ -1,0 +1,46 @@
+From 594f6ee895c9195fa8de37257dc60056d94e6b7e Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 28 Jan 2019 19:26:57 +0200
+Subject: [PATCH 93/93] ARM: i.MX6: cm-fx6: Remove invalid operating-points
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 22 ----------------------
+ 1 file changed, 22 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 11789f2..0e0e0fb 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -499,28 +499,6 @@
+ 	};
+ };
+ 
+-&cpu0 {
+-	operating-points = <
+-		/* kHz    uV */
+-		996000  1250000
+-		852000  1250000
+-		792000  1150000
+-		396000  975000
+-	>;
+-	fsl,soc-operating-points = <
+-		/* ARM kHz  SOC-PU uV */
+-		996000        1250000
+-		852000        1250000
+-		792000        1175000
+-		396000        1175000
+-	>;
+-};
+-
+-&gpc {
+-	/* use ldo-enable, u-boot will check it and configure */
+-	fsl,ldo-bypass = <1>;
+-};
+-
+ /* spi */
+ &ecspi1 {
+ 	fsl,spi-num-chipselects = <2>;
+-- 
+1.9.1
+

@@ -1,0 +1,164 @@
+From e366d1d534314949330ed0e427c1c287cf12f6f5 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 21 Dec 2016 16:37:38 +0200
+Subject: [PATCH 02/19] arm: mx6: cl_som_mx6: Add basic support
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/Kconfig                   |  9 +++++++++
+ board/compulab/cl_som_imx6/Kconfig | 15 +++++++++++++++
+ board/compulab/cm_fx6/cm_fx6.c     | 10 +++++++---
+ board/compulab/cm_fx6/common.h     |  8 +++++---
+ configs/cl_som_imx6_defconfig      | 14 ++++++++++++++
+ include/configs/cl_som_imx6.h      | 16 ++++++++++++++++
+ 6 files changed, 66 insertions(+), 6 deletions(-)
+ create mode 100644 board/compulab/cl_som_imx6/Kconfig
+ create mode 100644 configs/cl_som_imx6_defconfig
+ create mode 100644 include/configs/cl_som_imx6.h
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 9908b43..5fba073 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -630,6 +630,14 @@ config TARGET_CM_FX6
+ 	select DM_SERIAL
+ 	select DM_GPIO
+ 
++config TARGET_CL_SOM_IMX6
++	bool "Support cl_som_imx6"
++	select CPU_V7
++	select SUPPORT_SPL
++	select DM
++	select DM_SERIAL
++	select DM_GPIO
++
+ config ARCH_SOCFPGA
+ 	bool "Altera SOCFPGA family"
+ 	select CPU_V7
+@@ -892,6 +900,7 @@ source "board/broadcom/bcmnsp/Kconfig"
+ source "board/cirrus/edb93xx/Kconfig"
+ source "board/compulab/cm_t335/Kconfig"
+ source "board/compulab/cm_fx6/Kconfig"
++source "board/compulab/cl_som_imx6/Kconfig"
+ source "board/congatec/cgtqmx6eval/Kconfig"
+ source "board/creative/xfi3/Kconfig"
+ source "board/davedenx/qong/Kconfig"
+diff --git a/board/compulab/cl_som_imx6/Kconfig b/board/compulab/cl_som_imx6/Kconfig
+new file mode 100644
+index 0000000..8d94a49
+--- /dev/null
++++ b/board/compulab/cl_som_imx6/Kconfig
+@@ -0,0 +1,15 @@
++if TARGET_CL_SOM_IMX6
++
++config SYS_BOARD
++	default "cm_fx6"
++
++config SYS_VENDOR
++	default "compulab"
++
++config SYS_SOC
++	default "mx6"
++
++config SYS_CONFIG_NAME
++	default "cl_som_imx6"
++
++endif
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index c8e980d..1569460 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -454,7 +454,11 @@ static iomux_v3_cfg_t const enet_pads[] = {
+ 	IOMUX_PADS(PAD_RGMII_RD3__RGMII_RD3 | MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_GPIO_0__CCM_CLKO1    | MUX_PAD_CTRL(NO_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_GPIO_3__CCM_CLKO2    | MUX_PAD_CTRL(NO_PAD_CTRL)),
++#ifdef CL_SOM_IMX6
++	IOMUX_PADS(PAD_EIM_A19__GPIO2_IO19 | MUX_PAD_CTRL(NO_PAD_CTRL)),
++#else
+ 	IOMUX_PADS(PAD_SD4_DAT0__GPIO2_IO08 | MUX_PAD_CTRL(0x84)),
++#endif
+ 	IOMUX_PADS(PAD_ENET_REF_CLK__ENET_TX_CLK  |
+ 						MUX_PAD_CTRL(ENET_PAD_CTRL)),
+ 	IOMUX_PADS(PAD_RGMII_TX_CTL__RGMII_TX_CTL |
+@@ -496,12 +500,12 @@ int board_eth_init(bd_t *bis)
+ 
+ 	SETUP_IOMUX_PADS(enet_pads);
+ 	/* phy reset */
+-	err = gpio_request(CM_FX6_ENET_NRST, "enet_nrst");
++	err = gpio_request(PHY_ENET_NRST, "enet_nrst");
+ 	if (err)
+ 		printf("Etnernet NRST gpio request failed: %d\n", err);
+-	gpio_direction_output(CM_FX6_ENET_NRST, 0);
++	gpio_direction_output(PHY_ENET_NRST, 0);
+ 	udelay(500);
+-	gpio_set_value(CM_FX6_ENET_NRST, 1);
++	gpio_set_value(PHY_ENET_NRST, 1);
+ 	enable_enet_clk(1);
+ 	return cpu_eth_init(bis);
+ }
+diff --git a/board/compulab/cm_fx6/common.h b/board/compulab/cm_fx6/common.h
+index 76097f8..9e30bfc 100644
+--- a/board/compulab/cm_fx6/common.h
++++ b/board/compulab/cm_fx6/common.h
+@@ -15,11 +15,13 @@
+ 
+ #define CM_FX6_ECSPI_BUS0_CS0	IMX_GPIO_NR(2, 30)
+ #define CM_FX6_GREEN_LED	IMX_GPIO_NR(2, 31)
+-#define CM_FX6_ENET_NRST	IMX_GPIO_NR(2, 8)
+-#define CM_FX6_ENET_NRST	IMX_GPIO_NR(2, 8)
+ #define CM_FX6_USB_HUB_RST	IMX_GPIO_NR(7, 8)
+ #define SB_FX6_USB_OTG_PWR	IMX_GPIO_NR(3, 22)
+-#define CM_FX6_ENET_NRST	IMX_GPIO_NR(2, 8)
++#ifdef CL_SOM_IMX6
++#define PHY_ENET_NRST	IMX_GPIO_NR(2, 19)
++#else
++#define PHY_ENET_NRST	IMX_GPIO_NR(2, 8)
++#endif
+ #define CM_FX6_USB_HUB_RST	IMX_GPIO_NR(7, 8)
+ #define SB_FX6_USB_OTG_PWR	IMX_GPIO_NR(3, 22)
+ #define CM_FX6_SATA_PWREN	IMX_GPIO_NR(1, 28)
+diff --git a/configs/cl_som_imx6_defconfig b/configs/cl_som_imx6_defconfig
+new file mode 100644
+index 0000000..19144a3
+--- /dev/null
++++ b/configs/cl_som_imx6_defconfig
+@@ -0,0 +1,14 @@
++CONFIG_ARM=y
++CONFIG_TARGET_CL_SOM_IMX6=y
++CONFIG_SPL=y
++CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=arch/arm/imx-common/spl_sd.cfg,MX6QDL,SPL"
++# CONFIG_CMD_IMLS is not set
++# CONFIG_CMD_XIMG is not set
++# CONFIG_CMD_LOADB is not set
++# CONFIG_CMD_LOADS is not set
++# CONFIG_CMD_FLASH is not set
++# CONFIG_CMD_FPGA is not set
++# CONFIG_CMD_SETEXPR is not set
++CONFIG_SPI_FLASH=y
++CONFIG_CMD_DHCP=y
++CONFIG_CMD_PING=y
+diff --git a/include/configs/cl_som_imx6.h b/include/configs/cl_som_imx6.h
+new file mode 100644
+index 0000000..b3fb128
+--- /dev/null
++++ b/include/configs/cl_som_imx6.h
+@@ -0,0 +1,16 @@
++/*
++ * Config file for Compulab CM-FX6 board
++ *
++ * Copyright (C) 2016, Compulab Ltd - http://compulab.co.il/
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ */
++
++#ifndef __CONFIG_CL_SOM_IMX6_H
++#define __CONFIG_CL_SOM_IMX6_H
++
++#include "cm_fx6.h"
++
++#define CL_SOM_IMX6
++
++#endif	/* __CONFIG_CL_SOM_IMX6_H */
+-- 
+1.9.1
+

@@ -1,0 +1,40 @@
+From 5688c40ca4e6525322c3f66aaf6ca140f1f8af1f Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Mon, 11 Sep 2017 18:25:05 +0300
+Subject: [PATCH 28/57] arm: imx7d: cl-som-imx7: add support for usb keyboard
+
+Add support for usb keyboard for CL-SOM-iMX7.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ include/configs/cl-som-imx7.h | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 4b6debd8fe..176fb55b1d 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -136,7 +136,9 @@
+ 			"fi; " \
+ 		"fi;\0" \
+ 	"displaytype=dvi\0" \
+-	"stdin=serial\0" \
++	"stdin=serial,usbkbd\0" \
++
++#define CONFIG_PREBOOT                 "usb start"
+ 
+ #define CONFIG_BOOTCOMMAND \
+ 	"echo SD boot attempt ...; run sdbootscript; run sdboot; " \
+@@ -206,6 +208,9 @@
+ #define CONFIG_MXC_USB_PORTSC  (PORT_PTS_UTMI | PORT_PTS_PTW)
+ #define CONFIG_MXC_USB_FLAGS   0
+ #define CONFIG_USB_MAX_CONTROLLER_COUNT 2
++#define CONFIG_USB_KEYBOARD
++#define CONFIG_SYS_USB_EVENT_POLL_VIA_CONTROL_EP
++#define CONFIG_SYS_STDIO_DEREGISTER
+ 
+ /* Uncomment to enable iMX thermal driver support */
+ /*#define CONFIG_IMX_THERMAL*/
+-- 
+2.17.1
+

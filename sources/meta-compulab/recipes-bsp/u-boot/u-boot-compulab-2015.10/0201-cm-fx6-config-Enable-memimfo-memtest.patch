@@ -1,0 +1,26 @@
+From 24291f75c00f00a7dc6f2a4b72cb67c2aa3def08 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 12 Mar 2019 19:19:26 +0200
+Subject: [PATCH 201/201] cm-fx6: config: Enable memimfo, memtest
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ configs/cm_fx6_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/configs/cm_fx6_defconfig b/configs/cm_fx6_defconfig
+index 6be5c17..039d6e4 100644
+--- a/configs/cm_fx6_defconfig
++++ b/configs/cm_fx6_defconfig
+@@ -4,6 +4,8 @@ CONFIG_SPL=y
+ CONFIG_SYS_EXTRA_OPTIONS="IMX_CONFIG=arch/arm/imx-common/spl_sd.cfg,MX6QDL,SPL"
+ # CONFIG_CMD_IMLS is not set
+ # CONFIG_CMD_XIMG is not set
++CONFIG_CMD_MEMTEST=y
++CONFIG_CMD_MEMINFO=y
+ # CONFIG_CMD_LOADB is not set
+ # CONFIG_CMD_LOADS is not set
+ # CONFIG_CMD_FLASH is not set
+-- 
+1.9.1
+

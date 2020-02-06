@@ -1,0 +1,29 @@
+#!/bin/bash
+
+GST_PATH='/usr/lib/gstreamer-1.0'
+
+src=(\
+    imxv4l2videosrc ${GST_PATH}/libgstimxv4l2videosrc.so \
+    imxv4l2src ${GST_PATH}/libgstimxv4l2plugins.so \
+    imxv4l2src ${GST_PATH}/libgstimxv4l2plugins.so)
+
+out=(\
+    imxeglvivsink ${GST_PATH}/libgstimxeglvivsink.so \
+    overlaysink ${GST_PATH}/libgstoverlaysinkplugins.so \
+    imxv4l2sink ${GST_PATH}/libgstimxv4l2plugins.so)
+
+i=0
+while [ $i -lt $((${#src[@]})) ]
+do
+    SRC=${src[i]}; OUT=${out[i]};
+    # Calculate the providers' array location
+    j=$(($i * 2 + 1));
+    [[ -f ${src[j]} && -f ${out[j]} ]] && break
+    # Next iteration
+    i=$(($i + 2));
+    SRC=""; OUT="";
+done
+
+[[ -z ${SRC} || -z ${OUT} ]] && exit
+
+gst-launch-1.0 ${SRC} device=/dev/video0 ! ${OUT}

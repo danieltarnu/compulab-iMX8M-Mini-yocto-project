@@ -1,0 +1,251 @@
+From 3739264d32a49e24d1e7ace2832c0395bdb4cfdc Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Thu, 14 Sep 2017 13:24:31 +0300
+Subject: [PATCH 29/57] video: mxsfb: add error handling to mxs_set_lcdclk
+
+U-Boot get stuck when setting invalid to pclk in the environment
+variable videomode.
+The following error message is an example of a generated error
+message for invalid pclk value:
+
+Fail to set rate to 15khz
+
+Abort the execution of the function mxs_lcd_init() in case of
+mxs_set_lcdclk() failure.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ arch/arm/cpu/arm926ejs/mxs/clock.c    |  5 +++--
+ arch/arm/cpu/armv7/mx6/clock.c        | 18 ++++++++++--------
+ arch/arm/cpu/armv7/mx7/clock.c        | 10 ++++++----
+ arch/arm/include/asm/arch-mx6/clock.h |  2 +-
+ arch/arm/include/asm/arch-mx7/clock.h |  2 +-
+ arch/arm/include/asm/arch-mxs/clock.h |  2 +-
+ drivers/video/mxsfb.c                 |  5 ++++-
+ 7 files changed, 26 insertions(+), 18 deletions(-)
+
+diff --git a/arch/arm/cpu/arm926ejs/mxs/clock.c b/arch/arm/cpu/arm926ejs/mxs/clock.c
+index b552e4382c..cb1ba00f8d 100644
+--- a/arch/arm/cpu/arm926ejs/mxs/clock.c
++++ b/arch/arm/cpu/arm926ejs/mxs/clock.c
+@@ -309,7 +309,7 @@ void mxs_set_ssp_busclock(unsigned int bus, uint32_t freq)
+ 		bus, tgtclk, freq);
+ }
+ 
+-void mxs_set_lcdclk(uint32_t __maybe_unused lcd_base, uint32_t freq)
++int mxs_set_lcdclk(uint32_t __maybe_unused lcd_base, uint32_t freq)
+ {
+ 	struct mxs_clkctrl_regs *clkctrl_regs =
+ 		(struct mxs_clkctrl_regs *)MXS_CLKCTRL_BASE;
+@@ -317,7 +317,7 @@ void mxs_set_lcdclk(uint32_t __maybe_unused lcd_base, uint32_t freq)
+ 	int32_t k_best_l = 999, k_best_t = 0, x_best_l = 0xff, x_best_t = 0xff;
+ 
+ 	if (freq == 0)
+-		return;
++		return -1;
+ 
+ #if defined(CONFIG_MX23)
+ 	writel(CLKCTRL_CLKSEQ_BYPASS_PIX, &clkctrl_regs->hw_clkctrl_clkseq_clr);
+@@ -400,6 +400,7 @@ void mxs_set_lcdclk(uint32_t __maybe_unused lcd_base, uint32_t freq)
+ 	while (readl(&clkctrl_regs->hw_clkctrl_lcdif) & CLKCTRL_DIS_LCDIF_BUSY)
+ 		;
+ #endif
++	return 0;
+ }
+ 
+ uint32_t mxc_get_clock(enum mxc_clock clk)
+diff --git a/arch/arm/cpu/armv7/mx6/clock.c b/arch/arm/cpu/armv7/mx6/clock.c
+index 84bc2134fe..e9ead5cd66 100644
+--- a/arch/arm/cpu/armv7/mx6/clock.c
++++ b/arch/arm/cpu/armv7/mx6/clock.c
+@@ -615,7 +615,7 @@ static int enable_pll_video(u32 pll_div, u32 pll_num, u32 pll_denom,
+  *
+  * 'freq' using KHz as unit, see driver/video/mxsfb.c.
+  */
+-void mxs_set_lcdclk(u32 base_addr, u32 freq)
++int mxs_set_lcdclk(u32 base_addr, u32 freq)
+ {
+ 	u32 reg = 0;
+ 	u32 hck = MXC_HCLK / 1000;
+@@ -631,7 +631,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 	if (!is_mx6sx() && !is_mx6ul() && !is_mx6ull() && !is_mx6sl() &&
+ 	    !is_mx6sll()) {
+ 		debug("This chip not support lcd!\n");
+-		return;
++		return -1;
+ 	}
+ 
+ 	if (!is_mx6sl()) {
+@@ -639,7 +639,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 			reg = readl(&imx_ccm->cscdr2);
+ 			/* Can't change clocks when clock not from pre-mux */
+ 			if ((reg & MXC_CCM_CSCDR2_LCDIF1_CLK_SEL_MASK) != 0)
+-				return;
++				return -1;
+ 		}
+ 	}
+ 
+@@ -647,7 +647,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 		reg = readl(&imx_ccm->cscdr2);
+ 		/* Can't change clocks when clock not from pre-mux */
+ 		if ((reg & MXC_CCM_CSCDR2_LCDIF2_CLK_SEL_MASK) != 0)
+-			return;
++			return -1;
+ 	}
+ 
+ 	temp = freq * max_pred * max_postd;
+@@ -670,7 +670,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 
+ 		if (post_div > 4) {
+ 			printf("Fail to set rate to %dkhz", freq);
+-			return;
++			return -1;
+ 		}
+ 	}
+ 
+@@ -690,7 +690,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 
+ 	if (best == 0) {
+ 		printf("Fail to set rate to %dKHz", freq);
+-		return;
++		return -1;
+ 	}
+ 
+ 	debug("best %d, pred = %d, postd = %d\n", best, pred, postd);
+@@ -709,7 +709,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 
+ 	if (base_addr == LCDIF1_BASE_ADDR) {
+ 		if (enable_pll_video(pll_div, pll_num, pll_denom, post_div))
+-			return;
++			return -1;
+ 
+ 		enable_lcdif_clock(base_addr, 0);
+ 		if (!is_mx6sl()) {
+@@ -746,7 +746,7 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 	} else if (is_mx6sx()) {
+ 		/* Setting LCDIF2 for i.MX6SX */
+ 		if (enable_pll_video(pll_div, pll_num, pll_denom, post_div))
+-			return;
++			return -1;
+ 
+ 		enable_lcdif_clock(base_addr, 0);
+ 		/* Select pre-lcd clock to PLL5 and set pre divider */
+@@ -765,6 +765,8 @@ void mxs_set_lcdclk(u32 base_addr, u32 freq)
+ 
+ 		enable_lcdif_clock(base_addr, 1);
+ 	}
++
++	return 0;
+ }
+ 
+ int enable_lcdif_clock(u32 base_addr, bool enable)
+diff --git a/arch/arm/cpu/armv7/mx7/clock.c b/arch/arm/cpu/armv7/mx7/clock.c
+index 2cfde46a55..0bef0ae847 100644
+--- a/arch/arm/cpu/armv7/mx7/clock.c
++++ b/arch/arm/cpu/armv7/mx7/clock.c
+@@ -889,7 +889,7 @@ int set_clk_nand(void)
+ 	return 0;
+ }
+ 
+-void mxs_set_lcdclk(uint32_t base_addr, uint32_t freq)
++int mxs_set_lcdclk(uint32_t base_addr, uint32_t freq)
+ {
+ 	u32 hck = MXC_HCLK/1000;
+ 	u32 min = hck * 27;
+@@ -915,7 +915,7 @@ void mxs_set_lcdclk(uint32_t base_addr, uint32_t freq)
+ 
+ 		if (5 == i) {
+ 			printf("Fail to set rate to %dkhz", freq);
+-			return;
++			return -1;
+ 		}
+ 	}
+ 
+@@ -935,7 +935,7 @@ void mxs_set_lcdclk(uint32_t base_addr, uint32_t freq)
+ 
+ 	if (best == 0) {
+ 		printf("Fail to set rate to %dkhz", freq);
+-		return;
++		return -1;
+ 	}
+ 
+ 	debug("best %d, pred = %d, postd = %d\n", best, pred, postd);
+@@ -945,13 +945,15 @@ void mxs_set_lcdclk(uint32_t base_addr, uint32_t freq)
+ 	pll_num = (best - hck * pll_div) * pll_denom / hck;
+ 
+ 	if (enable_pll_video(pll_div, pll_num, pll_denom, post_div))
+-		return;
++		return -1;
+ 
+ 	target = CLK_ROOT_ON | LCDIF_PIXEL_CLK_ROOT_FROM_PLL_VIDEO_MAIN_CLK |
+ 		 CLK_ROOT_PRE_DIV((pred - 1)) | CLK_ROOT_POST_DIV((postd - 1));
+ 	clock_set_target_val(LCDIF_PIXEL_CLK_ROOT, target);
+ 
+ 	clock_enable(CCGR_LCDIF, 1);
++
++	return 0;
+ }
+ 
+ #ifdef CONFIG_FEC_MXC
+diff --git a/arch/arm/include/asm/arch-mx6/clock.h b/arch/arm/include/asm/arch-mx6/clock.h
+index 2d9c45e255..c334564068 100644
+--- a/arch/arm/include/asm/arch-mx6/clock.h
++++ b/arch/arm/include/asm/arch-mx6/clock.h
+@@ -77,7 +77,7 @@ void enable_enet_clk(unsigned char enable);
+ int enable_lcdif_clock(u32 base_addr, bool enable);
+ void enable_qspi_clk(int qspi_num);
+ void enable_thermal_clk(void);
+-void mxs_set_lcdclk(u32 base_addr, u32 freq);
++int mxs_set_lcdclk(u32 base_addr, u32 freq);
+ void select_ldb_di_clock_source(enum ldb_di_clock clk);
+ void enable_eim_clk(unsigned char enable);
+ #endif /* __ASM_ARCH_CLOCK_H */
+diff --git a/arch/arm/include/asm/arch-mx7/clock.h b/arch/arm/include/asm/arch-mx7/clock.h
+index 688d2361df..6835cd8a28 100644
+--- a/arch/arm/include/asm/arch-mx7/clock.h
++++ b/arch/arm/include/asm/arch-mx7/clock.h
+@@ -343,6 +343,6 @@ void enable_usboh3_clk(unsigned char enable);
+ #ifdef CONFIG_SECURE_BOOT
+ void hab_caam_clock_enable(unsigned char enable);
+ #endif
+-void mxs_set_lcdclk(uint32_t base_addr, uint32_t freq);
++int mxs_set_lcdclk(uint32_t base_addr, uint32_t freq);
+ void enable_thermal_clk(void);
+ #endif
+diff --git a/arch/arm/include/asm/arch-mxs/clock.h b/arch/arm/include/asm/arch-mxs/clock.h
+index fdc5395a70..9785045663 100644
+--- a/arch/arm/include/asm/arch-mxs/clock.h
++++ b/arch/arm/include/asm/arch-mxs/clock.h
+@@ -46,7 +46,7 @@ uint32_t mxc_get_clock(enum mxc_clock clk);
+ void mxs_set_ioclk(enum mxs_ioclock io, uint32_t freq);
+ void mxs_set_sspclk(enum mxs_sspclock ssp, uint32_t freq, int xtal);
+ void mxs_set_ssp_busclock(unsigned int bus, uint32_t freq);
+-void mxs_set_lcdclk(uint32_t __maybe_unused lcd_base, uint32_t freq);
++int mxs_set_lcdclk(uint32_t __maybe_unused lcd_base, uint32_t freq);
+ 
+ /* Compatibility with the FEC Ethernet driver */
+ #define	imx_get_fecclk()	mxc_get_clock(MXC_AHB_CLK)
+diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+index 20455ffb54..197b9dfaa2 100644
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -50,12 +50,15 @@ __weak void mxsfb_system_setup(void)
+ static void mxs_lcd_init(GraphicDevice *panel,
+ 			struct ctfb_res_modes *mode, int bpp)
+ {
++	int ret;
+ 	struct mxs_lcdif_regs *regs = (struct mxs_lcdif_regs *)MXS_LCDIF_BASE;
+ 	uint32_t word_len = 0, bus_width = 0;
+ 	uint8_t valid_data = 0;
+ 
+ 	/* Kick in the LCDIF clock */
+-	mxs_set_lcdclk(MXS_LCDIF_BASE, PS2KHZ(mode->pixclock));
++	ret = mxs_set_lcdclk(MXS_LCDIF_BASE, PS2KHZ(mode->pixclock));
++	if (ret < 0)
++		return;
+ 
+ 	/* Restart the LCDIF block */
+ 	mxs_reset_block(&regs->hw_lcdif_ctrl_reg);
+-- 
+2.17.1
+

@@ -1,0 +1,31 @@
+From 62c3906577fd8b0ee7e79ab901ce9d87b58102e1 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 3 Apr 2017 16:55:14 +0300
+Subject: [PATCH 15/19] arm: mx6: cl-som-imx6: Enable PCA953X config
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ include/configs/cl_som_imx6.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/include/configs/cl_som_imx6.h b/include/configs/cl_som_imx6.h
+index 7a05f53..16aa6b8 100644
+--- a/include/configs/cl_som_imx6.h
++++ b/include/configs/cl_som_imx6.h
+@@ -14,6 +14,13 @@
+ 
+ #define CONFIG_CMD_MII
+ 
++
++#define CONFIG_PCA953X
++#define CONFIG_CMD_PCA953X
++#define CONFIG_CMD_PCA953X_INFO
++#define CONFIG_SYS_I2C_PCA953X_ADDR     0x26
++#define CONFIG_SYS_I2C_PCA953X_WIDTH    { {CONFIG_SYS_I2C_PCA953X_ADDR, 16} }
++
+ #define CONFIG_BOARD_LATE_INIT
+ 
+ #endif	/* __CONFIG_CL_SOM_IMX6_H */
+-- 
+1.9.1
+

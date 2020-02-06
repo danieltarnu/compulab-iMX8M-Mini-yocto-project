@@ -1,0 +1,129 @@
+From 2a723eb87405b5257e4e6e81e828ddb7cda6e752 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 9 Jun 2016 14:15:20 +0300
+Subject: [PATCH 34/38] ARM: i.MX6UL: audio-1: add analog audio support
+
+Add analog audio support by means of the simple-audio-card.
+This instance provides a simple glue interface between cpu:sai and codec:wm8731.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 77 ++++++++++++++++++++++++++++-
+ 1 file changed, 76 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index f997e73..55f3dc1 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -33,7 +33,9 @@
+ 	};
+ 
+ 	pu_dummy: pudummy_reg {
+-		compatible = "fsl,imx6-dummy-pureg";
++		compatible = "regulator-fixed";
++		regulator-name = "pu-dummy";
++		regulator-always-on;
+ 	};
+ 
+ 	regulators {
+@@ -90,6 +92,43 @@
+ 			linux,default-trigger = "heartbeat";
+ 		};
+ 	};
++
++	sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "cl-som-imx6ul";
++		simple-audio-card,widgets =
++			"Headphone", "Headphone Jack",
++			"Line", "Line Out",
++			"Microphone", "Mic Jack",
++			"Line", "Line In";
++		simple-audio-card,routing =
++			"Headphone Jack", "RHPOUT",
++			"Headphone Jack", "LHPOUT",
++			"MICIN", "Mic Bias",
++			"Mic Bias", "Mic Jack";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&sound_master>;
++		simple-audio-card,frame-master = <&sound_master>;
++		simple-audio-card,bitclock-inversion;
++
++		sound_master: simple-audio-card,cpu {
++			sound-dai = <&sai2 0>;
++			system-clock-frequency = <12288000>;
++			system-clock-direction = "out";
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&wm8731>;
++			system-clock-direction = "in";
++			system-clock-type = "mclk";
++		};
++
++	};
++};
++
++&clks {
++	assigned-clocks = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
++	assigned-clock-rates = <786432000>;
+ };
+ 
+ &iomuxc {
+@@ -217,6 +256,16 @@
+ 			>;
+ 		};
+ 
++		pinctrl_sai2: sai2grp {
++			fsl,pins = <
++				MX6UL_PAD_JTAG_TDI__SAI2_TX_BCLK	0x17088
++				MX6UL_PAD_JTAG_TDO__SAI2_TX_SYNC	0x17088
++				MX6UL_PAD_JTAG_TRST_B__SAI2_TX_DATA	0x11088
++				MX6UL_PAD_JTAG_TCK__SAI2_RX_DATA	0x11088
++				MX6UL_PAD_JTAG_TMS__SAI2_MCLK		0x17088
++			>;
++		};
++
+ 		pinctrl_usb_otg1_id: usbotg1idgrp {
+ 			fsl,pins = <
+ 				MX6UL_PAD_GPIO1_IO00__ANATOP_OTG1_ID	0x17059
+@@ -425,6 +474,19 @@
+ 	pinctrl-0 = <&pinctrl_i2c3>;
+ 	status = "okay";
+ 
++	wm8731: wm8731@1a {
++		#sound-dai-cells = <0>;
++		compatible = "wlf,wm8731";
++		reg = <0x1a>;
++		status = "okay";
++		clocks = <&clks IMX6UL_CLK_SAI2>;
++		clock-names = "mclk";
++		AVDD-supply = <&pu_dummy>;
++		HPVDD-supply = <&pu_dummy>;
++		DCVDD-supply = <&pu_dummy>;
++		DBVDD-supply = <&pu_dummy>;
++	};
++
+ 	eeprom@50 {
+ 		compatible = "at24,24c02";
+ 		reg = <0x50>;
+@@ -512,3 +574,16 @@
+ 	pinctrl-0 = <&pinctrl_flexcan1>;
+ 	status = "okay";
+ };
++
++&sai2 {
++	#sound-dai-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai2>;
++
++	assigned-clocks = <&clks IMX6UL_CLK_SAI2_SEL>,
++			  <&clks IMX6UL_CLK_SAI2>;
++	assigned-clock-parents = <&clks IMX6UL_CLK_PLL4_AUDIO_DIV>;
++	assigned-clock-rates = <0>, <12288000>;
++
++	status = "okay";
++};
+-- 
+1.9.1
+

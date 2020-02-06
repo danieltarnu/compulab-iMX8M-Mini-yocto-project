@@ -1,0 +1,29 @@
+From fb1d97de9024f9038d8b79037485feb8a582e1b5 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Mon, 29 Jan 2018 18:10:23 +0200
+Subject: [PATCH 41/57] compulab: eeprom: layout: forward compatibility
+
+Treat all of the un-handled layout values as the largest supported
+layout.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/common/eeprom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/board/compulab/common/eeprom.c b/board/compulab/common/eeprom.c
+index 1a5bf0df2d..ed6d3d06d7 100644
+--- a/board/compulab/common/eeprom.c
++++ b/board/compulab/common/eeprom.c
+@@ -596,7 +596,7 @@ int eeprom_layout_detect(unsigned char *data)
+ 		return LAYOUT_VERSION_VER2;
+ 	case 3:
+ 		return LAYOUT_VERSION_VER3;
+-	case 4:
++	case 4 ... 0x1f:
+ 		return LAYOUT_VERSION_VER4;
+ 	}
+ 
+-- 
+2.17.1
+

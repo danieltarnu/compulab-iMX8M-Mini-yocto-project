@@ -1,0 +1,67 @@
+From 8e90d1223135b74c45bd54d23db1cff5d371e460 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 19 Jul 2017 16:11:07 +0300
+Subject: [PATCH 8/9] arm: imx6ul: fec: Fix fec-phy settings
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cl_som_imx6ul/cl_som_imx6ul.c | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+index d816c7b..c574ad1 100644
+--- a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
++++ b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+@@ -53,14 +53,18 @@ enum ddr_config {
+ 	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |			\
+ 	PAD_CTL_ODE)
+ 
+-#define ENET_PAD_CTRL  (PAD_CTL_PUS_100K_UP | PAD_CTL_PUE |     \
+-	PAD_CTL_SPEED_HIGH   |                                  \
+-	PAD_CTL_DSE_48ohm   | PAD_CTL_SRE_FAST)
++#define ENET_PAD_CTRL  (PAD_CTL_HYS | \
++	PAD_CTL_PUS_100K_UP |  \
++	PAD_CTL_SPEED_MED   |  \
++	PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_SLOW)
+ 
+ #define MDIO_PAD_CTRL  (PAD_CTL_PUS_100K_UP | PAD_CTL_PUE |     \
+ 	PAD_CTL_DSE_48ohm   | PAD_CTL_SRE_FAST | PAD_CTL_ODE)
+ 
+-#define ENET_CLK_PAD_CTRL  (PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST)
++#define ENET_CLK_PAD_CTRL  (PAD_CTL_HYS | \
++	PAD_CTL_PUS_100K_UP |  \
++	PAD_CTL_SPEED_LOW   |  \
++	PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST)
+ 
+ #define ENET_RX_PAD_CTRL  (PAD_CTL_PKE | PAD_CTL_PUE |          \
+ 	PAD_CTL_SPEED_HIGH   | PAD_CTL_SRE_FAST)
+@@ -284,7 +288,7 @@ static void setup_usb(void) { return; }
+ 
+ #ifdef CONFIG_FEC_MXC
+ static iomux_v3_cfg_t const fec1_pads[] = {
+-	MX6_PAD_GPIO1_IO06__ENET1_MDIO | MUX_PAD_CTRL(MDIO_PAD_CTRL),
++	MX6_PAD_GPIO1_IO06__ENET1_MDIO | MUX_PAD_CTRL(ENET_PAD_CTRL),
+ 	MX6_PAD_GPIO1_IO07__ENET1_MDC | MUX_PAD_CTRL(ENET_PAD_CTRL),
+ 	MX6_PAD_ENET1_TX_DATA0__ENET1_TDATA00 | MUX_PAD_CTRL(ENET_PAD_CTRL),
+ 	MX6_PAD_ENET1_TX_DATA1__ENET1_TDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),
+@@ -366,6 +370,17 @@ static int setup_fec(int fec_id)
+ 	enable_enet_clk(1);
+ 	return 0;
+ }
++
++int board_phy_config(struct phy_device *phydev)
++{
++	phy_write(phydev, MDIO_DEVAD_NONE, 0x1f, 0x8190);
++	phy_write(phydev, MDIO_DEVAD_NONE, 0x16, 0x202);
++
++	if (phydev->drv->config)
++		phydev->drv->config(phydev);
++
++	return 0;
++}
+ #else
+ static int setup_fec(int fec_id) { return 0; }
+ #endif
+-- 
+1.9.1
+

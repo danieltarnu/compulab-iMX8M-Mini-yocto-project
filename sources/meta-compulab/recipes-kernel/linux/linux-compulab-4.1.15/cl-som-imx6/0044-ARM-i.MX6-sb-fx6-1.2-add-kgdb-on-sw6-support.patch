@@ -1,0 +1,91 @@
+From 0db03bbb26d7b39678126218b398c3c5f9d4b4f3 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 16:21:17 +0200
+Subject: [PATCH 44/58] ARM: i.MX6: sb-fx6 1.2: add kgdb on sw6 support
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi |  2 ++
+ arch/arm/mach-imx/mach-cm_fx6.c       | 39 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 50b7d68..df5036c 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -264,6 +264,8 @@
+ 				/* mipi camera rst pwn */
+ 				MX6QDL_PAD_DI0_PIN4__GPIO4_IO20 0x80000000
+ 				MX6QDL_PAD_ENET_CRS_DV__GPIO1_IO25 0x80000000
++				/* KGDB SW6 */
++				MX6QDL_PAD_GPIO_18__GPIO7_IO13 0x80000000
+ 			>;
+ 		};
+ 	};
+diff --git a/arch/arm/mach-imx/mach-cm_fx6.c b/arch/arm/mach-imx/mach-cm_fx6.c
+index 6b540f6..94835910 100644
+--- a/arch/arm/mach-imx/mach-cm_fx6.c
++++ b/arch/arm/mach-imx/mach-cm_fx6.c
+@@ -22,6 +22,9 @@
+ #include "common.h"
+ #include "hardware.h"
+ #include <linux/string.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
+ 
+ 
+ extern unsigned int system_rev;
+@@ -104,6 +107,40 @@ static void __init cm_fx6_csi_mux_init(void)
+ 	}
+ }
+ 
++#ifdef CONFIG_KGDB
++#define	KGDB_GPIO IMX_GPIO_NR(7,13) /* SW6 */
++
++void kgdb_breakpoint(void);
++
++static irqreturn_t irq_handler(int irq, void *dev_id)
++{
++	static int count=0;
++
++	printk(KERN_DEBUG "interrupt received (irq[%d]: %d)\n", count++, irq);
++
++	kgdb_breakpoint();
++
++	return IRQ_HANDLED;
++}
++
++static void cm_fx6_kgdb_init(void)
++{
++	int ret;
++
++	ret = request_irq(gpio_to_irq(KGDB_GPIO),
++			irq_handler,
++			IRQF_TRIGGER_FALLING,
++			"irq_kgdb",
++			NULL);
++
++	if (ret)
++		printk(KERN_ERR
++			"cm-fx6: Failed to request irq for kgdb\n");
++
++}
++#else
++static void cm_fx6_kgdb_init(void){};
++#endif
+ 
+ static int cm_fx6_init(void)
+ {
+@@ -118,6 +155,8 @@ static int cm_fx6_init(void)
+ 	revision_from_anatop();
+ 	cm_fx6_csi_mux_init();
+ 
++	cm_fx6_kgdb_init();
++
+ 	return 0;
+ }
+ 
+-- 
+1.9.1
+

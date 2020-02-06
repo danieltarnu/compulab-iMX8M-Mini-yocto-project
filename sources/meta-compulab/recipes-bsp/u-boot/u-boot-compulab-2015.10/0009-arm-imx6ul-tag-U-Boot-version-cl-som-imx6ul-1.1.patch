@@ -1,0 +1,28 @@
+From 2ad6ecdec2b59b11abab142a06a976620973a4a7 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 19 Jul 2017 16:20:20 +0300
+Subject: [PATCH 9/9] arm: imx6ul: tag U-Boot version cl-som-imx6ul-1.1
+
+Tag U-Boot version cl-som-imx6ul-1.1.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 84244e4..3d19e51 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2015
+ PATCHLEVEL = 10
+ SUBLEVEL =
+-EXTRAVERSION = -cl-som-imx6ul-1.0
++EXTRAVERSION = -cl-som-imx6ul-1.1
+ NAME =
+ 
+ # *DOCUMENTATION*
+-- 
+1.9.1
+

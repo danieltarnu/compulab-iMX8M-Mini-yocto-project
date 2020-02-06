@@ -1,0 +1,32 @@
+From 60ce249da087a8cea07a9209d62092bd5cdbc087 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 13 Jan 2016 14:43:10 +0200
+Subject: [PATCH 28/38] ARM: i.MX6UL: add aliases for cl-som-imx6ul devices
+
+Add useful aliases for cl-som-imx6ul devices.
+It allows simplify U-Boot fdt modifiaction commands.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 6d80e21..4af3014 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -11,6 +11,11 @@
+ #include "imx6ul.dtsi"
+ 
+ / {
++	aliases {
++		gpmi = &gpmi;
++		lcdif = &lcdif;
++	};
++
+ 	memory {
+ 		reg = <0x80000000 0x20000000>;
+ 	};
+-- 
+1.9.1
+

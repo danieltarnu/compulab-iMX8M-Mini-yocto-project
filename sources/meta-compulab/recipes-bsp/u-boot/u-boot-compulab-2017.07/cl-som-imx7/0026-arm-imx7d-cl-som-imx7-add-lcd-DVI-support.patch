@@ -1,0 +1,772 @@
+From f5bca06386afb2f51d6f47f88f6421c6c0b7eaba Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Mon, 11 Sep 2017 11:20:25 +0300
+Subject: [PATCH 26/57] arm: imx7d: cl-som-imx7: add lcd/DVI support
+
+Add support for LCD/DVI console support
+Add support for LCD/DVI splash screen
+
+Update environment variable "displaytype" to select display type and
+resolution:
+* lcd_KD050C for KD050C 800*480 LCD.
+* dvi1280x720 for 1280*720 DVI.
+* dvi1280x1024 for 1280*1024 DVI.
+* dvi1920x1080 for 1920*1080 DVI.
+* dvi1024x768 or dvi (default) for 1024*768 DVI.
+
+To activate splash screen and disable LCD/DVI console:
+* Set environment variable "splashimage" to temporary RAM address for
+  the SPI image. For example 80800000.
+* Set environment variable "splashsource" to one of the following splash
+  image sources.
+** sf (default) for SPI flash. Dedicated space on the SPI FLASH is
+   offset 0x100000 bytes, size 0x100000 bytes.
+** mmc_fs for SD card, first partition.
+** usb_fs for USB disk, first partition.
+* Set environment variable "splashfile" to the splash image file name.
+  Relevant to SD card and USB disk.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/Makefile      |   1 +
+ board/compulab/cl-som-imx7/cl-som-imx7.c |   8 +-
+ board/compulab/cl-som-imx7/common.h      |   8 +
+ board/compulab/cl-som-imx7/display.c     | 563 +++++++++++++++++++++++
+ board/compulab/cl-som-imx7/mux.c         |  48 ++
+ configs/cl-som-imx7_defconfig            |   2 +
+ include/configs/cl-som-imx7.h            |  15 +
+ 7 files changed, 644 insertions(+), 1 deletion(-)
+ create mode 100644 board/compulab/cl-som-imx7/display.c
+
+diff --git a/board/compulab/cl-som-imx7/Makefile b/board/compulab/cl-som-imx7/Makefile
+index 8f0e068b7e..bc5361a63e 100644
+--- a/board/compulab/cl-som-imx7/Makefile
++++ b/board/compulab/cl-som-imx7/Makefile
+@@ -14,4 +14,5 @@ ifdef CONFIG_SPL_BUILD
+ obj-y  += spl.o
+ else
+ obj-y  += cl-som-imx7.o
++obj-$(CONFIG_VIDEO_MXS) += display.o
+ endif
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index d2880f5c36..11583c5c7f 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -671,6 +671,7 @@ int checkboard(void)
+ 
+ int fdt_board_adjust(void)
+ {
++	int ret = 0;
+ 	u32 cpurev = get_cpu_rev();
+ 
+ 	/* Disable features not supported by i.MX7Solo */
+@@ -695,6 +696,11 @@ int fdt_board_adjust(void)
+ 		fdt_node_disable("/soc/gpmi-nand@33002000");
+ 	}
+ 
+-	return 0;
++#ifdef CONFIG_VIDEO
++	/* Update display timing parameters */
++	ret = fdt_board_adjust_display();
++#endif /* CONFIG_VIDEO */
++
++	return ret;
+ }
+ #endif /* CONFIG_OF_BOARD_SETUP */
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index 02dcf6296b..53ed5d9b9e 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -46,4 +46,12 @@ typedef enum {
+        CL_SOM_IMX7_OTHER,
+ } cl_som_imx7_base;
+ 
++extern cl_som_imx7_base cl_som_imx7_base_id;
++
++#ifdef CONFIG_VIDEO_MXS
++int fdt_board_adjust_display(void);
++PADS_SET_PROT(lcd_pads)
++PADS_SET_PROT(lcd_control_pads)
++#endif /* CONFIG_VIDEO_MXS */
++
+ #endif /* !CONFIG_SPL_BUILD */
+diff --git a/board/compulab/cl-som-imx7/display.c b/board/compulab/cl-som-imx7/display.c
+new file mode 100644
+index 0000000000..c9a23bd49f
+--- /dev/null
++++ b/board/compulab/cl-som-imx7/display.c
+@@ -0,0 +1,563 @@
++/*
++ * Display configuration for the CompuLab CL-SOM-iMX7 board
++ *
++ * (C) Copyright 2017 CompuLab, Ltd. http://compulab.com/
++ *
++ * Author: Uri Mashiach <uri.mashiach@compulab.co.il>
++ *
++ * SPDX-License-Identifier:	GPL-2.0+
++ */
++
++#include <common.h>
++#include <search.h>
++#include <env_callback.h>
++#include "../common/common.h"
++#include <asm/arch/mx7-pins.h>
++#include <asm/gpio.h>
++#include <asm/imx-common/iomux-v3.h>
++#include <linux/fb.h>
++#include <i2c.h>
++#include <pca953x.h>
++#include <splash.h>
++#include "common.h"
++
++/* GPIO extender LCD enable bit */
++#define CONFIG_SYS_I2C_PCA953X_LCD_ENA	14
++/* The TFP410 address */
++#define CONFIG_SYS_TFP410_ADDR 0x39
++/* The TFP410 registers */
++#define TFP410_REG_DEV_ID_L 0x02
++#define TFP410_REG_DEV_ID_H 0x03
++#define TFP410_REG_CTL_1_MODE 0x08
++#define TFP410_REG_CTL_2_MODE 0x09
++#define TFP410_REG_CTL_3_MODE 0x0A
++/* LCD backlight GPIO */
++#define GPIO_LCD_LIGHT IMX_GPIO_NR(1, 2)
++
++#define FDT_TIMING_DVI "/soc/aips-bus@30400000/lcdif@30730000/display/display-timings/dvi"
++#define FDT_NODE_REG_DVI "/regulators/dvi_en_3v3"
++#define FDT_NODE_REG_LCD "/regulators/lcd_nstby_3v3"
++#define FLIP_32B(val) ((val>>24)&0xff) | ((val<<8)&0xff0000) | ((val>>8)&0xff00) | ((val<<24)&0xff000000)
++
++/* Display type code */
++typedef enum {
++	DISP_DVI,
++	DISP_LCD,
++	DISP_NONE,
++} display_type;
++
++/* Display parameters preset */
++typedef enum {
++	PRSET_LCD_KD050C,
++	PRSET_DVI_1280x720,
++	PRSET_DVI_1024X768,
++	PRSET_DVI_1280X1024,
++	PRSET_DVI_1920x1080,
++	PRSET_NONE,
++} display_preset;
++
++/* Doisplay parameters */
++struct disp_param {
++	char* del_node;
++	struct fb_videomode timings;
++};
++
++static struct disp_param dispparams[] = {
++	{/* PRSET_LCD_KD050C */
++		.del_node = FDT_NODE_REG_DVI,
++		.timings = {
++			.refresh	= 29580000,
++			.pixclock	= 29500,
++			.xres		= 800,
++			.left_margin	= 1,
++			.right_margin	= 16,
++			.hsync_len	= 80,
++			.yres		= 480,
++			.upper_margin	= 13,
++			.lower_margin	= 16,
++			.vsync_len	= 16,
++		}
++	},
++	{/* PRSET_DVI_1280x720 */
++		.del_node = FDT_NODE_REG_LCD,
++		.timings = {
++			.refresh	= 74250000,
++			.pixclock	= 13468,
++			.xres		= 1280,
++			.left_margin	= 220,
++			.right_margin	= 110,
++			.hsync_len	= 40,
++			.yres		= 720,
++			.upper_margin	= 20,
++			.lower_margin	= 5,
++			.vsync_len	= 5,
++		}
++	},
++	{/* PRSET_DVI_1024X768 */
++		.del_node = FDT_NODE_REG_LCD,
++		.timings = {
++			.refresh	= 65000000,
++			.pixclock	= 15384,
++			.xres		= 1024,
++			.left_margin	= 168,
++			.right_margin	= 8,
++			.hsync_len	= 144,
++			.yres		= 768,
++			.upper_margin	= 29,
++			.lower_margin	= 3,
++			.vsync_len	= 4,
++		}
++	},
++	{/* PRSET_DVI_1280X1024 */
++		.del_node = FDT_NODE_REG_LCD,
++		.timings = {
++			.refresh	= 110000000,
++			.pixclock	= 9090,
++			.xres		= 1280,
++			.left_margin	= 200,
++			.right_margin	= 48,
++			.hsync_len	= 184,
++			.yres		= 1024,
++			.upper_margin	= 26,
++			.lower_margin	= 1,
++			.vsync_len	= 3,
++		}
++	},
++	{/* PRSET_DVI_1920x1080 */
++		.del_node = FDT_NODE_REG_LCD,
++		.timings = {
++			.refresh	= 148500000,
++			.pixclock	= 6734,
++			.xres           = 1920,
++			.left_margin    = 80,
++			.right_margin   = 48,
++			.hsync_len      = 32,
++			.yres           = 1080,
++			.upper_margin   = 26,
++			.lower_margin   = 3,
++			.vsync_len      = 6,
++		}
++	},
++};
++
++/* Selected display preset ID */
++static display_preset selected_preset = PRSET_NONE;
++
++#define TFP410_ID_H 0x00
++#define TFP410_ID_L 0x06
++
++/*
++ * tfp410_validate() - TFP410 chip validation.
++ * - validate chip device ID.
++ *
++ * Returns -1 on read failure, 1 on validation failure 0 on success.
++ */
++static int tfp410_validate(void)
++{
++	uchar buf;
++	int ret;
++
++	/* check version */
++	ret = i2c_read(CONFIG_SYS_TFP410_ADDR, TFP410_REG_DEV_ID_L, 1, &buf, 1);
++	if (ret != 0) {
++		puts ("TFP410 validation read failure.\n");
++		return -1;
++	}
++	if (buf != TFP410_ID_L)
++		return 1;
++	ret = i2c_read(CONFIG_SYS_TFP410_ADDR, TFP410_REG_DEV_ID_H, 1, &buf, 1);
++	if (ret != 0) {
++		puts ("TFP410 validation read failure.\n");
++		return -1;
++	}
++	if (buf != TFP410_ID_H)
++		return 1;
++
++	return 0;
++}
++
++/*
++ * dvi_on() - turn on the DVI display.
++ * - Enable the TFP410 chip.
++ *
++ * Returns -1 on failure, 0 on success.
++ */
++static int dvi_on(void)
++{
++	uchar buf;
++	int ret = -1;
++
++	ret = i2c_set_bus_num(CL_SOM_IMX7_I2C_BUS_EXT);
++	if (ret != 0) {
++		puts ("Failed to select the external I2C bus.\n");
++		return -1;
++	}
++	ret = tfp410_validate();
++	if (ret != 0)
++		return 0;
++	/* Enable the TFP410 chip - RGP to DVI converter */
++	buf = 0x35;
++	ret = i2c_write(CONFIG_SYS_TFP410_ADDR,
++			TFP410_REG_CTL_1_MODE, 1, &buf, 1);
++	buf = 0xa6;
++	ret |= i2c_write(CONFIG_SYS_TFP410_ADDR,
++			 TFP410_REG_CTL_2_MODE, 1, &buf, 1);
++	buf = 0x10;
++	ret |= i2c_write(CONFIG_SYS_TFP410_ADDR,
++			 TFP410_REG_CTL_3_MODE, 1, &buf, 1);
++	if (ret != 0) {
++		puts ("TFP410 chip enable failure.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++/*
++ * lcd_on() - turn on the LCD display.
++ * - Turn on the LCD backlight.
++ * - Enable LCD GPIO.
++ *
++ * Returns -1 on failure, 0 on success.
++ */
++static int lcd_on(void)
++{
++	int ret = -1;
++
++	if (cl_som_imx7_base_id != CL_SOM_IMX7_SB_SOM)
++		return 0;
++
++	/* Turn on the LCD backlight */
++	ret = gpio_direction_output(GPIO_LCD_LIGHT , 1);
++	if (ret != 0) {
++		puts ("Failed to turn on the LCD backlight.\n");
++		return -1;
++	}
++	ret = i2c_set_bus_num(CL_SOM_IMX7_I2C_BUS_EXT);
++	if (ret != 0) {
++		puts ("Failed to select the external I2C bus.\n");
++		return -1;
++	}
++	/* Enable LCD GPIO */
++	ret = pca953x_set_dir(CONFIG_SYS_I2C_PCA953X_ADDR,
++			1 << CONFIG_SYS_I2C_PCA953X_LCD_ENA,
++			PCA953X_DIR_OUT << CONFIG_SYS_I2C_PCA953X_LCD_ENA);
++	ret |= pca953x_set_val(CONFIG_SYS_I2C_PCA953X_ADDR,
++			1 << CONFIG_SYS_I2C_PCA953X_LCD_ENA,
++			1 << CONFIG_SYS_I2C_PCA953X_LCD_ENA);
++	if (ret != 0) {
++		puts ("LCD GPIO enable failure.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++/*
++ * dvi_off() - turn off the DVI display.
++ * - Disable the TFP410 chip.
++ *
++ * Returns -1 on failure, 0 on success.
++ */
++static int dvi_off(void)
++{
++	uchar buf;
++	int ret = -1;
++
++	ret = i2c_set_bus_num(CL_SOM_IMX7_I2C_BUS_EXT);
++	if (ret != 0) {
++		puts ("Failed to select the external I2C bus.\n");
++		return -1;
++	}
++	ret = tfp410_validate();
++	if (ret != 0)
++		return 0;
++	/* Disable the TFP410 chip - RGP to DVI converter */
++	buf = 0xfe;
++	ret = i2c_write(CONFIG_SYS_TFP410_ADDR,
++			TFP410_REG_CTL_1_MODE, 1, &buf, 1);
++	if (ret != 0) {
++		puts ("TFP410 chip disable failure.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++/*
++ * lcd_off() - turn off the LCD display.
++ * - Turn off the LCD backlight.
++ * - Disable LCD GPIO.
++ *
++ * Returns -1 on failure, 0 on success.
++ */
++static int lcd_off(void)
++{
++	int ret = -1;
++
++	if (cl_som_imx7_base_id != CL_SOM_IMX7_SB_SOM)
++		return 0;
++
++	/* Turn off the LCD backlight */
++	ret = gpio_direction_output(GPIO_LCD_LIGHT , 0);
++	if (ret != 0) {
++		puts ("Failed to turn off the LCD backlight.\n");
++		return -1;
++	}
++	/* Disable LCD GPIO */
++	ret |= pca953x_set_dir(CONFIG_SYS_I2C_PCA953X_ADDR,
++			1 << CONFIG_SYS_I2C_PCA953X_LCD_ENA,
++			PCA953X_DIR_OUT << CONFIG_SYS_I2C_PCA953X_LCD_ENA);
++	ret |= pca953x_set_val(CONFIG_SYS_I2C_PCA953X_ADDR,
++			1 << CONFIG_SYS_I2C_PCA953X_LCD_ENA, 0);
++	if (ret != 0) {
++		puts ("LCD GPIO disable failure.\n");
++		return -1;
++	}
++
++	return 0;
++}
++
++/*
++ * set_preset() - apply specific display preset.
++ * The parameters are used by Freescale videomode module.
++ *
++ * Returns -1 on failure, display type code on success.
++ */
++static display_type set_preset(void)
++{
++	int ret = -1;
++	display_type disp_type = DISP_DVI;
++	char videomod_buf[100];
++
++	if ((selected_preset < 0) || (selected_preset >= PRSET_NONE))
++		return DISP_NONE;
++
++	sprintf(videomod_buf,
++		"video=ctfb:x:%u,y:%u,depth:24,pclk:%u,le:%u,ri:%u,up:%u," \
++		"lo:%u,hs:%u,vs:%u,sync:0,vmode:0",
++		dispparams[selected_preset].timings.xres,
++		dispparams[selected_preset].timings.yres,
++		dispparams[selected_preset].timings.pixclock,
++		dispparams[selected_preset].timings.left_margin,
++		dispparams[selected_preset].timings.right_margin,
++		dispparams[selected_preset].timings.upper_margin,
++		dispparams[selected_preset].timings.lower_margin,
++		dispparams[selected_preset].timings.hsync_len,
++		dispparams[selected_preset].timings.vsync_len);
++	ret = setenv("videomode", videomod_buf);
++	if (ret)
++		return -1;
++
++	if (selected_preset == PRSET_LCD_KD050C)
++		disp_type = DISP_LCD;
++
++	return disp_type;
++}
++
++/*
++ * env_parse_displaytype() - parse environment parameter.
++ * - Determine display type.
++ * - Set display timing in environment parameter "videomode".
++ *
++ * @displaytype: The environment variable containing the display parameters.
++ * Returns negative value on failure, display type code on success.
++ */
++static display_type env_parse_displaytype(char *disp_type)
++{
++	if ((!strcmp(disp_type, "dvi1024x768")) ||
++	    (!strcmp(disp_type, "dvi"))) {
++		selected_preset = PRSET_DVI_1024X768;
++	}
++	else if (!strcmp(disp_type, "dvi1920x1080"))
++		selected_preset = PRSET_DVI_1920x1080;
++	else if (!strcmp(disp_type, "dvi1280x1024"))
++		selected_preset = PRSET_DVI_1280X1024;
++	else if (!strcmp(disp_type, "dvi1280x720"))
++		selected_preset = PRSET_DVI_1280x720;
++	else if (!strcmp(disp_type, "lcd_KD050C"))
++		selected_preset = PRSET_LCD_KD050C;
++	return set_preset();
++}
++
++/* Enable the appropriate display */
++/*
++ * enable_display() - enable specific display type.
++ *
++ * @disp_type: display type to enable.
++ * Returns negative value on failure, 0 on success.
++ */
++static int enable_display(display_type disp_type)
++{
++	int ret = 0;
++
++	switch (disp_type) {
++	case DISP_DVI:
++		ret = lcd_off();
++		ret |= dvi_on();
++		break;
++	case DISP_LCD:
++		ret = dvi_off();
++		ret |= lcd_on();
++		break;
++	default:
++		break;
++	}
++
++	return ret;
++}
++
++/*
++ * setup_display() - set display signal MUX, enable display, set timing.
++ * The function is called from drv_video_init @ cfb_console.c
++ * Returns negative value on failure, 0 on success.
++ */
++int board_video_skip(void)
++{
++	int ret;
++	char *displaytype = getenv("displaytype");
++	char *stdout_env = getenv("stdout");
++	display_type disp_type;
++
++	cl_som_imx7_lcd_pads_set();
++	if (cl_som_imx7_base_id == CL_SOM_IMX7_SB_SOM)
++		cl_som_imx7_lcd_control_pads_set();
++
++	disp_type = env_parse_displaytype(displaytype);
++	if (disp_type < 0) {
++		printf("displaytype parsing failure\n");
++		return ret;
++	}
++
++	ret = enable_display(disp_type);
++	if (ret < 0) {
++		printf("Display enable failure\n");
++		return ret;
++	}
++	/* Update stdout and enderr environment parameters according to the
++	   baseboard type */
++	if (stdout_env) /* stdout was set */
++		return 0;
++	if ((cl_som_imx7_base_id ==  CL_SOM_IMX7_SB_IOT) ||
++	    (cl_som_imx7_base_id ==  CL_SOM_IMX7_IOTG)) {
++		setenv("stdout", "serial,vga");
++		setenv("stderr", "serial,vga");
++	}
++	else {
++		setenv("stdout", "serial");
++		setenv("stderr", "serial");
++	}
++
++	return 0;
++}
++
++/*
++ * on_displaytype() - callback function for the environment "displaytype"
++ *
++ * @name: environment name
++ * @value: environment value
++ * @op: operation - create, update, delete.
++ * Returns negative value on failure, 0 on success.
++ */
++static int on_displaytype(const char *name, const char *value, enum env_op op,
++			  int flags)
++{
++	int ret;
++
++	if (op != env_op_overwrite)
++		return 0;
++
++	ret = env_parse_displaytype((char*) value);
++	if (ret < 0) {
++		printf("displaytype parsing failure\n");
++		return ret;
++	}
++
++	return 0;
++}
++
++U_BOOT_ENV_CALLBACK(displaytype, on_displaytype);
++
++#ifdef CONFIG_SPLASH_SCREEN
++/* Splash screen sources options */
++static struct splash_location cl_som_imx7_splash_locations[] = {
++	{
++		.name = "sf",
++		.storage = SPLASH_STORAGE_SF,
++		.flags = SPLASH_STORAGE_RAW,
++		.offset = 0x100000,
++	},
++	{
++		.name = "mmc_fs",
++		.storage = SPLASH_STORAGE_MMC,
++		.flags = SPLASH_STORAGE_FS,
++		.devpart = "0:1",
++	},
++	{
++		.name = "usb_fs",
++		.storage = SPLASH_STORAGE_USB,
++		.flags = SPLASH_STORAGE_FS,
++		.devpart = "0:1",
++	},
++};
++
++/*
++ * splash_screen_prepare() - load splash screen image to RAM.
++ *
++ * Returns -1 on failure, 0 on success.
++ */
++int splash_screen_prepare(void)
++{
++	int ret = splash_source_load(cl_som_imx7_splash_locations,
++				     ARRAY_SIZE(cl_som_imx7_splash_locations));
++
++	if (!ret) {/* Splash screen loaded - prevent VGA console */
++		setenv("stdout", "serial");
++	}
++
++	return ret;
++}
++#endif /* CONFIG_SPLASH_SCREEN */
++
++/*
++ * fdt_board_adjust_display() - update device tree.
++ * * Updating device tree with display timing parameters.
++ * * Disable the regulator of the not active display.
++ * Returns -1 on failure, 0 on success.
++ */
++int fdt_board_adjust_display(void)
++{
++	u32 flip_val;
++	int ret;
++
++	if ((selected_preset < 0) || (selected_preset >= PRSET_NONE))
++		return 0;
++
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.refresh);
++	ret = fdt_prop_set(FDT_TIMING_DVI, "clock-frequency", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.xres);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "hactive", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.yres);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "vactive", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.left_margin);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "hback-porch", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.right_margin);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "hfront-porch", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.upper_margin);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "vback-porch", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.lower_margin);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "vfront-porch", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.hsync_len);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "hsync-len", &flip_val, 4, 0);
++	flip_val = FLIP_32B(dispparams[selected_preset].timings.vsync_len);
++	ret |= fdt_prop_set(FDT_TIMING_DVI, "vsync-len", &flip_val, 4, 0);
++	if (ret) {
++		printf("Failed updating device tree with display \
++			timing parameters\n");
++		return -1;
++	}
++	fdt_prop_del(dispparams[selected_preset].del_node,
++		     "regulator-always-on");
++
++	return 0;
++}
+diff --git a/board/compulab/cl-som-imx7/mux.c b/board/compulab/cl-som-imx7/mux.c
+index 15d4423fa0..7d04fde814 100644
+--- a/board/compulab/cl-som-imx7/mux.c
++++ b/board/compulab/cl-som-imx7/mux.c
+@@ -190,4 +190,52 @@ PADS_SET(nand_enable_pads)
+ 
+ #endif /* CONFIG_NAND_MXS */
+ 
++#ifdef CONFIG_VIDEO_MXS
++
++#define LCD_PAD_CTRL		(PAD_CTL_HYS | PAD_CTL_PUS_PU100KOHM |	\
++				PAD_CTL_DSE_3P3V_49OHM)
++
++/* RGB signals MUX */
++static iomux_v3_cfg_t const lcd_pads[] = {
++	MX7D_PAD_EPDC_DATA00__LCD_CLK | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA01__LCD_ENABLE | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA03__LCD_HSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA02__LCD_VSYNC | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA00__LCD_DATA0 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA01__LCD_DATA1 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA02__LCD_DATA2 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA03__LCD_DATA3 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA04__LCD_DATA4 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA05__LCD_DATA5 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA06__LCD_DATA6 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA07__LCD_DATA7 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA08__LCD_DATA8 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA09__LCD_DATA9 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA10__LCD_DATA10 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA11__LCD_DATA11 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA12__LCD_DATA12 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA13__LCD_DATA13 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA14__LCD_DATA14 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_EPDC_DATA15__LCD_DATA15 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA16__LCD_DATA16 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA17__LCD_DATA17 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA18__LCD_DATA18 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA19__LCD_DATA19 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA20__LCD_DATA20 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA21__LCD_DATA21 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA22__LCD_DATA22 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++	MX7D_PAD_LCD_DATA23__LCD_DATA23 | MUX_PAD_CTRL(LCD_PAD_CTRL),
++};
++
++PADS_SET(lcd_pads)
++
++static iomux_v3_cfg_t const lcd_control_pads[] = {
++	/* LCD backlight */
++	MX7D_PAD_GPIO1_IO02__GPIO1_IO2 | MUX_PAD_CTRL(GPIO_PAD_CTRL),
++};
++
++PADS_SET(lcd_control_pads)
++
++#endif /* CONFIG_VIDEO_MXS */
++
+ #endif /* !CONFIG_SPL_BUILD */
+diff --git a/configs/cl-som-imx7_defconfig b/configs/cl-som-imx7_defconfig
+index 73be05842f..76894bafdf 100644
+--- a/configs/cl-som-imx7_defconfig
++++ b/configs/cl-som-imx7_defconfig
+@@ -10,6 +10,7 @@ CONFIG_SPL_MMC_SUPPORT=y
+ CONFIG_SPL_SERIAL_SUPPORT=y
+ CONFIG_SPL_SPI_FLASH_SUPPORT=y
+ CONFIG_SPL_SPI_SUPPORT=y
++CONFIG_VIDEO=y
+ CONFIG_ARMV7_BOOT_SEC_DEFAULT=y
+ CONFIG_IMX_RDC=y
+ CONFIG_IMX_BOOTAUX=y
+@@ -39,6 +40,7 @@ CONFIG_CMD_GPIO=y
+ CONFIG_CMD_DHCP=y
+ CONFIG_CMD_MII=y
+ CONFIG_CMD_PING=y
++CONFIG_CMD_BMP=y
+ CONFIG_CMD_CACHE=y
+ CONFIG_CMD_EXT2=y
+ CONFIG_CMD_EXT4=y
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index 55bf8728de..4b6debd8fe 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -135,6 +135,8 @@
+ 				"run storagebootcmd;" \
+ 			"fi; " \
+ 		"fi;\0" \
++	"displaytype=dvi\0" \
++	"stdin=serial\0" \
+ 
+ #define CONFIG_BOOTCOMMAND \
+ 	"echo SD boot attempt ...; run sdbootscript; run sdboot; " \
+@@ -227,4 +229,17 @@
+ #define CONFIG_APBH_DMA_BURST8
+ #endif /* CONFIG_SPL_BUILD */
+ 
++/* Display */
++#ifdef CONFIG_VIDEO
++#define CONFIG_VIDEO_MXS
++#define CONFIG_VIDEO_LOGO
++#define CONFIG_SPLASH_SCREEN
++#define CONFIG_SPLASH_SCREEN_ALIGN
++#define CONFIG_SPLASH_SOURCE
++#define CONFIG_BMP_16BPP
++#define CONFIG_VIDEO_BMP_RLE8
++#define CONFIG_VIDEO_BMP_LOGO
++#define CONFIG_ENV_CALLBACK_LIST_STATIC "displaytype:displaytype"
++#endif /* CONFIG_VIDEO */
++
+ #endif	/* __CONFIG_H */
+-- 
+2.17.1
+

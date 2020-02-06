@@ -1,0 +1,114 @@
+From 92875f5cc44914515e50c11c503a09cec90497b2 Mon Sep 17 00:00:00 2001
+From: Hongxu Jia <hongxu.jia@windriver.com>
+Date: Sat, 11 Jun 2016 22:51:44 -0400
+Subject: [PATCH 08/11] tweak to support external bind
+
+Tweak the external bind to oe-core's sysroot rather than
+external bind source build.
+
+Upstream-Status: Inappropriate <oe-core specific>
+
+Signed-off-by: Hongxu Jia <hongxu.jia@windriver.com>
+---
+ client/Makefile.am       | 2 +-
+ client/tests/Makefile.am | 2 +-
+ common/tests/Makefile.am | 2 +-
+ dhcpctl/Makefile.am      | 2 +-
+ omapip/Makefile.am       | 2 +-
+ relay/Makefile.am        | 2 +-
+ server/Makefile.am       | 2 +-
+ server/tests/Makefile.am | 2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
+
+Index: dhcp-4.3.6/client/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/client/Makefile.am
++++ dhcp-4.3.6/client/Makefile.am
+@@ -4,7 +4,7 @@
+ # production code. Sadly, we are not there yet.
+ SUBDIRS = . tests
+ 
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = -DCLIENT_PATH='"PATH=$(sbindir):/sbin:/bin:/usr/sbin:/usr/bin"' \
+ 	      -DLOCALSTATEDIR='"$(localstatedir)"' -I$(top_srcdir)/includes
+Index: dhcp-4.3.6/client/tests/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/client/tests/Makefile.am
++++ dhcp-4.3.6/client/tests/Makefile.am
+@@ -1,6 +1,6 @@
+ SUBDIRS = .
+ 
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = $(ATF_CFLAGS) -DUNIT_TEST -I$(top_srcdir)/includes
+ AM_CPPFLAGS += -I@BINDDIR@/include -I$(top_srcdir)
+Index: dhcp-4.3.6/common/tests/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/common/tests/Makefile.am
++++ dhcp-4.3.6/common/tests/Makefile.am
+@@ -1,6 +1,6 @@
+ SUBDIRS = .
+ 
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = $(ATF_CFLAGS) -I$(top_srcdir)/includes
+ 
+Index: dhcp-4.3.6/dhcpctl/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/dhcpctl/Makefile.am
++++ dhcp-4.3.6/dhcpctl/Makefile.am
+@@ -1,4 +1,4 @@
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = -I$(top_srcdir)/includes -I$(top_srcdir)
+ 
+Index: dhcp-4.3.6/omapip/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/omapip/Makefile.am
++++ dhcp-4.3.6/omapip/Makefile.am
+@@ -1,4 +1,4 @@
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ AM_CPPFLAGS = -I$(top_srcdir)/includes
+ 
+ lib_LTLIBRARIES = libomapi.la
+Index: dhcp-4.3.6/relay/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/relay/Makefile.am
++++ dhcp-4.3.6/relay/Makefile.am
+@@ -1,4 +1,4 @@
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = -DLOCALSTATEDIR='"@localstatedir@"' -I$(top_srcdir)/includes
+ 
+Index: dhcp-4.3.6/server/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/server/Makefile.am
++++ dhcp-4.3.6/server/Makefile.am
+@@ -4,7 +4,7 @@
+ # production code. Sadly, we are not there yet.
+ SUBDIRS = . tests
+ 
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = -I$(top_srcdir) -DLOCALSTATEDIR='"@localstatedir@"' -I$(top_srcdir)/includes
+ 
+Index: dhcp-4.3.6/server/tests/Makefile.am
+===================================================================
+--- dhcp-4.3.6.orig/server/tests/Makefile.am
++++ dhcp-4.3.6/server/tests/Makefile.am
+@@ -1,6 +1,6 @@
+ SUBDIRS = .
+ 
+-BINDLIBDIR = @BINDDIR@/lib
++BINDLIBDIR = @BINDDIR@
+ 
+ AM_CPPFLAGS = $(ATF_CFLAGS) -DUNIT_TEST -I$(top_srcdir)/includes
+ AM_CPPFLAGS += -I@BINDDIR@/include -I$(top_srcdir)

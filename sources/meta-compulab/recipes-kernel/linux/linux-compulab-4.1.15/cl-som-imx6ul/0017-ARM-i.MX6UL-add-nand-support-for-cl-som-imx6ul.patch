@@ -1,0 +1,101 @@
+From cd5f36bed76dbc4180a86980a83a42ef51c6db6b Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 10 Jan 2016 15:31:46 +0200
+Subject: [PATCH 17/38] ARM: i.MX6UL: add nand support for cl-som-imx6ul
+
+Add nand support for cl-som-imx6ul:
+1) Add iomux group for nand.
+2) Add gpmi device node. Default status is "disabled"
+It is up to the user to turn in on with regard to the board configuration.
+3) Add default nand partition layout.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 43 +++++++++++++++++++++++++++--
+ 1 file changed, 41 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index a52da93..ba83ee7 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -95,8 +95,6 @@
+ 			fsl,pins = <
+ 				/* Heartbeat */
+ 				MX6UL_PAD_SNVS_TAMPER4__GPIO5_IO04 0x17059
+-				/* eMMC nReset */
+-				MX6UL_PAD_NAND_ALE__GPIO4_IO10	0x17059
+ 				/* Phy nReset */
+ 				MX6UL_PAD_SNVS_TAMPER8__GPIO5_IO08	0x17059
+ 			>;
+@@ -149,6 +147,7 @@
+ 
+ 		pinctrl_usdhc2: usdhc2grp {
+ 			fsl,pins = <
++				MX6UL_PAD_NAND_ALE__GPIO4_IO10	0x17059
+ 				MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x17059
+ 				MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x17059
+ 				MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x17059
+@@ -162,6 +161,27 @@
+ 			>;
+ 		};
+ 
++		pinctrl_gpmi_nand: gpminand1grp {
++			fsl,pins = <
++				MX6UL_PAD_NAND_CLE__RAWNAND_CLE         0xb0b1
++				MX6UL_PAD_NAND_ALE__RAWNAND_ALE         0xb0b1
++				MX6UL_PAD_NAND_WP_B__RAWNAND_WP_B       0xb0b1
++				MX6UL_PAD_NAND_READY_B__RAWNAND_READY_B 0xb000
++				MX6UL_PAD_NAND_CE0_B__RAWNAND_CE0_B     0xb0b1
++				MX6UL_PAD_NAND_CE1_B__RAWNAND_CE1_B     0xb0b1
++				MX6UL_PAD_NAND_RE_B__RAWNAND_RE_B       0xb0b1
++				MX6UL_PAD_NAND_WE_B__RAWNAND_WE_B       0xb0b1
++				MX6UL_PAD_NAND_DATA00__RAWNAND_DATA00   0xb0b1
++				MX6UL_PAD_NAND_DATA01__RAWNAND_DATA01   0xb0b1
++				MX6UL_PAD_NAND_DATA02__RAWNAND_DATA02   0xb0b1
++				MX6UL_PAD_NAND_DATA03__RAWNAND_DATA03   0xb0b1
++				MX6UL_PAD_NAND_DATA04__RAWNAND_DATA04   0xb0b1
++				MX6UL_PAD_NAND_DATA05__RAWNAND_DATA05   0xb0b1
++				MX6UL_PAD_NAND_DATA06__RAWNAND_DATA06   0xb0b1
++				MX6UL_PAD_NAND_DATA07__RAWNAND_DATA07   0xb0b1
++			>;
++		};
++
+ 		/* pins for spi */
+ 		pinctrl_ecspi2_cs: ecspi2_cs_grp {
+ 			fsl,pins = <
+@@ -286,6 +306,7 @@
+ 	status = "okay";
+ };
+ 
++/* emmc */
+ &usdhc2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_usdhc2>;
+@@ -296,6 +317,24 @@
+ 	status = "okay";
+ };
+ 
++/* nand */
++&gpmi {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_gpmi_nand>;
++	nand-on-flash-bbt;
++	status = "disabled";
++
++	partition@0 {
++		label = "linux";
++		reg = <0x0 0x800000>;
++	};
++
++	partition@800000 {
++		label = "rootfs";
++		reg = <0x800000 0x0>;
++	};
++};
++
+ &ecspi2 {
+ 	fsl,spi-num-chipselects = <1>;
+ 	pinctrl-names = "default";
+-- 
+1.9.1
+

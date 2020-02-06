@@ -1,0 +1,15 @@
+#!/bin/bash
+
+PID_FILE=/var/run/cl-camera.pid
+
+if [[ -f ${PID_FILE} ]];then
+PID=$(cat ${PID_FILE})
+kill -9 ${PID}
+rm -rf ${PID_FILE}
+exit 0
+fi
+
+gst-launch-1.0 v4l2src device=/dev/video0 ! autovideosink &
+
+PID=$!
+echo ${PID} > ${PID_FILE}

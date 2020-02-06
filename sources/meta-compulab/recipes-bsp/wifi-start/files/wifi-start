@@ -1,0 +1,63 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:		bt-start
+# Required-Start:	$syslog
+# Required-Stop:	$syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:
+# Short-Description:	CompuLab wifi-start
+### END INIT INFO
+
+# Get the soc and revision
+eval $(udevadm info -ap /sys/devices/soc0 | awk '(/revision|soc_id/)&&(gsub(/ |ATTR{|}=/,""))' ORS=";")
+
+[[ ${soc_id} = 'i.MX6QP' && ${revision} = '2.0' ]] && model=ZP
+[[ ${soc_id} = 'i.MX6Q' && ${revision} = '1.5' ]] && model=1DX
+[[ ${soc_id} = 'i.MX6Q' && ${revision} = '0.6' ]] && model=1DX
+[[ -z ${model} ]] && exit 0
+
+firmware_path=/lib/firmware/bcm/${model}/fw_bcmdhd.bin
+nvram_path=/lib/firmware/bcm/${model}/bcmdhd.${model}.SDIO.cal
+
+wifi_init() {
+echo -n ${nvram_path} >  /sys/module/bcmdhd/parameters/nvram_path
+echo -n ${firmware_path} > /sys/module/bcmdhd/parameters/firmware_path
+}
+
+wifi_stop() {
+	ifconfig wlan0 down
+}
+
+wifi_up() {
+	rfkill unblock wifi
+	ifconfig wlan0 up
+}
+
+wifi_status() {
+	iwconfig wlan0
+}
+
+wifi_start() {
+	wifi_init
+	wifi_up
+}
+
+case "$1" in
+start)
+	wifi_start
+	;;
+stop)
+	wifi_stop
+	;;
+status)
+	wifi_status
+	;;
+*)
+cat << eom
+	Usage: $0 {start|stop|status}
+eom
+	exit 1
+esac
+
+exit 0

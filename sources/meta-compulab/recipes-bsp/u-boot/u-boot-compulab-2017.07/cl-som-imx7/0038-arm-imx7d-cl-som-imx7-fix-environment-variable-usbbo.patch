@@ -1,0 +1,34 @@
+From 71e05561f65d39e2c1d68f8e5f381f606bc41255 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Thu, 14 Dec 2017 09:06:09 +0200
+Subject: [PATCH 38/57] arm: imx7d: cl-som-imx7: fix environment variable
+ usbbootscript
+
+String termination is missing in the definition of the environment
+variable usbbootscript.
+The result is that the next environment variable sdboot is merged with
+usbbootscript.
+
+Add a string termination to the definition of usbbootscript.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ include/configs/cl-som-imx7.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/configs/cl-som-imx7.h b/include/configs/cl-som-imx7.h
+index ba0ab8cecd..f9362e922d 100644
+--- a/include/configs/cl-som-imx7.h
++++ b/include/configs/cl-som-imx7.h
+@@ -124,7 +124,7 @@
+ 		"setenv storagedev ${usbdev}:${usbpart};" \
+ 		"if run loadscript; then " \
+ 			"run bootscript; " \
+-		"fi; " \
++		"fi;\0" \
+ 	"sdboot=setenv mmcdev ${mmcdev_def}; setenv mmcblk 0; run mmcboot\0" \
+ 	"emmcbootscript=setenv mmcdev 1; setenv mmcblk 2; run mmcbootscript\0" \
+ 	"emmcboot=setenv mmcdev 1; setenv mmcblk 2; run mmcboot\0" \
+-- 
+2.17.1
+

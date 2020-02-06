@@ -1,0 +1,35 @@
+From 84a684031082d6254345a8cc60237857cccbaff5 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 15 Jun 2016 14:01:54 +0300
+Subject: [PATCH 10/24] ARM: i.MX6: dts: ldo & hdmi changes
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 7c39b96..bd08a40 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -500,7 +500,7 @@
+ 
+ &gpc {
+ 	/* use ldo-enable, u-boot will check it and configure */
+-	fsl,ldo-bypass = <0>;
++	fsl,ldo-bypass = <1>;
+ };
+ 
+ /* spi */
+@@ -679,6 +679,8 @@
+ &hdmi_video {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_hdmi_hdcp>;
++        fsl,phy_reg_vlev = <0x0294>;
++        fsl,phy_reg_cksymtx = <0x800d>;
+ 	fsl,hdcp;
+ 	status = "okay";
+ };
+-- 
+1.9.1
+

@@ -1,0 +1,30 @@
+From b3ece576fe1e77a5cf7f9fd4decdc953c95ed0c1 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 11 Jan 2016 17:00:09 +0200
+Subject: [PATCH 20/38] ARM: i.MX6UL: add 'depends' property to gpmi-nand
+
+Add a new 'depends' property to the gpmi-nand node.
+The purpose is to create a dependency between devices.
+The ecspi4 bus driver with its siblings has to be configured first
+in order to provide the correct mtd device order registration.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 43546d9..305bd0c 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -322,6 +322,7 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_gpmi_nand>;
+ 	nand-on-flash-bbt;
++	depends = "/soc/aips-bus@02000000/spba-bus@02000000/ecspi@02014000";
+ 	status = "disabled";
+ 
+ 	partition@0 {
+-- 
+1.9.1
+

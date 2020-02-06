@@ -1,0 +1,26 @@
+From 9323ea89f9e3cd490ad6cc9f801e06ebf34ea8c8 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 7 Dec 2016 15:54:24 +0200
+Subject: [PATCH 30/58] ARM: i.MX6: Enable MXC Vivante GPU as a module
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cm_fx6_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/cm_fx6_defconfig b/arch/arm/configs/cm_fx6_defconfig
+index 8e04c28..cb8fcd1 100644
+--- a/arch/arm/configs/cm_fx6_defconfig
++++ b/arch/arm/configs/cm_fx6_defconfig
+@@ -340,7 +340,7 @@ CONFIG_MMC_SDHCI=y
+ CONFIG_MMC_SDHCI_PLTFM=y
+ CONFIG_MMC_SDHCI_ESDHC_IMX=y
+ CONFIG_MXC_IPU=y
+-CONFIG_MXC_GPU_VIV=y
++CONFIG_MXC_GPU_VIV=m
+ CONFIG_MXC_MIPI_CSI2=y
+ CONFIG_NEW_LEDS=y
+ CONFIG_LEDS_CLASS=y
+-- 
+1.9.1
+

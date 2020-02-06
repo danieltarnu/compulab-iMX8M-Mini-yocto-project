@@ -1,0 +1,5 @@
+#!/bin/bash
+
+for o in $(findmnt / -n -o options | sed 's/\,/ /g'); do [[ $o == 'ro' ]] && HOME=/run/user/0 ; done
+
+/usr/lib/chromium/chromium-wrapper --no-sandbox

@@ -1,0 +1,136 @@
+From 5fc4eb0a6636e7f739ba61d7a47a3b5c4722e28f Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 13 Jun 2018 16:46:41 +0300
+Subject: [PATCH 53/57] arm: imx7d: cl-som-imx7: workaround USB3503
+ initalization failure
+
+USB HSIC HUB USB3503 initialization failure occurs after POR (power on
+reset).
+
+Work around the problem by resetting the module after POR.
+POR is detected by the value of the PF3000 (PMIC) register INTSTAT0.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/cl-som-imx7.c |  3 +-
+ board/compulab/cl-som-imx7/common.h      |  2 ++
+ board/compulab/cl-som-imx7/spl.c         | 41 ++++++++++++++++++++++--
+ 3 files changed, 41 insertions(+), 5 deletions(-)
+
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index 8f23439fa1..0ad69ed520 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -529,14 +529,13 @@ int board_init(void)
+ }
+ 
+ #ifdef CONFIG_POWER
+-#define I2C_PMIC	0
+ int power_init_board(void)
+ {
+ 	struct pmic *p;
+ 	int ret;
+ 	unsigned int reg, rev_id;
+ 
+-	ret = power_pfuze3000_init(I2C_PMIC);
++	ret = power_pfuze3000_init(CL_SOM_IMX7_I2C_BUS_PMIC);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index a64f7f093d..d6a21e00c6 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -61,6 +61,8 @@ PADS_SET_PROT(lcd_control_pads)
+ #endif /* !CONFIG_SPL_BUILD */
+ 
+ void cl_som_imx7_setup_i2c0(void);
++#define CL_SOM_IMX7_I2C_BUS_PMIC SYS_I2C_BUS_SOM
++
+ #if defined(CONFIG_SYS_I2C_MXC) || defined(CONFIG_SPL_I2C_SUPPORT)
+ #define I2C_PAD_CTRL		(PAD_CTL_DSE_3P3V_32OHM | PAD_CTL_SRE_SLOW | \
+ 				PAD_CTL_HYS)
+diff --git a/board/compulab/cl-som-imx7/spl.c b/board/compulab/cl-som-imx7/spl.c
+index ad68a96b04..e79a9ad130 100644
+--- a/board/compulab/cl-som-imx7/spl.c
++++ b/board/compulab/cl-som-imx7/spl.c
+@@ -10,11 +10,15 @@
+ 
+ #include <common.h>
+ #include <spl.h>
++#include <i2c.h>
+ #include <fsl_esdhc.h>
++#include <power/pfuze3000_pmic.h>
+ #include <asm/imx-common/iomux-v3.h>
+ #include <asm/arch-mx7/mx7-pins.h>
+ #include <asm/arch-mx7/clock.h>
+ #include <asm/arch-mx7/mx7-ddr.h>
++#include <eeprom_layout.h>
++#include "../common/eeprom.h"
+ #include "common.h"
+ 
+ #ifdef CONFIG_FSL_ESDHC
+@@ -130,10 +134,17 @@ static int cl_som_imx7_spl_dram_cfg_size(u32 ram_size)
+ 
+ #define CL_SOM_IMX7_WD_RESET_VAL 0x1C /* Watchdog reset value */
+ 
++static void cl_som_imx7_spl_reset(void)
++{
++	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
++
++	cl_som_imx7_wdog_pads_set();
++	clrsetbits_le16(&wdog->wcr, 0, CL_SOM_IMX7_WD_RESET_VAL);
++	while (1);
++}
+ static void cl_som_imx7_spl_dram_cfg(void)
+ {
+ 	ulong ram_size_test, ram_size = 0;
+-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+ 	int init_failure;
+ 
+ 	for (ram_size = SZ_2G; ram_size >= SZ_256M; ram_size >>= 1) {
+@@ -148,8 +159,30 @@ static void cl_som_imx7_spl_dram_cfg(void)
+ 	/* Reset the board in case of DRAM initialization failure */
+ 	if (init_failure || (ram_size < SZ_256M)) {
+ 		puts("DRAM detection failed!!! Resetting ...\n");
+-		cl_som_imx7_wdog_pads_set();
+-		clrsetbits_le16(&wdog->wcr, 0, CL_SOM_IMX7_WD_RESET_VAL);
++		cl_som_imx7_spl_reset();
++	}
++}
++
++#define PFUZE3000_INTSTAT0_POR 0x01
++#define CL_SOM_IMX7_DUAL_RESET_MIN_BORAD_REV 120
++
++/* Reset module after power on  */
++static void cl_som_imx7_spl_por(void)
++{
++	u8 buf;
++
++	i2c_set_bus_num(CL_SOM_IMX7_I2C_BUS_PMIC);
++	i2c_read(CONFIG_POWER_PFUZE3000_I2C_ADDR, PFUZE3000_INTSTAT0, 1,
++		 &buf, 1);
++	if (buf == PFUZE3000_INTSTAT0_POR) {
++		u32 rev = cl_eeprom_get_board_rev(CONFIG_SYS_I2C_EEPROM_BUS);
++		/* Reset only if board revision is 1.20 or higher */
++		if (rev < CL_SOM_IMX7_DUAL_RESET_MIN_BORAD_REV)
++			return;
++
++		i2c_write(CONFIG_POWER_PFUZE3000_I2C_ADDR, PFUZE3000_INTSTAT0,
++			  1, &buf, 1);
++		cl_som_imx7_spl_reset();
+ 	}
+ }
+ 
+@@ -171,6 +204,8 @@ void board_init_f(ulong dummy)
+ 	/* setup GP timer */
+ 	timer_init();
+ 	cl_som_imx7_setup_i2c0();
++	/* Reset module after power on  */
++	cl_som_imx7_spl_por();
+ 	cl_som_imx7_spl_spi_init();
+ 	cl_som_imx7_uart1_pads_set();
+ 	/* UART clocks enabled and gd valid - init serial console */
+-- 
+2.17.1
+

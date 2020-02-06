@@ -1,0 +1,28 @@
+From c481393e8065e03096986d7161de684fdc4fc973 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 29 Jun 2016 08:15:26 +0300
+Subject: [PATCH 37/38] ARM: i.MX6UL: fix gpmi depends string
+
+Fix the gpmi depends string.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 55f3dc1..b2788a3 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -370,7 +370,7 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_gpmi_nand>;
+ 	nand-on-flash-bbt;
+-	depends = "/soc/aips-bus@02000000/spba-bus@02000000/ecspi@02014000";
++	depends = &ecspi4;
+ 	status = "disabled";
+ 
+ 	partition@0 {
+-- 
+1.9.1
+

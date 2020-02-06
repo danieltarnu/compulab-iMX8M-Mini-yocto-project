@@ -1,0 +1,28 @@
+From 74a8ed24f20a16d4a775c478748c69e6a8e486bc Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 17 Apr 2016 18:33:14 +0300
+Subject: [PATCH 25/38] ARM: i.MX6UL: fix usdhc1 cd/wp gpio settings
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 9efaa76..a25de61 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -299,8 +299,8 @@
+ &usdhc1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_usdhc1>;
+-	cd-gpios = <&gpio1 19 0>;
+-	wp-gpios = <&gpio1 18 0>;
++	cd-gpios = <&gpio1 19 GPIO_ACTIVE_LOW>;
++	wp-gpios = <&gpio1 18 GPIO_ACTIVE_HIGH>;
+ 	keep-power-in-suspend;
+ 	enable-sdio-wakeup;
+ 	status = "okay";
+-- 
+1.9.1
+

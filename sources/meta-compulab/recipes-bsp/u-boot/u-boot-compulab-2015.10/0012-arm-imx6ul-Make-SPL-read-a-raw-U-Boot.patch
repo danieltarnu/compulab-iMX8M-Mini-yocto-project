@@ -1,0 +1,25 @@
+From ee69dc7d732c71205b43883a9f6873933f3ffa55 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 25 Mar 2018 19:12:19 +0300
+Subject: [PATCH 12/12] arm: imx6ul: Make SPL read a raw U-Boot
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ include/configs/cl_som_imx6ul.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/configs/cl_som_imx6ul.h b/include/configs/cl_som_imx6ul.h
+index 3c1f4e5..b3dae80 100644
+--- a/include/configs/cl_som_imx6ul.h
++++ b/include/configs/cl_som_imx6ul.h
+@@ -65,7 +65,6 @@
+ #ifdef CONFIG_FSL_USDHC
+ #define CONFIG_SYS_FSL_ESDHC_ADDR	USDHC1_BASE_ADDR
+ #define CONFIG_SYS_FSL_USDHC_NUM	2
+-#define CONFIG_SUPPORT_EMMC_BOOT /* eMMC specific */
+ #endif
+ 
+ #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
+-- 
+1.9.1
+

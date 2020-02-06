@@ -1,0 +1,61 @@
+From f0b9ff05dddd08e9de4d3f110a08958f33d27f5c Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 8 Feb 2017 14:31:08 +0200
+Subject: [PATCH 06/19] arm: mx6: cl_som_mx6: fix board name
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 2 +-
+ include/configs/cl_som_imx6.h  | 2 +-
+ include/configs/cm_fx6.h       | 7 ++++++-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 5149ae7..a438e51 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -754,7 +754,7 @@ int board_init(void)
+ 
+ int checkboard(void)
+ {
+-	puts("Board: CM-FX6\n");
++	puts("Board: "CONFIG_BOARD_NAME"\n");
+ 	return 0;
+ }
+ 
+diff --git a/include/configs/cl_som_imx6.h b/include/configs/cl_som_imx6.h
+index cf0f06a..3eda633 100644
+--- a/include/configs/cl_som_imx6.h
++++ b/include/configs/cl_som_imx6.h
+@@ -9,9 +9,9 @@
+ #ifndef __CONFIG_CL_SOM_IMX6_H
+ #define __CONFIG_CL_SOM_IMX6_H
+ 
++#define CL_SOM_IMX6
+ #include "cm_fx6.h"
+ 
+-#define CL_SOM_IMX6
+ #define CONFIG_CMD_MII
+ 
+ #endif	/* __CONFIG_CL_SOM_IMX6_H */
+diff --git a/include/configs/cm_fx6.h b/include/configs/cm_fx6.h
+index 4a57514..f61d1aa 100644
+--- a/include/configs/cm_fx6.h
++++ b/include/configs/cm_fx6.h
+@@ -45,7 +45,12 @@
+ #define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, 115200}
+ 
+ /* Shell */
+-#define CONFIG_SYS_PROMPT	"CM-FX6 # "
++#ifdef CL_SOM_IMX6
++#define CONFIG_BOARD_NAME	"SOM-iMX6"
++#else
++#define CONFIG_BOARD_NAME	"CM-FX6"
++#endif
++#define CONFIG_SYS_PROMPT	CONFIG_BOARD_NAME" # "
+ #define CONFIG_SYS_PBSIZE	(CONFIG_SYS_CBSIZE + \
+ 					sizeof(CONFIG_SYS_PROMPT) + 16)
+ 
+-- 
+1.9.1
+

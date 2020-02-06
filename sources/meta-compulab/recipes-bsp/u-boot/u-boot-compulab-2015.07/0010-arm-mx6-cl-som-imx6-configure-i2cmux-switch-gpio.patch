@@ -1,0 +1,27 @@
+From 1664a2c2138efbd40cf90b91db52206d2ee14c51 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 28 Mar 2017 15:32:51 +0300
+Subject: [PATCH 10/19] arm: mx6: cl-som-imx6: configure i2cmux switch gpio
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index e4e38b9..9b3abed 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -514,6 +514,9 @@ int board_eth_init(bd_t *bis)
+ 	if (handle_mac_address("ethaddr", CONFIG_SYS_I2C_EEPROM_BUS))
+ 		printf(NO_MAC_ADDR, "primary NIC");
+ 
++	gpio_request(IMX_GPIO_NR(1, 2),"i2cmux-switch");
++	gpio_direction_output(IMX_GPIO_NR(1, 2), 0);
++
+ 	if (handle_mac_address("eth1addr", SB_FX6_I2C_EEPROM_BUS))
+ 		printf(NO_MAC_ADDR, "secondary NIC");
+ 
+-- 
+1.9.1
+

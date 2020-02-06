@@ -1,0 +1,96 @@
+From ff9ddd012c2fefd46bdf2d7a2d679e92abf73e26 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 25 Apr 2019 13:34:17 +0300
+Subject: [PATCH] ARM: i.MX6: solo: Add single freq option
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/Makefile               |  2 ++
+ arch/arm/boot/dts/imx6dl-cm-fx6-800.dts  | 32 ++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/imx6dl-sbc-fx6-800.dts | 21 +++++++++++++++++++++
+ 3 files changed, 55 insertions(+)
+ create mode 100644 arch/arm/boot/dts/imx6dl-cm-fx6-800.dts
+ create mode 100644 arch/arm/boot/dts/imx6dl-sbc-fx6-800.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 92ec0b1..70a64e8 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -333,7 +333,9 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
+ 	imx6q-wandboard.dtb \
+ 	imx6q-wandboard-revb1.dtb \
+ 	imx6dl-cm-fx6.dtb \
++	imx6dl-cm-fx6-800.dtb \
+ 	imx6dl-sbc-fx6.dtb \
++	imx6dl-sbc-fx6-800.dtb \
+ 	imx6dl-sbc-fx6m.dtb \
+ 	imx6q-cm-fx6.dtb \
+ 	imx6q-sbc-fx6.dtb \
+diff --git a/arch/arm/boot/dts/imx6dl-cm-fx6-800.dts b/arch/arm/boot/dts/imx6dl-cm-fx6-800.dts
+new file mode 100644
+index 0000000..10965d9c
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6dl-cm-fx6-800.dts
+@@ -0,0 +1,32 @@
++/*
++ * Copyright 2019 CompuLab Ltd.
++ *
++ * Author: Valentin Raevsky <valentin@compulab.co.il>
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/dts-v1/;
++#include "imx6dl.dtsi"
++#include "imx6qdl-cm-fx6.dtsi"
++
++/ {
++	model = "CompuLab CM-FX6 (single freq)";
++	compatible = "compulab,cm-fx6", "fsl,imx6dl";
++};
++
++&cpu0 {
++	operating-points = <
++		/* kHz    uV */
++		792000  1175000
++	>;
++	fsl,soc-operating-points = <
++		/* ARM kHz  SOC-PU uV */
++		792000	1175000
++	>;
++};
+diff --git a/arch/arm/boot/dts/imx6dl-sbc-fx6-800.dts b/arch/arm/boot/dts/imx6dl-sbc-fx6-800.dts
+new file mode 100644
+index 0000000..068fbc4
+--- /dev/null
++++ b/arch/arm/boot/dts/imx6dl-sbc-fx6-800.dts
+@@ -0,0 +1,21 @@
++/*
++* Copyright 2019 CompuLab Ltd.
++*
++* Author: Valentin Raevsky <valentin@compulab.co.il>
++*
++* The code contained herein is licensed under the GNU General Public
++* License. You may obtain a copy of the GNU General Public License
++* Version 2 or later at the following locations:
++*
++* http://www.opensource.org/licenses/gpl-license.html
++* http://www.gnu.org/copyleft/gpl.html
++*/
++
++#include "imx6dl-cm-fx6-800.dts"
++#include "imx6qdl-sb-fx6x.dtsi"
++#include "imx6qdl-sb-fx6.dtsi"
++
++/ {
++	model = "CompuLab CM-FX6 on SBC-FX6 (single freq)";
++	compatible = "compulab,cm-fx6", "compulab,sbc-fx6", "fsl,imx6dl";
++};
+-- 
+1.9.1
+

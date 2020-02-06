@@ -1,0 +1,153 @@
+From f55eacc3d65e03da283a4b8ef5a2aad1f04792d7 Mon Sep 17 00:00:00 2001
+From: Uri Mashiach <uri.mashiach@compulab.co.il>
+Date: Wed, 13 Jun 2018 16:26:03 +0300
+Subject: [PATCH 52/57] arm: imx7d: cl-som-imx7: add i2c0 initialization to the
+ SPL
+
+The i2c0 initialization function is implemented in the U-Boot source
+file.
+
+Move the implementation to SPL/U-Boot common file.
+Add SPL call to the i2c0 initialization function.
+
+Signed-off-by: Uri Mashiach <uri.mashiach@compulab.co.il>
+---
+ board/compulab/cl-som-imx7/cl-som-imx7.c | 28 -------------------
+ board/compulab/cl-som-imx7/common.h      |  6 ++++
+ board/compulab/cl-som-imx7/mux.c         | 35 ++++++++++++++++++++++++
+ board/compulab/cl-som-imx7/spl.c         |  1 +
+ 4 files changed, 42 insertions(+), 28 deletions(-)
+
+diff --git a/board/compulab/cl-som-imx7/cl-som-imx7.c b/board/compulab/cl-som-imx7/cl-som-imx7.c
+index 61aaecc97a..8f23439fa1 100644
+--- a/board/compulab/cl-som-imx7/cl-som-imx7.c
++++ b/board/compulab/cl-som-imx7/cl-som-imx7.c
+@@ -40,29 +40,6 @@ static struct eeprom_layout sb_som_am57x_layout;
+ /* Baseboard I2C bus is initialized flag */
+ int cl_som_imx7_base_i2c_init;
+ 
+-#define I2C_PAD_CTRL		(PAD_CTL_DSE_3P3V_32OHM | PAD_CTL_SRE_SLOW | \
+-				PAD_CTL_HYS)
+-
+-#define CL_SOM_IMX7_GPIO_I2C2_SCL	IMX_GPIO_NR(1, 6)
+-#define CL_SOM_IMX7_GPIO_I2C2_SDA	IMX_GPIO_NR(1, 7)
+-
+-static struct i2c_pads_info cl_som_imx7_i2c_pad_info2 = {
+-	.scl = {
+-		.i2c_mode = MX7D_PAD_GPIO1_IO06__I2C2_SCL |
+-			MUX_PAD_CTRL(I2C_PAD_CTRL),
+-		.gpio_mode = MX7D_PAD_GPIO1_IO06__GPIO1_IO6 |
+-			MUX_PAD_CTRL(I2C_PAD_CTRL),
+-		.gp = CL_SOM_IMX7_GPIO_I2C2_SCL,
+-	},
+-	.sda = {
+-		.i2c_mode = MX7D_PAD_GPIO1_IO07__I2C2_SDA |
+-			MUX_PAD_CTRL(I2C_PAD_CTRL),
+-		.gpio_mode = MX7D_PAD_GPIO1_IO07__GPIO1_IO7 |
+-			MUX_PAD_CTRL(I2C_PAD_CTRL),
+-		.gp = CL_SOM_IMX7_GPIO_I2C2_SDA,
+-	},
+-};
+-
+ static struct i2c_pads_info cl_som_imx7_i2c_pad_info4 = {
+ 	.scl = {
+ 		.i2c_mode = MX7D_PAD_GPIO1_IO10__I2C4_SCL |
+@@ -86,10 +63,6 @@ static struct i2c_pads_info cl_som_imx7_i2c_pad_info4 = {
+ /*
+  * cl_som_imx7_setup_i2c() - I2C  pinmux configuration.
+  */
+-static void cl_som_imx7_setup_i2c0(void)
+-{
+-	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &cl_som_imx7_i2c_pad_info2);
+-}
+ static int cl_som_imx7_setup_i2c1(void)
+ {
+ 	int ret;
+@@ -107,7 +80,6 @@ static int cl_som_imx7_setup_i2c1(void)
+ 	return 0;
+ }
+ #else /* !CONFIG_SYS_I2C_MXC */
+-static void cl_som_imx7_setup_i2c0(void) {}
+ static int cl_som_imx7_setup_i2c1(void) { return 0; }
+ #endif /* CONFIG_SYS_I2C_MXC */
+ 
+diff --git a/board/compulab/cl-som-imx7/common.h b/board/compulab/cl-som-imx7/common.h
+index 33c216be6a..a64f7f093d 100644
+--- a/board/compulab/cl-som-imx7/common.h
++++ b/board/compulab/cl-som-imx7/common.h
+@@ -59,3 +59,9 @@ PADS_SET_PROT(lcd_control_pads)
+ #endif /* CONFIG_VIDEO_MXS */
+ 
+ #endif /* !CONFIG_SPL_BUILD */
++
++void cl_som_imx7_setup_i2c0(void);
++#if defined(CONFIG_SYS_I2C_MXC) || defined(CONFIG_SPL_I2C_SUPPORT)
++#define I2C_PAD_CTRL		(PAD_CTL_DSE_3P3V_32OHM | PAD_CTL_SRE_SLOW | \
++				PAD_CTL_HYS)
++#endif /* CONFIG_SYS_I2C_MXC || CONFIG_SPL_I2C_SUPPORT */
+diff --git a/board/compulab/cl-som-imx7/mux.c b/board/compulab/cl-som-imx7/mux.c
+index b976310e6e..62d87de36b 100644
+--- a/board/compulab/cl-som-imx7/mux.c
++++ b/board/compulab/cl-som-imx7/mux.c
+@@ -10,7 +10,9 @@
+ 
+ #include <common.h>
+ #include <asm/imx-common/iomux-v3.h>
++#include <asm/imx-common/mxc_i2c.h>
+ #include <asm/arch-mx7/mx7-pins.h>
++#include "common.h"
+ 
+ #define PADS_SET(pads_array)						       \
+ void cl_som_imx7_##pads_array##_set(void)				       \
+@@ -239,3 +241,36 @@ PADS_SET(lcd_control_pads)
+ #endif /* CONFIG_VIDEO_MXS */
+ 
+ #endif /* !CONFIG_SPL_BUILD */
++
++#if defined(CONFIG_SYS_I2C_MXC) || defined(CONFIG_SPL_I2C_SUPPORT)
++
++#define CL_SOM_IMX7_GPIO_I2C2_SCL	IMX_GPIO_NR(1, 6)
++#define CL_SOM_IMX7_GPIO_I2C2_SDA	IMX_GPIO_NR(1, 7)
++
++static struct i2c_pads_info cl_som_imx7_i2c_pad_info2 = {
++	.scl = {
++		.i2c_mode = MX7D_PAD_GPIO1_IO06__I2C2_SCL |
++			MUX_PAD_CTRL(I2C_PAD_CTRL),
++		.gpio_mode = MX7D_PAD_GPIO1_IO06__GPIO1_IO6 |
++			MUX_PAD_CTRL(I2C_PAD_CTRL),
++		.gp = CL_SOM_IMX7_GPIO_I2C2_SCL,
++	},
++	.sda = {
++		.i2c_mode = MX7D_PAD_GPIO1_IO07__I2C2_SDA |
++			MUX_PAD_CTRL(I2C_PAD_CTRL),
++		.gpio_mode = MX7D_PAD_GPIO1_IO07__GPIO1_IO7 |
++			MUX_PAD_CTRL(I2C_PAD_CTRL),
++		.gp = CL_SOM_IMX7_GPIO_I2C2_SDA,
++	},
++};
++
++/*
++ * cl_som_imx7_setup_i2c() - I2C  pinmux configuration.
++ */
++void cl_som_imx7_setup_i2c0(void)
++{
++	setup_i2c(0, CONFIG_SYS_I2C_SPEED, 0x7f, &cl_som_imx7_i2c_pad_info2);
++}
++#else /* !CONFIG_SYS_I2C_MXC && !CONFIG_SPL_I2C_SUPPORT */
++void cl_som_imx7_setup_i2c0(void) {}
++#endif /* CONFIG_SYS_I2C_MXC || CONFIG_SPL_I2C_SUPPORT */
+diff --git a/board/compulab/cl-som-imx7/spl.c b/board/compulab/cl-som-imx7/spl.c
+index f4ffc97732..ad68a96b04 100644
+--- a/board/compulab/cl-som-imx7/spl.c
++++ b/board/compulab/cl-som-imx7/spl.c
+@@ -170,6 +170,7 @@ void board_init_f(ulong dummy)
+ 	arch_cpu_init();
+ 	/* setup GP timer */
+ 	timer_init();
++	cl_som_imx7_setup_i2c0();
+ 	cl_som_imx7_spl_spi_init();
+ 	cl_som_imx7_uart1_pads_set();
+ 	/* UART clocks enabled and gd valid - init serial console */
+-- 
+2.17.1
+

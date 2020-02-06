@@ -1,0 +1,44 @@
+From 827a0f9d0914e70b202a5cde3dd0d0e8186e8ee5 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 13 Mar 2016 21:42:05 +0200
+Subject: [PATCH 29/38] ARM: i.MX6UL: adjust usdhc2 pad conf values
+
+Adjust usdhc2 pad conf values.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 4af3014..159ce90 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -153,15 +153,15 @@
+ 		pinctrl_usdhc2: usdhc2grp {
+ 			fsl,pins = <
+ 				MX6UL_PAD_NAND_ALE__GPIO4_IO10	0x17059
+-				MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x17059
+-				MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x17059
+-				MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x17059
+-				MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x17059
+-				MX6UL_PAD_NAND_DATA04__USDHC2_DATA4 0x17059
+-				MX6UL_PAD_NAND_DATA05__USDHC2_DATA5 0x17059
+-				MX6UL_PAD_NAND_DATA06__USDHC2_DATA6 0x17059
+-				MX6UL_PAD_NAND_DATA07__USDHC2_DATA7 0x17059
+-				MX6UL_PAD_NAND_WE_B__USDHC2_CMD	0x17059
++				MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x1F059
++				MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x1F059
++				MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x1F059
++				MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x1F059
++				MX6UL_PAD_NAND_DATA04__USDHC2_DATA4 0x1F059
++				MX6UL_PAD_NAND_DATA05__USDHC2_DATA5 0x1F059
++				MX6UL_PAD_NAND_DATA06__USDHC2_DATA6 0x1F059
++				MX6UL_PAD_NAND_DATA07__USDHC2_DATA7 0x1F059
++				MX6UL_PAD_NAND_WE_B__USDHC2_CMD	0x1F059
+ 				MX6UL_PAD_NAND_RE_B__USDHC2_CLK	0x17059
+ 			>;
+ 		};
+-- 
+1.9.1
+

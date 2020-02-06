@@ -1,0 +1,64 @@
+FAQ
+===
+
+Q. How do I create a recipe to build a Mono/.NET application within Yocto/OpenEmbedded
+
+See wiki instructions
+
+https://wiki.yoctoproject.org/wiki/Building_and_running_embedded_Linux_.NET_applications_from_first_principles
+
+Also see mono-hellowworld example recipes
+
+http://git.yoctoproject.org/cgit/cgit.cgi/meta-mono/tree/recipes-mono/mono-helloworld
+
+- mono-helloworld is based on the Mono example, mono-skel, and provides files needed to build with autotools
+
+This recipe now provides a console "hello world" demo and if "x11" is in DISTRO_FEATURES in
+the configuration it will also build a Windows Forms demo, and a GTK# demo
+
+- mono-helloworld-xbuild uses a Visual Studio solution and project files with Mono xbuild
+
+Q. How do I set the version of Mono that I wish to build?
+
+A. Modify your conf/local.conf file to include the following
+
+For Mono 3.12.1
+
+PREFERRED_VERSION_mono = "3.12.1"
+PREFERRED_VERSION_mono-native = "3.12.1"
+
+For Mono 4.0.3.19
+
+PREFERRED_VERSION_mono = "4.0.3.19"
+PREFERRED_VERSION_mono-native = "4.0.3.19"
+
+Q. How do I include Mono in an image?
+
+A. Ideally you would wish to create an image recipe that inherits a base image recipe,
+or .bbappends to a base image recipe, possibly in a new layer.
+
+The core-image-mono in recipes-mono/images shows how to do this. In core-image-mono.bb
+we require core-image-sato (i.e. base our mono image on the sato image) and in addition
+we require core-image-mono.inc. In the include file we add Mono to the output image
+
+IMAGE_INSTALL += "libgdiplus mono mono-helloworld"
+
+So you can modify your own image recipe(s) in this manner. However in the simplest case 
+for testing you can add the following to your conf/local.conf to add packages to every 
+image built
+
+IMAGE_INSTALL_append = " mono"
+
+Note that libgdiplus requires giflib which introduces a dependency on the meta-oe layer
+
+Q. How do I use Mono 3.x.x on Windows?
+
+A. See the articles here on building the Mono sources under Windows
+ 
+3.4.x / 3.6.x
+
+http://www.codeproject.com/Articles/769292/How-to-build-Mono-on-Windows
+
+3.8.x / 3.10.x
+
+http://www.codeproject.com/Articles/815565/How-to-build-Mono-on-Windows

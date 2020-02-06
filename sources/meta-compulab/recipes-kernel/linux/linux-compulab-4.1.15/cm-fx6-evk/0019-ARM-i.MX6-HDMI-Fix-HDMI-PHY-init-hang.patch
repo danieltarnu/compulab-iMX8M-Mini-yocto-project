@@ -1,0 +1,31 @@
+From 77d068850e63be08c3e2ca3a203c35d8190e17db Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Thu, 7 Jul 2016 14:56:16 +0300
+Subject: [PATCH 19/24] ARM: i.MX6: HDMI: Fix HDMI PHY init hang
+
+Remove the hdmi_enable_overflow_interrupts() function call from
+the mxc_hdmi_phy_init(). This fix addresses the HDMI PHY init hang.
+This occurs in case that the HDMI PHY has been turned on by the U-Boot.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ drivers/video/fbdev/mxc/mxc_hdmi.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/video/fbdev/mxc/mxc_hdmi.c b/drivers/video/fbdev/mxc/mxc_hdmi.c
+index c1b5126..513bda7 100644
+--- a/drivers/video/fbdev/mxc/mxc_hdmi.c
++++ b/drivers/video/fbdev/mxc/mxc_hdmi.c
+@@ -1260,9 +1260,6 @@ static void mxc_hdmi_phy_init(struct mxc_hdmi *hdmi)
+ 			|| (hdmi->blank != FB_BLANK_UNBLANK))
+ 		return;
+ 
+-	if (!hdmi->hdmi_data.video_mode.mDVI)
+-		hdmi_enable_overflow_interrupts();
+-
+ 	/*check csc whether needed activated in HDMI mode */
+ 	cscon = (isColorSpaceConversion(hdmi) &&
+ 			!hdmi->hdmi_data.video_mode.mDVI);
+-- 
+1.9.1
+

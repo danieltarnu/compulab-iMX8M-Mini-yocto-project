@@ -1,0 +1,36 @@
+From 9e52bd94543068659f6c07242ca99368d3f0eb76 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 27 Jan 2015 17:39:24 +0200
+Subject: [PATCH 18/24] Bluetooth: btmrvl: disable SD8787 AMP device
+
+Disable SD8787 AMP device.
+The device probe gets stuck while configuring a 0x911B device.
+
+Firmware Version 14.66.35.p52 for SD8787 doesn't support BT-AMP.
+
+http://git.marvell.com/?p=mwifiex-firmware.git;a=commit;h=3f45b8c4cc1eb1d102bc3486b19677332dd215ab
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ drivers/bluetooth/btmrvl_sdio.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
+index 01d6da5..c887ba5 100644
+--- a/drivers/bluetooth/btmrvl_sdio.c
++++ b/drivers/bluetooth/btmrvl_sdio.c
+@@ -198,9 +198,11 @@ static const struct sdio_device_id btmrvl_sdio_ids[] = {
+ 	/* Marvell SD8787 Bluetooth device */
+ 	{ SDIO_DEVICE(SDIO_VENDOR_ID_MARVELL, 0x911A),
+ 			.driver_data = (unsigned long) &btmrvl_sdio_sd8787 },
++#ifdef SD8787_AMP
+ 	/* Marvell SD8787 Bluetooth AMP device */
+ 	{ SDIO_DEVICE(SDIO_VENDOR_ID_MARVELL, 0x911B),
+ 			.driver_data = (unsigned long) &btmrvl_sdio_sd8787 },
++#endif
+ 	/* Marvell SD8797 Bluetooth device */
+ 	{ SDIO_DEVICE(SDIO_VENDOR_ID_MARVELL, 0x912A),
+ 			.driver_data = (unsigned long) &btmrvl_sdio_sd8797 },
+-- 
+1.9.1
+

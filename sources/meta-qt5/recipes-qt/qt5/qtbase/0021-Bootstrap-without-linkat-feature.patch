@@ -1,0 +1,27 @@
+From 7596905dbe3ff36a129b5793966da30579d877f4 Mon Sep 17 00:00:00 2001
+From: Samuli Piippo <samuli.piippo@qt.io>
+Date: Fri, 24 Nov 2017 15:16:31 +0200
+Subject: [PATCH] Bootstrap without linkat feature
+
+qmake does not work together with pseudo when unnamed temporary files
+are used with linkat.
+
+Upstream-Status: Inappropriate [OE specific]
+[YOCTO #11996]
+---
+ src/corelib/global/qconfig-bootstrapped.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/corelib/global/qconfig-bootstrapped.h b/src/corelib/global/qconfig-bootstrapped.h
+index 283ce1ce26..dfcbb15a6b 100644
+--- a/src/corelib/global/qconfig-bootstrapped.h
++++ b/src/corelib/global/qconfig-bootstrapped.h
+@@ -95,7 +95,7 @@
+ #define QT_FEATURE_itemmodel -1
+ #define QT_FEATURE_library -1
+ #ifdef __linux__
+-# define QT_FEATURE_linkat 1
++# define QT_FEATURE_linkat -1
+ #else
+ # define QT_FEATURE_linkat -1
+ #endif

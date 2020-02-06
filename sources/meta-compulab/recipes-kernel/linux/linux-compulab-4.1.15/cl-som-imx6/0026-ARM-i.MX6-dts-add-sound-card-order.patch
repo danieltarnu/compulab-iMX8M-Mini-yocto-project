@@ -1,0 +1,45 @@
+From fd13e5fe51eac690f1face48eda0d1360df7a45b Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 13 Nov 2016 16:15:58 +0200
+Subject: [PATCH 26/58] ARM: i.MX6: dts: add sound card order
+
+Add sound card order.
+The availabel sound cards order is:
+1 - analog wm8731; 2 - hdmi; 3 - spdif.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 6a6c124..7f18a14 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -93,7 +93,7 @@
+ 		mxcfb3 = &mxcfb4;
+ 	};
+ 
+-	sound {
++	simple_sound: sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,name = "cm-fx6";
+ 		simple-audio-card,widgets =
+@@ -725,12 +725,14 @@
+ };
+ 
+ &hdmi_audio {
++	depends = &simple_sound;
+ 	status = "okay";
+ };
+ 
+ &spdif {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_spdif>;
++	depends = &hdmi_audio;
+ 	status = "okay";
+ };
+ 
+-- 
+1.9.1
+

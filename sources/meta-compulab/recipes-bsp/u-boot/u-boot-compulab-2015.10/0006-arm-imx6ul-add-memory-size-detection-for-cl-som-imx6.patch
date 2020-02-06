@@ -1,0 +1,181 @@
+From 099e882a7b80c4c537e5db3963bcfed128c4d50d Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 20 Jan 2016 15:26:26 +0200
+Subject: [PATCH 6/7] arm: imx6ul: add memory size detection for cl-som-imx6ul
+
+Add memory size detection for cl-som-imx6ul.
+This feature allows to handle 1G, 512M and 256M memory configurations.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cl_som_imx6ul/cl_som_imx6ul.c | 91 ++++++++++++++++++++++++++--
+ include/configs/cl_som_imx6ul.h              |  7 ++-
+ 2 files changed, 89 insertions(+), 9 deletions(-)
+
+diff --git a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+index d8ebd95..d816c7b 100644
+--- a/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
++++ b/board/compulab/cl_som_imx6ul/cl_som_imx6ul.c
+@@ -29,6 +29,13 @@
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
++enum ddr_config {
++	DDR_16BIT_256MB,
++	DDR_16BIT_512MB,
++	DDR_16BIT_1GB,
++	DDR_UNKNOWN,
++};
++
+ #define UART_PAD_CTRL  (PAD_CTL_PKE | PAD_CTL_PUE |		\
+ 	PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |		\
+ 	PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST  | PAD_CTL_HYS)
+@@ -497,7 +504,7 @@ int board_early_init_f(void)
+ int board_init(void)
+ {
+ 	/* Address of boot parameters */
+-	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
++	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
+ 
+ 	setup_gpmi_nand();
+ 
+@@ -536,6 +543,27 @@ int misc_init_r(void)
+ 	return 0;
+ }
+ 
++void dram_init_banksize(void)
++{
++	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
++	gd->bd->bi_dram[1].start = PHYS_SDRAM_2;
++
++	switch (gd->ram_size) {
++	case 0x10000000: /* DDR_16BIT_256MB */
++		gd->bd->bi_dram[0].size = 0x10000000;
++		gd->bd->bi_dram[1].size = 0;
++		break;
++	case 0x20000000: /* DDR_32BIT_512MB */
++		gd->bd->bi_dram[0].size = 0x20000000;
++		gd->bd->bi_dram[1].size = 0;
++		break;
++	case 0x40000000:
++		gd->bd->bi_dram[0].size = 0x20000000;
++		gd->bd->bi_dram[1].size = 0x20000000;
++		break;
++	}
++}
++
+ #ifdef CONFIG_SPL_BUILD
+ #include <libfdt.h>
+ #include <spl.h>
+@@ -590,7 +618,7 @@ struct mx6_ddr_sysinfo ddr_sysinfo = {
+ };
+ 
+ static struct mx6_ddr3_cfg mem_ddr = {
+-	.mem_speed = 800,
++	.mem_speed = 1066,
+ 	.density = 4,
+ 	.width = 16,
+ 	.banks = 8,
+@@ -616,10 +644,58 @@ static void ccgr_init(void)
+ 	writel(0xFFFFFFFF, &ccm->CCGR7);
+ }
+ 
+-static void spl_dram_init(void)
++static void spl_mx6ul_dram_init(enum ddr_config dram_config, bool reset)
+ {
+-	mx6ul_dram_iocfg(mem_ddr.width, &mx6_ddr_ioregs, &mx6_grp_ioregs);
++	if (reset)
++		((struct mmdc_p_regs *)MX6_MMDC_P0_MDCTL)->mdmisc = 2;
++
++	switch (dram_config) {
++	case DDR_16BIT_256MB:
++		ddr_sysinfo.dsize = 0;
++		ddr_sysinfo.ncs = 1;
++		mem_ddr.rowaddr = 14;
++		break;
++	case DDR_16BIT_512MB:
++		ddr_sysinfo.dsize = 0;
++		ddr_sysinfo.ncs = 1;
++		mem_ddr.rowaddr = 15;
++		break;
++	case DDR_16BIT_1GB:
++		ddr_sysinfo.dsize = 0;
++		ddr_sysinfo.ncs = 2;
++		mem_ddr.rowaddr = 15;
++		break;
++	default:
++		puts("Tried to setup invalid DDR configuration\n");
++		hang();
++	}
++
+ 	mx6_dram_cfg(&ddr_sysinfo, &mx6_mmcd_calib, &mem_ddr);
++	udelay(100);
++}
++
++static int spl_dram_init(void)
++{
++	unsigned long bank1_size, bank2_size;
++
++	mx6ul_dram_iocfg(mem_ddr.width, &mx6_ddr_ioregs, &mx6_grp_ioregs);
++
++	spl_mx6ul_dram_init(DDR_16BIT_1GB, true);
++	bank1_size = get_ram_size((long int *)PHYS_SDRAM_1, 0x20000000);
++	bank2_size = get_ram_size((long int *)PHYS_SDRAM_2, 0x20000000);
++	if (bank1_size == 0x20000000) {
++		if (bank2_size == 0x20000000)
++			return 0;
++
++		spl_mx6ul_dram_init(DDR_16BIT_512MB, true);
++		return 0;
++	}
++	spl_mx6ul_dram_init(DDR_16BIT_256MB, true);
++	bank1_size = get_ram_size((long int *)PHYS_SDRAM_1, 0x10000000);
++	if (bank1_size == 0x10000000)
++		return 0;
++
++	return -1;
+ }
+ 
+ void board_init_f(ulong dummy)
+@@ -640,8 +716,10 @@ void board_init_f(ulong dummy)
+ 	preloader_console_init();
+ 
+ 	/* DDR initialization */
+-	spl_dram_init();
+-
++	if (spl_dram_init()) {
++		puts("!!!ERROR!!! DRAM detection failed!!!\n");
++		hang();
++	}
+ 	/* Clear the BSS. */
+ 	memset(__bss_start, 0, __bss_end - __bss_start);
+ 
+@@ -659,5 +737,6 @@ void spl_board_init(void)
+ 		puts("Booting from MMC\n");
+ 	else
+ 		puts("Unknown boot device\n");
++
+ }
+ #endif
+diff --git a/include/configs/cl_som_imx6ul.h b/include/configs/cl_som_imx6ul.h
+index dbf0beb..a30316c 100644
+--- a/include/configs/cl_som_imx6ul.h
++++ b/include/configs/cl_som_imx6ul.h
+@@ -161,10 +161,11 @@
+ #define CONFIG_STACKSIZE		SZ_128K
+ 
+ /* Physical Memory Map */
+-#define CONFIG_NR_DRAM_BANKS		1
+-#define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
++#define CONFIG_NR_DRAM_BANKS		2
++#define PHYS_SDRAM_1			MMDC0_ARB_BASE_ADDR
++#define PHYS_SDRAM_2			MMDC1_ARB_BASE_ADDR
+ 
+-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
++#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1
+ #define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+ #define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+ 
+-- 
+1.9.1
+

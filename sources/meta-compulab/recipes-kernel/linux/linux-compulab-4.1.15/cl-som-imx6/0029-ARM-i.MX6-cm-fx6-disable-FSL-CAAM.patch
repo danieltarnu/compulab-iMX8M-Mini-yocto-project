@@ -1,0 +1,46 @@
+From b3d308c758ec4a352ad29b20d60dd069e97e8d85 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 11 Dec 2016 15:02:58 +0200
+Subject: [PATCH 29/58] ARM: i.MX6: cm-fx6: disable FSL CAAM
+
+Disable FSL CAAM, it could be a reason of boot hangs.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cm_fx6_defconfig | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/configs/cm_fx6_defconfig b/arch/arm/configs/cm_fx6_defconfig
+index e112e94..8e04c28 100644
+--- a/arch/arm/configs/cm_fx6_defconfig
++++ b/arch/arm/configs/cm_fx6_defconfig
+@@ -227,6 +227,7 @@ CONFIG_SERIAL_IMX_CONSOLE=y
+ CONFIG_SERIAL_FSL_LPUART=y
+ CONFIG_SERIAL_FSL_LPUART_CONSOLE=y
+ CONFIG_FSL_OTP=y
++CONFIG_HW_RANDOM=y
+ # CONFIG_I2C_COMPAT is not set
+ CONFIG_I2C_CHARDEV=y
+ CONFIG_I2C_MUX_GPIO=y
+@@ -402,6 +403,7 @@ CONFIG_MAGIC_SYSRQ=y
+ # CONFIG_FTRACE is not set
+ CONFIG_SECURITYFS=y
+ CONFIG_CRYPTO_USER=y
++CONFIG_CRYPTO_AUTHENC=y
+ CONFIG_CRYPTO_TEST=m
+ CONFIG_CRYPTO_CBC=y
+ CONFIG_CRYPTO_CTS=y
+@@ -425,10 +427,6 @@ CONFIG_CRYPTO_CAMELLIA=y
+ CONFIG_CRYPTO_DES=y
+ CONFIG_CRYPTO_TWOFISH=y
+ # CONFIG_CRYPTO_ANSI_CPRNG is not set
+-CONFIG_CRYPTO_DEV_FSL_CAAM=y
+-CONFIG_CRYPTO_DEV_FSL_CAAM_SM=y
+-CONFIG_CRYPTO_DEV_FSL_CAAM_SM_TEST=y
+-CONFIG_CRYPTO_DEV_FSL_CAAM_SECVIO=y
+ CONFIG_CRC_CCITT=m
+ CONFIG_CRC_T10DIF=y
+ CONFIG_CRC7=m
+-- 
+1.9.1
+

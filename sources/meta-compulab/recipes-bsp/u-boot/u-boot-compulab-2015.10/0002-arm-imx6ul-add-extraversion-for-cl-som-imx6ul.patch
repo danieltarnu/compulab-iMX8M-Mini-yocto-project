@@ -1,0 +1,28 @@
+From 3435949ab69dedf2f67c970d1974a7456f0fb86a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Mon, 21 Dec 2015 15:26:41 +0200
+Subject: [PATCH 2/7] arm: imx6ul: add extraversion for cl-som-imx6ul
+
+Add extraversion for cl-som-imx6ul
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index fd06024..2bc1421 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2015
+ PATCHLEVEL = 10
+ SUBLEVEL =
+-EXTRAVERSION =
++EXTRAVERSION = -cl-som-imx6ul-0.7
+ NAME =
+ 
+ # *DOCUMENTATION*
+-- 
+1.9.1
+

@@ -1,0 +1,14 @@
+[Unit]
+Description=CompuLab AP Start Script
+Conflicts=hostapd.service dnsmasq.service
+After=network.target
+
+[Service]
+Type=notify
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/cl-ap.work start
+ExecStop=/usr/local/bin/cl-ap.work stop
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

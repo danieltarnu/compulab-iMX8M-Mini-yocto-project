@@ -1,0 +1,26 @@
+From 7b896fb686380da2f8fa5ad84b6f360b47d1247a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 16:36:47 +0200
+Subject: [PATCH 46/58] ARM: i.MX6: dts: add memory label
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index df5036c..b58237e 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -15,7 +15,7 @@
+ #define MX6QDL_GPR1	0x04 0x04 0x000 0x0 0x0
+ 
+ / {
+-	memory {
++	memory: memory {
+ 		reg = <0x10000000 0x20000000>;
+ 	};
+ 
+-- 
+1.9.1
+

@@ -1,0 +1,52 @@
+From 733af588871c36405d15235a92311770624bb9be Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 8 Feb 2017 09:56:27 +0200
+Subject: [PATCH 05/19] arm: mx6: cl_som_mx6: add emmc support #1
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ board/compulab/cm_fx6/cm_fx6.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/board/compulab/cm_fx6/cm_fx6.c b/board/compulab/cm_fx6/cm_fx6.c
+index 8558806..5149ae7 100644
+--- a/board/compulab/cm_fx6/cm_fx6.c
++++ b/board/compulab/cm_fx6/cm_fx6.c
+@@ -685,16 +685,28 @@ int ft_board_setup(void *blob, bd_t *bd)
+ 				     NULL, 0, 1);
+ 	}
+ 
+-	if (nand_enabled) {
+-		/* nand */
++	if (!nand_enabled) {
++		/* nand disable */
++		fdt_status_disabled_by_alias(blob, gpmi_nand);
++		/* Disable an rtc that makes use of an emmc pin for irq */
++		fdt_status_disabled_by_alias(blob, rtc_emmc);
++	} else {
++		/* emmc disable */
+ 		fdt_status_disabled_by_alias(blob, usdhc4_path);
+ 		/* Disable an rtc that makes use of a nand pin for irq */
+ 		fdt_status_disabled_by_alias(blob, rtc_nand);
++	}
++
++	if (nand_enabled) {
++		/* nand enable */
++		fdt_status_okay_by_alias(blob, gpmi_nand);
++		/* Enable an rtc that makes use of an emmc pin for irq */
++		fdt_status_okay_by_alias(blob, rtc_emmc);
+ 	} else {
+-		/* emmc */
+-		fdt_status_disabled_by_alias(blob, gpmi_nand);
+-		/* Disable an rtc that makes use of an emmc pin for irq */
+-		fdt_status_disabled_by_alias(blob, rtc_emmc);
++		/* emmc enable */
++		fdt_status_okay_by_alias(blob, usdhc4_path);
++		/* Disable an rtc that makes use of a nand pin for irq */
++		fdt_status_okay_by_alias(blob, rtc_nand);
+ 	}
+ 
+ 	return 0;
+-- 
+1.9.1
+

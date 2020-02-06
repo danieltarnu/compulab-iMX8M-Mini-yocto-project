@@ -1,0 +1,10 @@
+--- a/Makefile	2019-06-16 15:56:23.174339030 +0300
++++ b/Makefile	2019-06-16 15:56:55.872030245 +0300
+@@ -358,7 +358,6 @@
+ stress-ng: $(OBJS)
+ 	@echo "LD $@"
+ 	@$(CC) $(CPPFLAGS) $(CFLAGS) $(OBJS) -lm $(LDFLAGS) -o $@
+-	@sync
+ 
+ makeconfig:
+ 	@if [ ! -s config ]; then \

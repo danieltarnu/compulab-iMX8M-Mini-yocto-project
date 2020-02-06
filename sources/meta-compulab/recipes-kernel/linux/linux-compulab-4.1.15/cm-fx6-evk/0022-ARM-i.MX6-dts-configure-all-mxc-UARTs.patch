@@ -1,0 +1,127 @@
+From c8652fa5341792eab5227d37d730cc3da36600de Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 10 Aug 2016 19:12:00 +0300
+Subject: [PATCH 22/24] ARM: i.MX6: dts: configure all mxc UARTs
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi  | 60 +++++++++++++++++++++++++++++++++-
+ arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi | 10 ------
+ 2 files changed, 59 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 33db95c..6a6c124 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -344,7 +344,33 @@
+ 			>;
+ 		};
+ 
+-		/* pins for console */
++		/* pins for ttymxc0 */
++		pinctrl_uart1: uart1grp {
++			fsl,pins = <
++				MX6QDL_PAD_SD3_DAT7__UART1_TX_DATA  0x1b0b1
++				MX6QDL_PAD_SD3_DAT6__UART1_RX_DATA  0x1b0b1
++			>;
++		};
++
++		/* pins for ttymxc1 */
++		pinctrl_uart2: uar2grp {
++			fsl,pins = <
++				MX6QDL_PAD_GPIO_7__UART2_TX_DATA  0x1b0b1
++				MX6QDL_PAD_GPIO_8__UART2_RX_DATA  0x1b0b1
++				MX6QDL_PAD_SD4_DAT5__UART2_RTS_B  0x1b0b1
++				MX6QDL_PAD_SD4_DAT6__UART2_CTS_B  0x1b0b1
++			>;
++		};
++
++		/* pins for ttymxc2 */
++		pinctrl_uart3: uar3grp {
++			fsl,pins = <
++				MX6QDL_PAD_EIM_D24__UART3_TX_DATA 0x1b0b1
++				MX6QDL_PAD_EIM_D25__UART3_RX_DATA 0x1b0b1
++			>;
++		};
++
++		/* pins for ttymxc3 console */
+ 		pinctrl_uart4: uart4grp {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_KEY_COL0__UART4_TX_DATA   0x1b0b1
+@@ -352,6 +378,14 @@
+ 			>;
+ 		};
+ 
++		/* pins for ttymxc4 */
++		pinctrl_uart5: uart5grp {
++			fsl,pins = <
++				MX6QDL_PAD_KEY_COL1__UART5_TX_DATA 0x1b0b1
++				MX6QDL_PAD_KEY_ROW1__UART5_RX_DATA 0x1b0b1
++			>;
++		};
++
+ 		/* pins for usb hub1 */
+ 		pinctrl_usbh1: usbh1grp {
+ 			fsl,pins = <
+@@ -601,6 +635,24 @@
+ 	status = "disabled";
+ };
+ 
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	status = "okay";
++};
++
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart2>;
++	status = "okay";
++};
++
++&uart3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart3>;
++	status = "okay";
++};
++
+ /* console */
+ &uart4 {
+ 	pinctrl-names = "default";
+@@ -608,6 +660,12 @@
+ 	status = "okay";
+ };
+ 
++&uart5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart5>;
++	status = "okay";
++};
++
+ /* usb otg */
+ &usbotg {
+ 	vbus-supply = <&reg_usb_otg_vbus>;
+diff --git a/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi b/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi
+index ff35479..2947e25 100644
+--- a/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-sb-fx6m.dtsi
+@@ -80,16 +80,6 @@
+ 
+ &iomuxc {
+ 	imx6q-sbc-fx6m {
+-		/* pins for uart2 */
+-		pinctrl_uart2: uart2grp {
+-			fsl,pins = <
+-				MX6QDL_PAD_GPIO_7__UART2_TX_DATA 0x1b0b1
+-				MX6QDL_PAD_GPIO_8__UART2_RX_DATA 0x1b0b1
+-				MX6QDL_PAD_SD4_DAT5__UART2_RTS_B 0x1b0b1
+-				MX6QDL_PAD_SD4_DAT6__UART2_CTS_B 0x1b0b1
+-		>;
+-		};
+-
+ 		/* pins for pcie */
+ 		pinctrl_fx6m_pcie: pciefx6mgrp {
+ 			fsl,pins = <
+-- 
+1.9.1
+

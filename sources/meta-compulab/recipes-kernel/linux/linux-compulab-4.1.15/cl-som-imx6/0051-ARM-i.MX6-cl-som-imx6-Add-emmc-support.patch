@@ -1,0 +1,183 @@
+From f49b1ccd6d5d50480b6f89d4272d073e793e8cc4 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 7 Feb 2017 14:02:38 +0200
+Subject: [PATCH 51/58] ARM: i.MX6: cl-som-imx6: Add emmc support.
+
+Either emmc or nand can be populated.
+The board U-Boot is responsible for removing a configuration mismatched node.
+The U-Boot must disable emmc for nand or nand for emmc configuration.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi | 79 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 78 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index b58237e..e80219f 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -93,6 +93,14 @@
+ 			startup-delay-us = <100>;
+ 			enable-active-high;
+ 		};
++
++		reg_emmc_vmmc: fixedregulator@101 {
++			compatible = "regulator-fixed";
++			regulator-name = "VSD_3V3";
++			regulator-min-microvolt = <3300000>;
++			regulator-max-microvolt = <3300000>;
++			regulator-always-on;
++		};
+ #endif
+ 		tsc2046reg: tsc2046-reg {
+ 			compatible = "regulator-fixed";
+@@ -120,6 +128,12 @@
+ 		mxcfb1 = &mxcfb2;
+ 		mxcfb2 = &mxcfb3;
+ 		mxcfb3 = &mxcfb4;
++		nand = &gpmi;
++#ifdef __SOM_iMX6__
++		emmc = &usdhc4;
++		rtc_nand = &rtc_nand;
++		rtc_emmc = &rtc_emmc;
++#endif
+ 	};
+ 
+ 	simple_sound: sound {
+@@ -392,6 +406,7 @@
+ 			>;
+ 		};
+ 
++#ifndef __SOM_iMX6__
+ 		/* pins for ttymxc1 */
+ 		pinctrl_uart2: uar2grp {
+ 			fsl,pins = <
+@@ -401,6 +416,7 @@
+ 				MX6QDL_PAD_SD4_DAT6__UART2_CTS_B  0x1b0b1
+ 			>;
+ 		};
++#endif
+ 
+ 		/* pins for ttymxc2 */
+ 		pinctrl_uart3: uar3grp {
+@@ -465,6 +481,23 @@
+ 			>;
+ 		};
+ 
++#ifdef __SOM_iMX6__
++		/* pins for emmc */
++		pinctrl_usdhc4: usdhc4grp {
++			fsl,pins = <
++				MX6QDL_PAD_SD4_DAT0__SD4_DATA0 0x1F071
++				MX6QDL_PAD_SD4_DAT1__SD4_DATA1 0x1F071
++				MX6QDL_PAD_SD4_DAT2__SD4_DATA2 0x1F071
++				MX6QDL_PAD_SD4_DAT3__SD4_DATA3 0x1F071
++				MX6QDL_PAD_SD4_DAT4__SD4_DATA4 0x1F071
++				MX6QDL_PAD_SD4_DAT5__SD4_DATA5 0x1F071
++				MX6QDL_PAD_SD4_DAT6__SD4_DATA6 0x1F071
++				MX6QDL_PAD_SD4_DAT7__SD4_DATA7 0x1F071
++				MX6QDL_PAD_SD4_CMD__SD4_CMD  0x1F071
++				MX6QDL_PAD_SD4_CLK__SD4_CLK  0x11071
++			>;
++		};
++#endif
+ #ifndef __SOM_iMX6__
+ 		/* pins for wifi/bt */
+ 		pinctrl_mrvl1: mrvl1grp {
+@@ -529,11 +562,13 @@
+ 			>;
+                 };
+ 
++#ifndef __SOM_iMX6__
+ 		pinctrl_pwm3_1: pwm3grp-1 {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_SD4_DAT1__PWM3_OUT 0x1b0b1
+ 			>;
+ 		};
++#endif
+ 
+                 pinctrl_ipu1_3: ipu1grp-3 { /* parallel port 16-bit */
+                         fsl,pins = <
+@@ -558,6 +593,18 @@
+                                 MX6QDL_PAD_CSI0_VSYNC__IPU1_CSI0_VSYNC   0x80000000
+                         >;
+                 };
++
++		pinctrl_rtc_nand: rtcnandgrp {
++			fsl,pins = <
++				MX6QDL_PAD_NANDF_RB0__GPIO6_IO10	0x80000000
++			>;
++		};
++
++		pinctrl_rtc_emmc: rtcemmcgrp {
++			fsl,pins = <
++				MX6QDL_PAD_SD4_DAT0__GPIO2_IO08		0x80000000
++			>;
++		};
+ 	};
+ };
+ 
+@@ -683,10 +730,26 @@
+ 	status = "okay";
+ 
+ #ifdef __SOM_iMX6__
+-	rtc@69 {
++	rtc_nand: rtc_nand@69 {
++		compatible = "ab1805";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_rtc_nand>;
++		reg = <0x69>;
++		pagesize = <16>;
++		interrupt-parent = <&gpio6>;
++		interrupts = <10 0>;
++		status = "okay";
++	};
++
++	rtc_emmc: rtc_emmc@69 {
+ 		compatible = "ab1805";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_rtc_emmc>;
+ 		reg = <0x69>;
+ 		pagesize = <16>;
++		interrupt-parent = <&gpio2>;
++		interrupts = <8 0>;
++		status = "okay";
+ 	};
+ #endif
+ 
+@@ -718,11 +781,13 @@
+ 	status = "okay";
+ };
+ 
++#ifndef __SOM_iMX6__
+ &uart2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart2>;
+ 	status = "okay";
+ };
++#endif
+ 
+ &uart3 {
+ 	pinctrl-names = "default";
+@@ -785,6 +850,18 @@
+ 	vmmc-supply = <&wlan_pwren_dn>;
+ 	status = "okay";
+ };
++
++/* emmc */
++&usdhc4 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_usdhc4>;
++	bus-width = <8>;
++	keep-power-in-suspend;
++	no-1-8-v;
++	non-removable;
++	vmmc-supply = <&reg_emmc_vmmc>;
++	status = "okay";
++};
+ #endif
+ 
+ &clks {
+-- 
+1.9.1
+

@@ -1,0 +1,93 @@
+From 2b3ee2643ede0d22b478599e7ad45681b0b60222 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Wed, 4 May 2016 14:54:22 +0300
+Subject: [PATCH 32/38] ASoC: simple-card: Add system-clock-type DT parameter
+ to dai nodes
+
+Select the clock type parameter for set_sysclk calls in the card init phase.
+Make use of the dir clock parameter for set_sysclk instead if the
+SND_SOC_CLOCK_IN value.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ .../devicetree/bindings/sound/simple-card.txt         |  1 +
+ include/sound/simple_card.h                           |  1 +
+ sound/soc/generic/simple-card.c                       | 19 ++++++++++++++++---
+ 3 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/sound/simple-card.txt b/Documentation/devicetree/bindings/sound/simple-card.txt
+index 5958dea..2f8b5af 100644
+--- a/Documentation/devicetree/bindings/sound/simple-card.txt
++++ b/Documentation/devicetree/bindings/sound/simple-card.txt
+@@ -81,6 +81,7 @@ Optional CPU/CODEC subnodes properties:
+ 					  clk_disable_unprepare() in dai
+ 					  shutdown().
+ - system-clock-direction		: "in" or "out", default "in"
++- system-clock-type			: "xtal" or "mclk" that has 1 or 2 value, default is 0
+ 
+ Example 1 - single DAI link:
+ 
+diff --git a/include/sound/simple_card.h b/include/sound/simple_card.h
+index 8b09ab1..c178ae0 100644
+--- a/include/sound/simple_card.h
++++ b/include/sound/simple_card.h
+@@ -18,6 +18,7 @@ struct asoc_simple_dai {
+ 	const char *name;
+ 	unsigned int sysclk;
+ 	int sysclk_dir;
++	int sysclk_id;
+ 	int slots;
+ 	int slot_width;
+ 	struct clk *clk;
+diff --git a/sound/soc/generic/simple-card.c b/sound/soc/generic/simple-card.c
+index 4b416d2..e80fd66 100644
+--- a/sound/soc/generic/simple-card.c
++++ b/sound/soc/generic/simple-card.c
+@@ -76,13 +76,17 @@ static int asoc_simple_card_hw_params(struct snd_pcm_substream *substream,
+ 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+ 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+ 	struct simple_card_data *priv = snd_soc_card_get_drvdata(rtd->card);
++	struct simple_dai_props *dai_props =
++		&priv->dai_props[rtd - rtd->card->rtd];
++	unsigned int sysclk_id = dai_props->codec_dai.sysclk_id;
++	unsigned int sysclk_dir = dai_props->codec_dai.sysclk_dir;
+ 	unsigned int mclk;
+ 	int ret = 0;
+ 
+ 	if (priv->mclk_fs) {
+ 		mclk = params_rate(params) * priv->mclk_fs;
+-		ret = snd_soc_dai_set_sysclk(codec_dai, 0, mclk,
+-					     SND_SOC_CLOCK_IN);
++		ret = snd_soc_dai_set_sysclk(codec_dai, sysclk_id, mclk,
++					     sysclk_dir);
+ 	}
+ 
+ 	return ret;
+@@ -126,7 +130,7 @@ static int __asoc_simple_card_dai_init(struct snd_soc_dai *dai,
+ 	int ret;
+ 
+ 	if (set->sysclk) {
+-		ret = snd_soc_dai_set_sysclk(dai, 0, set->sysclk,
++		ret = snd_soc_dai_set_sysclk(dai, set->sysclk_id, set->sysclk,
+ 					     set->sysclk_dir);
+ 		if (ret && ret != -ENOTSUPP) {
+ 			dev_err(dai->dev, "simple-card: set_sysclk error\n");
+@@ -242,6 +246,15 @@ asoc_simple_card_sub_parse_of(struct device_node *np,
+ 			return -EINVAL;
+ 	}
+ 
++	ret = of_property_read_string(np, "system-clock-type", &str);
++	if (ret == 0) {
++		if (!strcmp(str, "xtal"))
++			dai->sysclk_id = 1;
++		else if (!strcmp(str, "mclk"))
++			dai->sysclk_id = 2;
++		else
++			return -EINVAL;
++	}
+ 	/*
+ 	 * Parse dai->sysclk come from "clocks = <&xxx>"
+ 	 * (if system has common clock)
+-- 
+1.9.1
+

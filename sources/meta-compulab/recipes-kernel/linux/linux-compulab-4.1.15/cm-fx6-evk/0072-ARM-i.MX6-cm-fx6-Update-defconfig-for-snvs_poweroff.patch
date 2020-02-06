@@ -1,0 +1,26 @@
+From d7435e09011033df9e498567991abf06e58c366a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 20 Aug 2017 12:06:51 +0300
+Subject: [PATCH 72/72] ARM: i.MX6: cm-fx6: Update defconfig for snvs_poweroff
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cm_fx6_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/configs/cm_fx6_defconfig b/arch/arm/configs/cm_fx6_defconfig
+index ad19201..77b2c14 100644
+--- a/arch/arm/configs/cm_fx6_defconfig
++++ b/arch/arm/configs/cm_fx6_defconfig
+@@ -244,6 +244,8 @@ CONFIG_GPIO_SYSFS=y
+ CONFIG_GPIO_PCA953X=y
+ CONFIG_POWER_SUPPLY=y
+ CONFIG_SABRESD_MAX8903=y
++CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_SYSCON_POWEROFF=y
+ CONFIG_SENSORS_MAX17135=y
+ CONFIG_SENSORS_MAG3110=y
+ CONFIG_THERMAL=y
+-- 
+1.9.1
+

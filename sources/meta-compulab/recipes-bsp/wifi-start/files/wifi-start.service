@@ -1,0 +1,9 @@
+[Unit]
+Description=CompuLab WiFi Start Script
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/wifi-start start
+
+[Install]
+WantedBy=multi-user.target

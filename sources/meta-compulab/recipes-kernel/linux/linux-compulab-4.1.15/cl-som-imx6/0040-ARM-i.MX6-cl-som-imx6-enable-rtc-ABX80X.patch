@@ -1,0 +1,45 @@
+From e9c844497426dffdeb3931b288d2d352dff38f3a Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 5 Feb 2017 15:48:28 +0200
+Subject: [PATCH 40/58] ARM: i.MX6: cl-som-imx6: enable rtc ABX80X
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi  | 8 ++++++++
+ arch/arm/configs/cl_som_imx6_defconfig | 1 +
+ 2 files changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+index 1586e85..f65cfd8 100644
+--- a/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
++++ b/arch/arm/boot/dts/imx6qdl-cm-fx6.dtsi
+@@ -630,6 +630,14 @@
+ 	pinctrl-0 = <&pinctrl_i2c3>;
+ 	status = "okay";
+ 
++#ifdef __SOM_iMX6__
++	rtc@69 {
++		compatible = "ab1805";
++		reg = <0x69>;
++		pagesize = <16>;
++	};
++#endif
++
+ 	eeprom@50 {
+ 		compatible = "at24,24c02";
+ 		reg = <0x50>;
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index 654dcaf..72f0224 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -351,6 +351,7 @@ CONFIG_LEDS_TRIGGER_HEARTBEAT=y
+ CONFIG_LEDS_TRIGGER_GPIO=y
+ CONFIG_RTC_CLASS=y
+ CONFIG_RTC_INTF_DEV_UIE_EMUL=y
++CONFIG_RTC_DRV_ABX80X=m
+ CONFIG_RTC_DRV_EM3027=y
+ CONFIG_RTC_DRV_MC13XXX=y
+ CONFIG_RTC_DRV_MXC=y
+-- 
+1.9.1
+

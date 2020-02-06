@@ -1,0 +1,26 @@
+From 6f8dbbe4cf06dd9ef0f5bc90c11b6877c6823430 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 5 Dec 2017 15:00:49 +0200
+Subject: [PATCH 90/93] imx: vpu: vpu_alloc_dma_buffer add __GFP_NOFAIL flag
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ drivers/mxc/vpu/mxc_vpu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mxc/vpu/mxc_vpu.c b/drivers/mxc/vpu/mxc_vpu.c
+index c571182..552cbe2 100644
+--- a/drivers/mxc/vpu/mxc_vpu.c
++++ b/drivers/mxc/vpu/mxc_vpu.c
+@@ -263,7 +263,7 @@ static int vpu_alloc_dma_buffer(struct vpu_mem_desc *mem)
+ 	mem->cpu_addr = (unsigned long)
+ 	    dma_alloc_coherent(NULL, PAGE_ALIGN(mem->size),
+ 			       (dma_addr_t *) (&mem->phy_addr),
+-			       GFP_DMA | GFP_KERNEL);
++			       GFP_DMA | GFP_KERNEL | __GFP_NOFAIL);
+ 	dev_dbg(vpu_dev, "[ALLOC] mem alloc cpu_addr = 0x%x\n", mem->cpu_addr);
+ 	if ((void *)(mem->cpu_addr) == NULL) {
+ 		dev_err(vpu_dev, "Physical memory allocation error!\n");
+-- 
+1.9.1
+

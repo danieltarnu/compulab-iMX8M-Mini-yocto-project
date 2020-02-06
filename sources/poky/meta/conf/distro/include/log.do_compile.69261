@@ -1,0 +1,32 @@
+DEBUG: Executing shell function do_compile
+NOTE: make -j 16 -C /home/marlin/opt/nxp/build-xwayland/tmp/work/aarch64-poky-linux/optee-client-imx/git-r0/git ARCH=arm64
+make: Entering directory '/home/marlin/opt/nxp/build-xwayland/tmp/work/aarch64-poky-linux/optee-client-imx/git-r0/git'
+Building libteec.so
+  CC      src/teec_trace.c
+  CC      src/tee_client_api.c
+src/teec_trace.c: In function '_dprintf':
+src/teec_trace.c:110:24: error: '%s' directive output may be truncated writing up to 255 bytes into a region of size 246 [-Werror=format-truncation=]
+     "%s [%d] %s:%s:%d: %s",
+                        ^~
+src/teec_trace.c:112:11:
+     line, raw);
+           ~~~           
+src/teec_trace.c:109:3: note: 'snprintf' output 11 or more bytes (assuming 266) into a destination of size 256
+   snprintf(prefixed, MAX_PRINT_SIZE,
+   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     "%s [%d] %s:%s:%d: %s",
+     ~~~~~~~~~~~~~~~~~~~~~~~
+     trace_level_strings[level], thread_id, prefix, func,
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     line, raw);
+     ~~~~~~~~~~
+cc1: all warnings being treated as errors
+Makefile:56: recipe for target '/home/marlin/opt/nxp/build-xwayland/tmp/work/aarch64-poky-linux/optee-client-imx/git-r0/git/libteec/../out/libteec/teec_trace.o' failed
+make[1]: *** [/home/marlin/opt/nxp/build-xwayland/tmp/work/aarch64-poky-linux/optee-client-imx/git-r0/git/libteec/../out/libteec/teec_trace.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+ERROR: oe_runmake failed
+Makefile:31: recipe for target 'build-libteec' failed
+make: *** [build-libteec] Error 2
+make: Leaving directory '/home/marlin/opt/nxp/build-xwayland/tmp/work/aarch64-poky-linux/optee-client-imx/git-r0/git'
+WARNING: exit code 1 from a shell command.
+ERROR: Function failed: do_compile (log file is located at /home/marlin/opt/nxp/build-xwayland/tmp/work/aarch64-poky-linux/optee-client-imx/git-r0/temp/log.do_compile.69261)

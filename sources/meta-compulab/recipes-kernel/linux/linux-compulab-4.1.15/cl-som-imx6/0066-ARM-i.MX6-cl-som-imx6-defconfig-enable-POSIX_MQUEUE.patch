@@ -1,0 +1,25 @@
+From c3dddeb94a6e75d02def375be9caa7b4d9a8b220 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 11 Jun 2017 13:27:54 +0300
+Subject: [PATCH 66/66] ARM: i.MX6: cl-som-imx6: defconfig: enable POSIX_MQUEUE
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cl_som_imx6_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/configs/cl_som_imx6_defconfig b/arch/arm/configs/cl_som_imx6_defconfig
+index b14cbd7..847f29d 100644
+--- a/arch/arm/configs/cl_som_imx6_defconfig
++++ b/arch/arm/configs/cl_som_imx6_defconfig
+@@ -1,6 +1,7 @@
+ CONFIG_LOCALVERSION="-cl-som-imx6-1.0"
+ CONFIG_KERNEL_LZO=y
+ CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
+ CONFIG_FHANDLE=y
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+-- 
+1.9.1
+

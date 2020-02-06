@@ -1,0 +1,30 @@
+From cf51a26d87f1257300de32965cc4798a8332f4cb Mon Sep 17 00:00:00 2001
+From: Ilya Ledvich <ilya@compulab.co.il>
+Date: Thu, 6 Jul 2017 15:40:08 +0300
+Subject: [PATCH 11/57] mtd: nand: mxs: fix a bug in the
+ mxs_nand_get_ecc_strength()
+
+Fix a bug with calculating a nand_chip data structure address
+in the mxs_nand_get_ecc_strength() function.
+
+Signed-off-by: Ilya Ledvich <ilya@compulab.co.il>
+---
+ drivers/mtd/nand/mxs_nand.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mtd/nand/mxs_nand.c b/drivers/mtd/nand/mxs_nand.c
+index c3501ee208..1a5b5f78dc 100644
+--- a/drivers/mtd/nand/mxs_nand.c
++++ b/drivers/mtd/nand/mxs_nand.c
+@@ -197,7 +197,7 @@ static bool mxs_nand_bbm_in_data_chunk(struct mtd_info *mtd, int gf_len,
+  */
+ static int mxs_nand_get_ecc_strength(struct mtd_info *mtd)
+ {
+-	struct nand_chip *chip = mtd->priv;
++	struct nand_chip *chip = mtd_to_nand(mtd);
+ 	uint32_t page_oob_size = mtd->oobsize;
+ 	int meta = MXS_NAND_METADATA_SIZE;
+ 	int max_ecc_strength_supported;
+-- 
+2.17.1
+

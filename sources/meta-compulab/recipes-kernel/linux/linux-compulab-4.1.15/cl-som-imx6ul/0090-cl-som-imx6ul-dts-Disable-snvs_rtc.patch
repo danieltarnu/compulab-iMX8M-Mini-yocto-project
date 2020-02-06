@@ -1,0 +1,25 @@
+From b9d64427d900752b087144754a2ee33089b39046 Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Sun, 10 Dec 2017 15:26:44 +0200
+Subject: [PATCH 90/91] cl-som-imx6ul: dts: Disable snvs_rtc
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+index 939da82..91fa475 100644
+--- a/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
++++ b/arch/arm/boot/dts/imx6ul-cl-som-imx6ul.dtsi
+@@ -592,3 +592,7 @@
+ 
+ 	status = "okay";
+ };
++
++&snvs_rtc {
++	status = "disabled";
++};
+-- 
+1.9.1
+

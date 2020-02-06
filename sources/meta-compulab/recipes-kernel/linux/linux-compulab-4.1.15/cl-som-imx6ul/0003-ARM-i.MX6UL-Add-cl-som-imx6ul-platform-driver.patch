@@ -1,0 +1,127 @@
+From cb175983db3deacf0f4b96f639b2cf4d932d91af Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 17 Nov 2015 14:04:48 +0200
+Subject: [PATCH 03/38] ARM: i.MX6UL: Add cl-som-imx6ul platform driver.
+
+Add cl-som-imx6ul platform driver.
+This patch sets a correct value of the ENET1 reference
+clock mode selection field (GPR1.13 = 1).
+It is required in order to make FEC and PHY work together
+with respect to the CompuLab board design.
+In cl-som-imx6ul boards, ENET ref clock source is a kzs8041 phy.
+Details in the IMX6ULRM.
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+
+Conflicts:
+	arch/arm/mach-imx/Kconfig
+	arch/arm/mach-imx/Makefile
+
+Conflicts:
+	arch/arm/mach-imx/Kconfig
+	arch/arm/mach-imx/Makefile
+---
+ arch/arm/boot/dts/cl-som-imx6ul.dts    |  2 +-
+ arch/arm/mach-imx/Kconfig              |  7 ++++++
+ arch/arm/mach-imx/Makefile             |  1 +
+ arch/arm/mach-imx/mach-cl-som-imx6ul.c | 45 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 54 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/mach-imx/mach-cl-som-imx6ul.c
+
+diff --git a/arch/arm/boot/dts/cl-som-imx6ul.dts b/arch/arm/boot/dts/cl-som-imx6ul.dts
+index 29a3713e..d15b29d 100644
+--- a/arch/arm/boot/dts/cl-som-imx6ul.dts
++++ b/arch/arm/boot/dts/cl-som-imx6ul.dts
+@@ -13,7 +13,7 @@
+ 
+ / {
+ 	model = "CompuLab i.MX6 UltraLite SoM";
+-	compatible = "fsl,imx6ul";
++	compatible = "fsl,imx6ul", "compulab,cl-som-imx6ul";
+ 
+ 	memory {
+ 		reg = <0x80000000 0x20000000>;
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index dba87a4..08ee450 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -620,6 +620,13 @@ config SOC_IMX6UL
+ 	help
+ 	  This enables support for Freescale i.MX6 UltraLite processor.
+ 
++config CL_SOM_IMX6UL
++       bool "CompuLab SoM i.MX6ul board support"
++       depends on SOC_IMX6UL
++
++       help
++        This enables support for CompuLab SoM i.MX6ul board.
++
+ config SOC_IMX7
+ 	bool
+ 	select CPU_V7
+diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
+index d973b16..e36b1f6 100644
+--- a/arch/arm/mach-imx/Makefile
++++ b/arch/arm/mach-imx/Makefile
+@@ -111,6 +111,7 @@ obj-$(CONFIG_SOC_IMX6SX) += clk-imx6sx.o mach-imx6sx.o ddr3_freq_imx6sx.o \
+ 			    lpddr2_freq_imx6sx.o
+ obj-$(CONFIG_SOC_IMX6UL) += clk-imx6ul.o mach-imx6ul.o ddr3_freq_imx6sx.o \
+ 			    lpddr2_freq_imx6sx.o
++obj-$(CONFIG_CL_SOM_IMX6UL) += mach-cl-som-imx6ul.o
+ obj-$(CONFIG_SOC_IMX7D) += clk-imx7d.o mach-imx7d.o
+ 
+ ifeq ($(CONFIG_SUSPEND),y)
+diff --git a/arch/arm/mach-imx/mach-cl-som-imx6ul.c b/arch/arm/mach-imx/mach-cl-som-imx6ul.c
+new file mode 100644
+index 0000000..c43db1a
+--- /dev/null
++++ b/arch/arm/mach-imx/mach-cl-som-imx6ul.c
+@@ -0,0 +1,45 @@
++/*
++ * Copyright (C) 2015 CompuLab LTD. 
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/of_address.h>
++#include <linux/of_platform.h>
++#include <linux/regmap.h>
++#include <linux/mfd/syscon.h>
++#include <linux/mfd/syscon/imx6q-iomuxc-gpr.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/map.h>
++
++static void __init cl_som_imx6ul_enet_clk_init(void)
++{
++	struct regmap *gpr;
++
++	gpr = syscon_regmap_lookup_by_compatible("fsl,imx6ul-iomuxc-gpr");
++	if (!IS_ERR(gpr))
++		regmap_update_bits(gpr, IOMUXC_GPR1, IMX6UL_GPR1_ENET_CLK_DIR,
++				   1 << 13);
++	else
++		pr_err("failed to find fsl,imx6ul-iomux-gpr regmap\n");
++
++}
++
++static int __init cl_som_imx6ul_init(void)
++{
++	struct device_node *np;
++
++	np = of_find_compatible_node(NULL, NULL, "compulab,cl-som-imx6ul");
++
++	if (!np) {
++		pr_err("failed to find compulab,cl-som-imx6ul\n");
++		return -ENODEV;
++	}
++
++	cl_som_imx6ul_enet_clk_init();
++
++	return 0;
++}
++subsys_initcall(cl_som_imx6ul_init);
+-- 
+1.9.1
+

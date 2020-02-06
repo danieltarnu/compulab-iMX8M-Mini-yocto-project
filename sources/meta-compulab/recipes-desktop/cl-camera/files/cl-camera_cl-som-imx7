@@ -1,0 +1,24 @@
+#!/bin/bash
+
+PID_FILE=/var/run/cl-camera.pid
+
+if [[ -f ${PID_FILE} ]];then
+PID=$(cat ${PID_FILE})
+kill -9 ${PID}
+rm -rf ${PID_FILE}
+exit 0
+fi
+
+SRC="videotestsrc pattern=7"
+
+TEXT=cl-som-imx7
+OVERP="valignment=center font-desc=Sans,40"
+
+TEXT1="the camera is not supported on this SB-SOM"
+OVERP1="font-desc=Sans,40"
+
+SINK="waylandsink window-width=1280 window-height=720"
+gst-launch-1.0 ${SRC} ! "video/x-raw, framerate=(fraction)30/1" ! textoverlay text="'${TEXT}'" ${OVERP} ! textoverlay text="'${TEXT1}'" ${OVERP1} ! ${SINK} &
+
+PID=$!
+echo ${PID} > ${PID_FILE}

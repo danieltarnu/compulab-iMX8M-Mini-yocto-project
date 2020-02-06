@@ -1,0 +1,30 @@
+From 5dcb83a1763b8643077f9a4d17aaad4de4b7caae Mon Sep 17 00:00:00 2001
+From: Valentin Raevsky <valentin@compulab.co.il>
+Date: Tue, 12 Mar 2019 15:45:33 +0200
+Subject: [PATCH] cm-fx6: defconfig: CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=Y
+
+Signed-off-by: Valentin Raevsky <valentin@compulab.co.il>
+---
+ arch/arm/configs/cm_fx6_defconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/configs/cm_fx6_defconfig b/arch/arm/configs/cm_fx6_defconfig
+index 33fc828..322577b 100644
+--- a/arch/arm/configs/cm_fx6_defconfig
++++ b/arch/arm/configs/cm_fx6_defconfig
+@@ -42,10 +42,10 @@ CONFIG_CMA=y
+ CONFIG_SECCOMP=y
+ CONFIG_CMDLINE="console=ttymxc3,115200 root=/dev/mmcblk0p1 rootwait"
+ CONFIG_CPU_FREQ=y
+-CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE=y
++CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE=y
+ CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+-CONFIG_CPU_FREQ_GOV_USERSPACE=y
+ CONFIG_CPU_FREQ_GOV_ONDEMAND=y
++CONFIG_CPU_FREQ_GOV_INTERACTIVE=y
+ CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+ CONFIG_ARM_IMX6Q_CPUFREQ=y
+ CONFIG_CPU_IDLE=y
+-- 
+1.9.1
+
